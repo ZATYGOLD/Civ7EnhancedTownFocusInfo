@@ -86,10 +86,10 @@ const ETFI_USE_LEGACY_OBSERVER = false;
       "LOC_PROJECT_TOWN_TEMPLE_NAME",
     ]),
     configs: {
-      LOC_PROJECT_TOWN_URBAN_CENTER_NAME: {
-        counter: handleUrbanTown,
-        icons: ["YIELD_GOLD", "YIELD_HAPPINESS"],
-      },
+      // LOC_PROJECT_TOWN_URBAN_CENTER_NAME: {
+      //   counter: handleUrbanTown,
+      //   icons: ["YIELD_GOLD", "YIELD_HAPPINESS"],
+      // },
       LOC_PROJECT_TOWN_GRANARY_NAME: {
         counter: () => getImprovementCount(Array.from(IMPROVEMENTS.sets.food)),
         icons: ["YIELD_FOOD"],
