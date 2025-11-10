@@ -20,7 +20,8 @@
 			<Properties><LoadOrder>1100</LoadOrder></Properties>
 			<Actions>
 					<UIScripts>
-						<Item>ui/etfi-tooltip.js</Item>
+						<!-- <Item>ui/etfi-tooltip.js</Item> -->
+						<Item>ui/production-chooser/etfi.js</Item>
 					</UIScripts>
 				<UpdateText>
 					<Item>text/en_us/InGameText.xml</Item>
