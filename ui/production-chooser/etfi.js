@@ -4,9 +4,181 @@ import { IsElement } from '/core/ui/utilities/utilities-dom.chunk.js';
 import { c as GetTownFocusBlp } from '/base-standard/ui/production-chooser/production-chooser-helpers.chunk.js';
 import { A as AdvisorUtilities } from '/base-standard/ui/tutorial/tutorial-support.chunk.js';
 
-// Recreate the local constant from panel-production-tooltips.js
-const bulletChar = String.fromCodePoint(8226);
+// #region Etfi Improvements
+const ETFI_IMPROVEMENTS = {
+  displayNames: {
+    IMPROVEMENT_WOODCUTTER: "LOC_MOD_ETFI_IMPROVEMENT_WOODCUTTER",
+    IMPROVEMENT_WOODCUTTER_RESOURCE: "LOC_MOD_ETFI_IMPROVEMENT_WOODCUTTER",
+    IMPROVEMENT_MINE: "LOC_MOD_ETFI_IMPROVEMENT_MINE",
+    IMPROVEMENT_MINE_RESOURCE: "LOC_MOD_ETFI_IMPROVEMENT_MINE",
+    IMPROVEMENT_FISHING_BOAT: "LOC_MOD_ETFI_IMPROVEMENT_FISHING_BOAT",
+    IMPROVEMENT_FISHING_BOAT_RESOURCE: "LOC_MOD_ETFI_IMPROVEMENT_FISHING_BOAT",
+    IMPROVEMENT_FARM: "LOC_MOD_ETFI_IMPROVEMENT_FARM",
+    IMPROVEMENT_PASTURE: "LOC_MOD_ETFI_IMPROVEMENT_PASTURE",
+    IMPROVEMENT_PLANTATION: "LOC_MOD_ETFI_IMPROVEMENT_PLANTATION",
+    IMPROVEMENT_CAMP: "LOC_MOD_ETFI_IMPROVEMENT_CAMP",
+    IMPROVEMENT_CLAY_PIT: "LOC_MOD_ETFI_IMPROVEMENT_CLAY_PIT",
+    IMPROVEMENT_QUARRY: "LOC_MOD_ETFI_IMPROVEMENT_QUARRY",
+  },
+  sets: {
+    food: new Set([
+      "IMPROVEMENT_FARM",
+      "IMPROVEMENT_PASTURE",
+      "IMPROVEMENT_PLANTATION",
+      "IMPROVEMENT_FISHING_BOAT",
+      "IMPROVEMENT_FISHING_BOAT_RESOURCE",
+    ]),
+    production: new Set([
+      "IMPROVEMENT_CAMP",
+      "IMPROVEMENT_WOODCUTTER",
+      "IMPROVEMENT_WOODCUTTER_RESOURCE",
+      "IMPROVEMENT_CLAY_PIT",
+      "IMPROVEMENT_MINE",
+      "IMPROVEMENT_MINE_RESOURCE",
+      "IMPROVEMENT_QUARRY",
+    ]),
+  },
+};
 
+function getImprovementBonus(city) {
+  if (!city || !city.Constructibles) {
+    return { total: 0, details: {}, multiplier: 1 };
+  }
+
+  const targetImprovements = Array.from(ETFI_IMPROVEMENTS.sets.food);
+  const targetSet = new Set(targetImprovements);
+
+  const improvements = city.Constructibles.getIdsOfClass("IMPROVEMENT") || [];
+  const detailedCounts = {};
+
+  for (const instanceId of improvements) {
+    const instance = Constructibles.get(instanceId);
+    if (!instance) continue;
+
+    const location = instance?.location;
+    if (location?.x == null || location?.y == null) continue;
+
+    // Using free constructible to get the warehouse bonus
+    const fcID = Districts.getFreeConstructible(
+      location,
+      GameContext.localPlayerID
+    );
+    const info = GameInfo.Constructibles.lookup(fcID);
+    if (!info) continue;
+
+    if (targetSet.has(info.ConstructibleType)) {
+      const displayName = Locale.compose(
+        ETFI_IMPROVEMENTS.displayNames[info.ConstructibleType] ||
+          info.ConstructibleType
+      );
+      detailedCounts[displayName] = (detailedCounts[displayName] || 0) + 1;
+    }
+  }
+
+  const baseTotal = Object.values(detailedCounts).reduce(
+    (sum, count) => sum + count,
+    0
+  );
+
+  // Food towns use +1/+2/+3 by era (same as your old code: base 1 + age bonus)
+  let multiplier = 1;
+  const ageData = GameInfo.Ages.lookup(Game.age);
+  if (ageData) {
+    const currentAge = ageData.AgeType?.trim();
+    if (currentAge === "AGE_EXPLORATION") {
+      multiplier = 2;
+    } else if (currentAge === "AGE_MODERN") {
+      multiplier = 3;
+    }
+  }
+
+  return {
+    total: baseTotal * multiplier,
+    details: detailedCounts,
+    multiplier,
+  };
+}
+
+// #region Render Tooltip Logic
+function renderGranaryBlock(etfiTooltipInstance, city) {
+  const tooltipRoot = etfiTooltipInstance.tooltip;
+  if (!tooltipRoot) return;
+
+  // Only apply to the specific project
+  const projectNameId = etfiTooltipInstance.target?.dataset?.name;
+  if (projectNameId !== "LOC_PROJECT_TOWN_GRANARY_NAME") return;
+
+  const bonus = getImprovementBonus(city);
+
+  // Reuse container if it already exists
+  let container = tooltipRoot.querySelector(".etfi-granary-block");
+  if (container) {
+    container.remove(); // remove old one so we can rebuild cleanly
+  }
+
+  container = document.createElement("div");
+  container.className =
+    "etfi-granary-block mt-2 p-2 rounded-md production-chooser-tooltip__subtext-bg flex flex-col gap-1";
+
+  // Top row: icon + total
+  const totalRow = document.createElement("div");
+  totalRow.className = "flex items-center gap-2 text-accent-2";
+
+  const icon = document.createElement("fxs-icon");
+  icon.setAttribute("data-icon-id", "YIELD_FOOD");
+  icon.classList.add("size-5");
+
+  const totalText = document.createElement("span");
+  totalText.className = "font-semibold";
+  totalText.textContent = `+${bonus.total}`;
+
+  totalRow.append(icon, totalText);
+  container.appendChild(totalRow);
+
+  // Breakdown rows
+  if (bonus.details && Object.keys(bonus.details).length > 0) {
+    const breakdown = document.createElement("div");
+    breakdown.className = "mt-1 text-xs text-accent-2";
+
+    for (const [name, count] of Object.entries(bonus.details)) {
+      const row = document.createElement("div");
+      row.className = "flex justify-between";
+
+      const labelSpan = document.createElement("span");
+      labelSpan.textContent = name;
+
+      const valueSpan = document.createElement("span");
+      valueSpan.textContent = `+${count}`;
+
+      row.append(labelSpan, valueSpan);
+      breakdown.appendChild(row);
+    }
+
+    // Era multiplier line, if > 1
+    if (bonus.multiplier > 1) {
+      const eraRow = document.createElement("div");
+      eraRow.className =
+        "flex justify-between mt-1 pt-1 border-t border-white/10";
+
+      const eraLabel = document.createElement("span");
+      eraLabel.textContent = Locale.compose("LOC_MOD_ETFI_ERA_BONUS");
+
+      const eraValue = document.createElement("span");
+      eraValue.textContent = `x${bonus.multiplier}`;
+
+      eraRow.append(eraLabel, eraValue);
+      breakdown.appendChild(eraRow);
+    }
+
+    container.appendChild(breakdown);
+  }
+
+  // Insert after the vanilla description
+  etfiTooltipInstance.description.insertAdjacentElement("afterend", container);
+}
+
+// #region EtfiToolTipType
+const bulletChar = String.fromCodePoint(8226);
 class EtfiToolTipType {
     _target = null;
     get target() {
@@ -15,7 +187,6 @@ class EtfiToolTipType {
     set target(value) {
       this._target = value ? new WeakRef(value) : null;
     }
-    // #region Element References
     tooltip = document.createElement("fxs-tooltip");
     icon = document.createElement("fxs-icon");
     header = document.createElement("fxs-header");
@@ -159,6 +330,12 @@ class EtfiToolTipType {
         this.gemsContainer.appendChild(recommendationTooltipContent);
       }
       this.gemsContainer.classList.toggle("hidden", !recommendations);
+
+      // === ETFI: Granary-specific extra info ===
+      // Only run on town focus items, and only for LOC_PROJECT_TOWN_GRANARY_NAME
+      if (IsElement(this.target, "town-focus-chooser-item")) {
+        renderGranaryBlock(this, city);
+      }
     }
     getRequirementsText() {
       const projectType = this.getProjectType() ?? -1;
