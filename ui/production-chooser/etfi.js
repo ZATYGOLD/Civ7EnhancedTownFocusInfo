@@ -60,7 +60,6 @@ class EtfiToolTipType {
         this.gemsContainer
       );
     }
-    //static get instance() { return EtfiToolTipType._instance; }
     getHTML() {
       return this.tooltip;
     }
