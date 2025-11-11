@@ -1,4 +1,9 @@
 
+/**
+ * Enhanced Town Focus Info Mod - Makes Town Focus Tooltips more informative
+ * Author: Zatygold
+ * Version: 2.0.0
+ */
 import TooltipManager from '/core/ui/tooltips/tooltip-manager.js';
 import { IsElement } from '/core/ui/utilities/utilities-dom.chunk.js';
 import { c as GetTownFocusBlp } from '/base-standard/ui/production-chooser/production-chooser-helpers.chunk.js';
@@ -9,6 +14,10 @@ const ETFI_PROJECT_TYPES = {
   TOWN_FARMING:"LOC_PROJECT_TOWN_GRANARY_NAME",
   TOWN_FISHING: "LOC_PROJECT_TOWN_FISHING_NAME",
   TOWN_MINING: "LOC_PROJECT_TOWN_PRODUCTION_NAME"
+};
+const ETFI_YIELDS = {
+  FOOD: "YIELD_FOOD",
+  PRODUCTION: "YIELD_PRODUCTION"
 };
 
 const ETFI_IMPROVEMENTS = {
@@ -233,9 +242,6 @@ class EtfiToolTipType {
     // NEW: central dispatcher for ETFI details text
     getDetailsText(city) {
       if (!this.target) return void 0;
-      if (!IsElement(this.target, "town-focus-chooser-item")) {
-        return void 0;
-      }
 
       const projectNameKey = this.target.dataset.name; // e.g. "LOC_PROJECT_TOWN_GRANARY_NAME"
       if (!projectNameKey) return void 0;
@@ -262,6 +268,7 @@ class EtfiToolTipType {
     getImprovementSummaryForSet(city, targetSet, baseMultiplier = 1) {
       if (!city || !city.Constructibles) return null;
       if (!(targetSet instanceof Set) || targetSet.size === 0) return null;
+      if (!GameInfo?.Constructibles || !Districts || !Constructibles) return null;
     
       const resultByType = Object.create(null);
       const improvements = city.Constructibles.getIdsOfClass("IMPROVEMENT") || [];
@@ -348,7 +355,7 @@ class EtfiToolTipType {
       );
       if (!summary) return void 0;
     
-      return this.renderImprovementDetailsHTML(summary, "YIELD_FOOD");
+      return this.renderImprovementDetailsHTML(summary, ETFI_YIELDS.FOOD);
     }
     // NEW:
     getFishingDetailsHTML(city) {
@@ -357,16 +364,16 @@ class EtfiToolTipType {
       );
       if (!summary) return void 0;
     
-      return this.renderImprovementDetailsHTML(summary, "YIELD_FOOD");
+      return this.renderImprovementDetailsHTML(summary, ETFI_YIELDS.FOOD);
     }
     // NEW:
-    getMiningDetailsHTML(city, project) {
+    getMiningDetailsHTML(city) {
       const summary = this.getImprovementSummaryForSet(
         city, ETFI_IMPROVEMENTS.sets.production, 2                                   
       );
       if (!summary) return void 0;
     
-      return this.renderImprovementDetailsHTML(summary, "YIELD_PRODUCTION");
+      return this.renderImprovementDetailsHTML(summary, ETFI_YIELDS.PRODUCTION);
     }
     getRequirementsText() {
       const projectType = this.getProjectType() ?? -1;
