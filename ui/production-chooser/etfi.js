@@ -214,12 +214,8 @@ class EtfiToolTipType {
       if (!IsElement(this.target, "town-focus-chooser-item")) {
         return void 0;
       }
-      const projectType = this.getProjectType() ?? -1;
-      if (projectType < 0) return void 0;
-      const project = GameInfo.Projects.lookup(projectType);
-      if (!project) return void 0;
 
-      const projectNameKey = project.Name; // e.g. "LOC_PROJECT_TOWN_GRANARY_NAME"
+      const projectNameKey = this.target.dataset.name; // e.g. "LOC_PROJECT_TOWN_GRANARY_NAME"
       if (!projectNameKey) return void 0;
 
       switch (projectNameKey) {
@@ -267,8 +263,7 @@ class EtfiToolTipType {
         if (!targetSet.has(ctype)) continue;
     
         if (!resultByType[ctype]) {
-          const nameKey =
-            ETFI_IMPROVEMENTS.displayNames[ctype] || info.Name || ctype;
+          const nameKey = ETFI_IMPROVEMENTS.displayNames[ctype] || info.Name || ctype;
           resultByType[ctype] = {
             type: ctype,
             displayName: Locale.compose(nameKey),
@@ -327,15 +322,12 @@ class EtfiToolTipType {
       }
       html += `</div>`;
     
-      // Era multiplier line if > 1
-      if (multiplier > 1) {
-        html += `
-          <div class="flex justify-between mt-1 pt-1 border-t border-white/10 text-xs text-accent-2">
-            <span>${Locale.compose("LOC_MOD_ETFI_ERA_BONUS")}</span>
-            <span>x${multiplier}</span>
-          </div>
-        `;
-      }
+      html += `
+        <div class="flex justify-between mt-1 pt-1 border-t border-white/10 text-xs text-accent-2">
+          <span>${Locale.compose("LOC_MOD_ETFI_ERA_BONUS")}</span>
+          <span>x${multiplier}</span>
+        </div>
+      `;
     
       html += `</div>`;
       return html;
