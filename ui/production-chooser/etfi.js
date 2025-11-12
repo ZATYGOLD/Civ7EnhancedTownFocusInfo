@@ -328,7 +328,7 @@ class EtfiToolTipType {
         <div class="flex flex-col w-full">
           <div             
             class="flex items-center justify-center gap-2 mb-2 rounded-md px-3 py-2"
-            style="background-color: rgba(201, 200, 200, 0.9); color:#000; text-align:center;"
+            style="background-color: rgba(10, 10, 20, 0.25); color:#f5f5f5; text-align:center;"
           >
             <fxs-icon data-icon-id="${yieldIconId}" class="size-5"></fxs-icon>
             <span class="font-semibold">+${total}</span>
@@ -336,7 +336,11 @@ class EtfiToolTipType {
       `;
     
       // Breakdown per improvement type
-      html += `<div class="mt-1 text-xs text-accent-2">`;
+      html += `
+      <div 
+        class="mt-1 text-accent-2"
+        style="font-size: 0.8em; line-height: 1.4;"
+      >`;
       for (const item of items) {
         html += `
           <div class="flex justify-between">
@@ -348,7 +352,10 @@ class EtfiToolTipType {
       html += `</div>`;
     
       html += `
-        <div class="flex justify-between mt-1 pt-1 border-t border-white/10 text-xs text-accent-2">
+        <div 
+          class="flex justify-between mt-1 pt-1 border-t border-white/10text-accent-2"
+          style="font-size: 0.8em; line-height: 1.4;"
+        >
           <span>${Locale.compose("LOC_MOD_ETFI_ERA_BONUS")}</span>
           <span>x${multiplier}</span>
         </div>
@@ -420,13 +427,16 @@ class EtfiToolTipType {
         <div class="flex flex-col w-full">
           <div             
             class="flex items-center justify-center gap-2 mb-2 rounded-md px-3 py-2"
-            style="background-color: rgba(201, 200, 200, 0.9); color:#000; text-align:center;"
+            style="background-color: rgba(10, 10, 20, 0.25); color:#f5f5f5; text-align:center;"
           >
             <fxs-icon data-icon-id="${ETFI_YIELDS.INFLUENCE}" class="size-5"></fxs-icon>
             <span class="font-semibold">+${totalConnections}</span>
           </div>
 
-          <div class="mt-1 text-xs text-accent-2">
+          <div 
+            class="mt-1 text-accent-2"
+            style="font-size: 0.8em; line-height: 1.4;"
+          >
             <div class="mb-1">${labelConnections}</div>
 
             <div class="flex justify-between">
