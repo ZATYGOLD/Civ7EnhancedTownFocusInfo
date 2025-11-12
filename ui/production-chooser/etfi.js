@@ -291,17 +291,23 @@ class EtfiToolTipType {
           location,
           GameContext.localPlayerID
         );
-        const info = GameInfo.Constructibles.lookup(fcID);
-        if (!info) continue;
-    
-        const ctype = info.ConstructibleType;
-        if (!targetSet.has(ctype)) continue;
+        const fcInfo = GameInfo.Constructibles.lookup(fcID);
+        if (!fcInfo) continue;
+
+        const logicalType = fcInfo.ConstructibleType;
+        if (!targetSet.has(logicalType)) continue;
+
+        // 2) Use the *instance* constructible for display (real improvement)
+        const info = GameInfo.Constructibles.lookup(instance.type);
+        const ctype = info?.ConstructibleType || logicalType;
+
 
         const displayKey = ETFI_IMPROVEMENTS.displayNames[ctype] || info.Name || ctype;
 
         if (!resultByDisplayKey[displayKey]) {
           resultByDisplayKey[displayKey] = {
             key: displayKey,
+            ctype,
             iconId: ctype,
             displayName: Locale.compose(displayKey),
             count: 0,
@@ -362,15 +368,15 @@ class EtfiToolTipType {
       }
       html += `</div>`;
     
-      html += `
-        <div 
-          class="flex justify-between mt-1 pt-1 border-t border-white/10text-accent-2"
-          style="font-size: 0.8em; line-height: 1.4;"
-        >
-          <span>${Locale.compose("LOC_MOD_ETFI_ERA_BONUS")}</span>
-          <span>x${multiplier}</span>
-        </div>
-      `;
+      // html += `
+      //   <div 
+      //     class="flex justify-between mt-1 pt-1 border-t border-white/10text-accent-2"
+      //     style="font-size: 0.8em; line-height: 1.4;"
+      //   >
+      //     <span>${Locale.compose("LOC_MOD_ETFI_ERA_BONUS")}</span>
+      //     <span>x${multiplier}</span>
+      //   </div>
+      // `;
     
       html += `</div>`;
       return html;
