@@ -276,7 +276,7 @@ class EtfiToolTipType {
       if (!(targetSet instanceof Set) || targetSet.size === 0) return null;
       if (!GameInfo?.Constructibles || !Districts || !Constructibles) return null;
     
-      const resultByType = Object.create(null);
+      const resultByDisplayKey = Object.create(null);
       const improvements = city.Constructibles.getIdsOfClass("IMPROVEMENT") || [];
     
       for (const instanceId of improvements) {
@@ -296,20 +296,22 @@ class EtfiToolTipType {
     
         const ctype = info.ConstructibleType;
         if (!targetSet.has(ctype)) continue;
-    
-        if (!resultByType[ctype]) {
-          const nameKey = ETFI_IMPROVEMENTS.displayNames[ctype] || info.Name || ctype;
-          resultByType[ctype] = {
-            type: ctype,
-            displayName: Locale.compose(nameKey),
+
+        const displayKey = ETFI_IMPROVEMENTS.displayNames[ctype] || info.Name || ctype;
+
+        if (!resultByDisplayKey[displayKey]) {
+          resultByDisplayKey[displayKey] = {
+            key: displayKey,
+            iconId: ctype,
+            displayName: Locale.compose(displayKey),
             count: 0,
           };
         }
     
-        resultByType[ctype].count += 1;
+        resultByDisplayKey[displayKey].count += 1;
       }
     
-      const items = Object.values(resultByType);
+      const items = Object.values(resultByDisplayKey);
       if (!items.length) return null;
     
       const baseTotal = items.reduce((sum, item) => sum + item.count, 0);
@@ -342,10 +344,19 @@ class EtfiToolTipType {
         style="font-size: 0.8em; line-height: 1.4;"
       >`;
       for (const item of items) {
+        const perImprovementYield = item.count * multiplier;
         html += `
-          <div class="flex justify-between">
-            <span>${item.displayName}</span>
-            <span>+${item.count}</span>
+          <div class="flex justify-between items-center mt-1">
+            <div class="flex items-center gap-2">
+              <fxs-icon data-icon-id="${item.iconId}" class="size-5"></fxs-icon>
+              <span class="opacity-60">| </span>
+              <span>${item.displayName}</span>
+              <span class="opacity-70 ml-1">x${item.count}</span>
+            </div>
+            <div class="flex items-center gap-1">
+              <fxs-icon data-icon-id="${yieldIconId}" class="size-4"></fxs-icon>
+              <span class="font-semibold">+${perImprovementYield}</span>
+            </div>
           </div>
         `;
       }
@@ -543,7 +554,7 @@ class EtfiToolTipType {
         <div class="flex flex-col w-full">
           <div 
             class="flex items-center justify-center gap-2 mb-2 rounded-md px-3 py-2"
-            style="background-color: rgba(201, 200, 200, 0.9); color:#000; text-align:center;"
+            style="background-color: rgba(10, 10, 20, 0.25); color:#f5f5f5; text-align:center;"
           >
             <fxs-icon data-icon-id="${ETFI_YIELDS.HAPPINESS}" class="size-6"></fxs-icon>
             <span class="font-semibold">+${totalHappiness}</span>
