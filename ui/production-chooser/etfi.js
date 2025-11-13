@@ -426,19 +426,19 @@ class EtfiToolTipType {
     // NEW:
     getInnDetailsHTML(city) {
       if (!city || typeof city.getConnectedCities !== "function") return void 0;
-    
+
       const connectedIds = city.getConnectedCities();
       if (!connectedIds || !connectedIds.length) {
         return void 0;
       }
-    
+
       const towns = [];
       const citiesList = [];
-    
+
       for (const id of connectedIds) {
         const settlement = Cities.get(id);
         if (!settlement) continue;
-    
+
         const name = Locale.compose(settlement.name);
         if (settlement.isTown) {
           towns.push(name);
@@ -446,12 +446,13 @@ class EtfiToolTipType {
           citiesList.push(name);
         }
       }
-    
+
       const totalConnections = towns.length + citiesList.length;
-    
+
       const labelCities = Locale.compose("LOC_MOD_ETFI_CONNECTED_CITIES");
       const labelTowns  = Locale.compose("LOC_MOD_ETFI_CONNECTED_TOWNS");
-    
+      const labelTotalConnections = Locale.compose("LOC_MOD_ETFI_TOTAL_CONNECTIONS");
+
       let html = `
         <div class="flex flex-col w-full">
           <div             
@@ -461,11 +462,16 @@ class EtfiToolTipType {
             <fxs-icon data-icon-id="${ETFI_YIELDS.INFLUENCE}" class="size-5"></fxs-icon>
             <span class="font-semibold">+${totalConnections}</span>
           </div>
-    
+
           <div 
             class="mt-1 text-accent-2"
             style="font-size: 0.8em; line-height: 1.4;"
           >
+            <div class="flex justify-between mb-1">
+              <span>${labelTotalConnections}</span>
+              <span>${totalConnections}</span>
+            </div>
+            <div class="mt-1 border-t border-white/10"></div>
             <div class="flex justify-between items-center">
               <div class="flex items-center gap-2">
                 <fxs-icon data-icon-id="${ETFI_ICONS.CITY}" class="size-4"></fxs-icon>
@@ -479,7 +485,7 @@ class EtfiToolTipType {
               </div>
             </div>
       `;
-    
+
       if (citiesList.length) {
         html += `
             <div class="ml-6 opacity-80" style="font-size: 0.8em;">
@@ -487,7 +493,7 @@ class EtfiToolTipType {
             </div>
         `;
       }
-    
+
       html += `
             <div class="flex justify-between items-center mt-1">
               <div class="flex items-center gap-2">
@@ -502,7 +508,7 @@ class EtfiToolTipType {
               </div>
             </div>
       `;
-    
+
       if (towns.length) {
         html += `
             <div class="ml-6 opacity-80" style="font-size: 0.8em;">
@@ -510,12 +516,12 @@ class EtfiToolTipType {
             </div>
         `;
       }
-    
+
       html += `
           </div>
         </div>
       `;
-    
+
       return html;
     }
     getTradeDetailsHTML(city){
@@ -635,31 +641,31 @@ class EtfiToolTipType {
       if (!city || !city.Constructibles || !GameplayMap || !GameInfo?.Constructibles || !GameInfo?.Features || !GameInfo?.Yields) {
         return void 0;
       }
-    
+
       const improvements = city.Constructibles.getIdsOfClass("IMPROVEMENT") || [];
       if (!improvements.length) return void 0;
-    
+
       const multiplier = getEraMultiplier(); // +1/+2/+3 per Age
-    
+
       const improvementBuckets = Object.create(null); // non-wonder tiles w/ ≥1 base Happiness
       const wonderBuckets = Object.create(null);      // wonder tiles grouped by wonder name
       const globalDeltas = Object.create(null);       // total extra yields from Resort
-    
+
       function addToGlobal(yType, amount) {
         if (!amount) return;
         globalDeltas[yType] = (globalDeltas[yType] || 0) + amount;
       }
-    
+
       for (const instanceId of improvements) {
         const instance = Constructibles.get(instanceId);
         if (!instance) continue;
-    
+
         const loc = instance.location;
         if (!loc || loc.x == null || loc.y == null) continue;
         const { x, y } = loc;
-    
+
         const isNW = GameplayMap.isNaturalWonder(x, y);
-    
+
         // ── 1) Base yields for this tile ───────────────────────────────────────
         const baseYields = Object.create(null);
         for (const yInfo of GameInfo.Yields) {
@@ -673,20 +679,20 @@ class EtfiToolTipType {
             baseYields[yInfo.YieldType] = amt;
           }
         }
-    
+
         const happyBase = baseYields[ETFI_YIELDS.HAPPINESS] || 0;
-    
+
         // If tile has literally no yields and no happiness, Resort adds nothing.
         if (!isNW && happyBase <= 0) {
           continue;
         }
-    
+
         // Start from base yields and apply Resort effects
         const tileYields = Object.create(null);
         for (const yType in baseYields) {
           tileYields[yType] = baseYields[yType];
         }
-    
+
         // ── 2) Per-age H & G on tiles with ≥1 base Happiness ───────────────────
         if (happyBase > 0) {
           tileYields[ETFI_YIELDS.HAPPINESS] =
@@ -694,14 +700,14 @@ class EtfiToolTipType {
           tileYields[ETFI_YIELDS.GOLD] =
             (tileYields[ETFI_YIELDS.GOLD] || 0) + multiplier;
         }
-    
+
         // ── 3) +50% yields on Natural Wonders (after per-age bonuses) ──────────
         if (isNW) {
           for (const yType in tileYields) {
             tileYields[yType] *= 1.5;
           }
         }
-    
+
         // ── 4) Delta = final - base (Resort’s actual contribution) ─────────────
         const deltaYields = Object.create(null);
         let hasDelta = false;
@@ -716,20 +722,20 @@ class EtfiToolTipType {
             addToGlobal(yType, delta);
           }
         }
-    
+
         if (!hasDelta) continue;
-    
+
         // ── Bucket by wonder vs. improvement ────────────────────────────────────
         if (isNW) {
           // Natural Wonder tile: group by wonder name, use improvement icon if possible
           const fType = GameplayMap.getFeatureType(x, y);
           const fInfo = GameInfo.Features.lookup(fType);
           const wonderName = Locale.compose(fInfo?.Name) || "Natural Wonder";
-    
+
           const cinfo = GameInfo.Constructibles.lookup(instance.type);
           const ctype = cinfo?.ConstructibleType;
           const iconId = ctype || fInfo?.FeatureType;
-    
+
           let wb = wonderBuckets[wonderName];
           if (!wb) {
             wb = {
@@ -741,7 +747,7 @@ class EtfiToolTipType {
             wonderBuckets[wonderName] = wb;
           }
           wb.count += 1;
-    
+
           for (const yType in deltaYields) {
             const val = deltaYields[yType];
             wb.yields[yType] = (wb.yields[yType] || 0) + val;
@@ -752,7 +758,7 @@ class EtfiToolTipType {
           const ctype = cinfo?.ConstructibleType;
           const displayKey =
             ETFI_IMPROVEMENTS.displayNames[ctype] || cinfo?.Name || ctype || "LOC_UNKNOWN";
-    
+
           let ib = improvementBuckets[displayKey];
           if (!ib) {
             ib = {
@@ -770,14 +776,14 @@ class EtfiToolTipType {
           ib.deltaG += deltaYields[ETFI_YIELDS.GOLD] || 0;
         }
       }
-    
+
       const improvementItems = Object.values(improvementBuckets);
       const wonderItems = Object.values(wonderBuckets);
-    
+
       if (!Object.keys(globalDeltas).length) {
         return void 0;
       }
-    
+
       // ── Build header from global deltas (Resort effect only) ─────────────────
       const headerOrder = [
         ETFI_YIELDS.HAPPINESS,
@@ -787,7 +793,11 @@ class EtfiToolTipType {
         ETFI_YIELDS.SCIENCE,
         ETFI_YIELDS.CULTURE,
       ];
-    
+
+      // --- Inserted: label and base-count for improvements ---
+      const labelTotalImprovements = Locale.compose("LOC_MOD_ETFI_TOTAL_IMPROVEMENTS");
+      const baseTotalImprovements = improvementItems.reduce((sum, it) => sum + (it.count || 0), 0);
+
       let headerYieldsHtml = "";
       for (const yType of headerOrder) {
         const val = globalDeltas[yType];
@@ -801,7 +811,7 @@ class EtfiToolTipType {
           </div>
         `;
       }
-    
+
       let html = `
         <div class="flex flex-col w-full">
           <div
@@ -811,16 +821,21 @@ class EtfiToolTipType {
             ${headerYieldsHtml}
           </div>
       `;
-    
-      // ── Improvements breakdown (non-wonder, happy tiles) ─────────────────────
+
+      // ── Improvements summary + breakdown (non-wonder, happy tiles) ───────────
+      html += `
+        <div
+          class="mt-1 text-accent-2"
+          style="font-size: 0.8em; line-height: 1.4;"
+        >
+          <div class="flex justify-between mb-1">
+            <span>${labelTotalImprovements}</span>
+            <span>${baseTotalImprovements}</span>
+          </div>
+          <div class="mt-1 border-t border-white/10"></div>
+      `;
+
       if (improvementItems.length) {
-        html += `
-          <div
-            class="mt-1 text-accent-2"
-            style="font-size: 0.8em; line-height: 1.4;"
-          >
-        `;
-    
         for (const item of improvementItems) {
           const hVal =
             Math.abs(item.deltaH - Math.round(item.deltaH)) < 1e-6
@@ -830,7 +845,7 @@ class EtfiToolTipType {
             Math.abs(item.deltaG - Math.round(item.deltaG)) < 1e-6
               ? Math.round(item.deltaG)
               : item.deltaG.toFixed(1);
-    
+
           html += `
             <div class="flex justify-between items-center mt-1">
               <div class="flex items-center gap-2">
@@ -852,42 +867,42 @@ class EtfiToolTipType {
             </div>
           `;
         }
-    
-        html += `</div>`;
       }
-    
+
+      html += `</div>`;
+
       // ── Natural Wonders breakdown: icon | name x count + all extra yields ────
       if (wonderItems.length) {
         html += `
           <div class="mt-2" style="font-size: 0.8em; line-height: 1.4;">
         `;
-    
+
         for (const w of wonderItems) {
           const yields = w.yields || {};
           let yieldsHtml = "";
-    
+
           // Desired order: Happiness, Gold, then all other yields
           const primaryOrder = [
             ETFI_YIELDS.HAPPINESS,
             ETFI_YIELDS.GOLD,
           ];
-    
+
           const secondaryOrder = [];
           for (const yInfo of GameInfo.Yields) {
             const yType = yInfo.YieldType;
             if (primaryOrder.indexOf(yType) !== -1) continue; // already handled
             secondaryOrder.push(yType);
           }
-    
+
           const orderedYields = primaryOrder.concat(secondaryOrder);
-    
+
           for (const yType of orderedYields) {
             const val = yields[yType];
             if (!val) continue;
-    
+
             const displayVal =
               Math.abs(val - Math.round(val)) < 1e-6 ? Math.round(val) : val.toFixed(1);
-    
+
             yieldsHtml += `
               <span class="inline-flex items-center gap-2 mr-1">
                 <fxs-icon data-icon-id="${yType}" class="size-4"></fxs-icon>
@@ -895,7 +910,7 @@ class EtfiToolTipType {
               </span>
             `;
           }
-    
+
           html += `
             <div class="flex justify-between items-center mt-1">
               <div class="flex items-center gap-2">
@@ -910,10 +925,10 @@ class EtfiToolTipType {
             </div>
           `;
         }
-    
+
         html += `</div>`;
       }
-    
+
       html += `</div>`;
       return html;
     }
@@ -921,50 +936,53 @@ class EtfiToolTipType {
       if (!city || !city.Constructibles || !Constructibles || !GameInfo?.Constructibles) {
         return void 0;
       }
-    
+
       const constructibles = city.Constructibles;
       const buildingIds = constructibles.getIdsOfClass("BUILDING") || [];
-    
+
       const byTile = Object.create(null);
       let totalBuildings = 0;
-    
+
       for (const instanceId of buildingIds) {
         const instance = Constructibles.get(instanceId);
         if (!instance) continue;
         if (!instance.complete) continue; // only completed buildings
-    
+
         const loc = instance.location;
         if (!loc || loc.x == null || loc.y == null) continue;
-    
+
         const info = GameInfo.Constructibles.lookup(instance.type);
         if (!info) continue;
-    
+
         const key = `${loc.x},${loc.y}`;
-    
+
         if (!byTile[key]) {
           byTile[key] = {
             buildings: [], // { iconId, nameKey }
           };
         }
-    
+
         byTile[key].buildings.push({
           iconId: info.ConstructibleType,
           nameKey: info.Name,
         });
-    
+
         totalBuildings += 1;
       }
-    
+
       if (!totalBuildings) return void 0;
-    
+
       // === NEW: sort so tiles with 2+ buildings come first ===
       const stacks = Object.values(byTile).sort(
         (a, b) => b.buildings.length - a.buildings.length
       );
       if (!stacks.length) return void 0;
-    
+
       const bullet = "•";
-    
+
+      // --- Inserted: label for total buildings ---
+      const labelTotalBuildings = Locale.compose("LOC_MOD_ETFI_TOTAL_BUILDINGS");
+
       // Header: +1 Happiness per building in this town
       let html = `
         <div class="flex flex-col w-full">
@@ -975,29 +993,34 @@ class EtfiToolTipType {
             <fxs-icon data-icon-id="${ETFI_YIELDS.HAPPINESS}" class="size-5"></fxs-icon>
             <span class="font-semibold">+${totalBuildings}</span>
           </div>
-    
+
           <div
             class="mt-1 text-accent-2"
             style="font-size: 0.8em; line-height: 1.4;"
           >
+            <div class="flex justify-between mb-1">
+              <span>${labelTotalBuildings}</span>
+              <span>${totalBuildings}</span>
+            </div>
+            <div class="mt-1 border-t border-white/10"></div>
       `;
-    
+
       for (const stack of stacks) {
         const buildingsOnTile = stack.buildings || [];
         const bonus = buildingsOnTile.length; // +1 Happiness per building
-    
+
         // Build "icon | name • icon | name • icon | name"
         let buildingsHtml = "";
         for (let i = 0; i < buildingsOnTile.length; i++) {
           const b = buildingsOnTile[i];
           const name = Locale.compose(b.nameKey);
-    
+
           if (i > 0) {
             buildingsHtml += `
               <span class="mx-1">${bullet}</span>
             `;
           }
-    
+
           buildingsHtml += `
             <span class="inline-flex items-center gap-2 whitespace-nowrap">
               <fxs-icon data-icon-id="${b.iconId}" class="size-5"></fxs-icon>
@@ -1006,7 +1029,7 @@ class EtfiToolTipType {
             </span>
           `;
         }
-    
+
         html += `
           <div class="flex justify-between items-center mt-1">
             <div class="flex items-center gap-2 min-w-0">
@@ -1019,12 +1042,12 @@ class EtfiToolTipType {
           </div>
         `;
       }
-    
+
       html += `
           </div>
         </div>
       `;
-    
+
       return html;
     }
     getRequirementsText() {
