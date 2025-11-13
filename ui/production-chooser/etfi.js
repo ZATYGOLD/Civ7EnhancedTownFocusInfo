@@ -268,10 +268,10 @@ class EtfiToolTipType {
     }
     // NEW: central dispatcher for ETFI details text
     getDetailsText(city) {
-      if (!this.target) return void 0;
+      if (!this.target) return null;
 
       const projectNameKey = this.target.dataset.name; // e.g. "LOC_PROJECT_TOWN_GRANARY_NAME"
-      if (!projectNameKey) return void 0;
+      if (!projectNameKey) return null;
 
       switch (projectNameKey) {
         case ETFI_PROJECT_TYPES.TOWN_FARMING:
@@ -296,7 +296,7 @@ class EtfiToolTipType {
           return this.getTempleDetailsHTML(city);
 
         default:
-          return void 0;
+          return null;
       }
     }
     // NEW:
@@ -357,7 +357,7 @@ class EtfiToolTipType {
     }
     // NEW:
     renderImprovementDetailsHTML(summary, yieldIconId) {
-      if (!summary) return void 0;
+      if (!summary) return null;
     
       const { items, total, multiplier, baseCount } = summary;
       const labelTotalImprovements = Locale.compose("LOC_MOD_ETFI_TOTAL_IMPROVEMENTS");
@@ -407,7 +407,7 @@ class EtfiToolTipType {
       const summary = this.getImprovementSummaryForSet(
         city, ETFI_IMPROVEMENTS.sets.food
       );
-      if (!summary) return void 0;
+      if (!summary) return null;
     
       return this.renderImprovementDetailsHTML(summary, ETFI_YIELDS.FOOD);
     }
@@ -416,17 +416,17 @@ class EtfiToolTipType {
       const summary = this.getImprovementSummaryForSet(
         city, ETFI_IMPROVEMENTS.sets.production, 2                                   
       );
-      if (!summary) return void 0;
+      if (!summary) return null;
     
       return this.renderImprovementDetailsHTML(summary, ETFI_YIELDS.PRODUCTION);
     }
     // NEW:
     getInnDetailsHTML(city) {
-      if (!city || typeof city.getConnectedCities !== "function") return void 0;
+      if (!city || typeof city.getConnectedCities !== "function") return null;
 
       const connectedIds = city.getConnectedCities();
       if (!connectedIds || !connectedIds.length) {
-        return void 0;
+        return null;
       }
 
       const towns = [];
@@ -512,7 +512,7 @@ class EtfiToolTipType {
       return html;
     }
     getTradeDetailsHTML(city){
-      if (!city || !GameplayMap || !GameInfo?.Resources) return void 0;
+      if (!city || !GameplayMap || !GameInfo?.Resources) return null;
 
       const cityLocation = city.location;
       const getPurchasedPlots =
@@ -520,7 +520,7 @@ class EtfiToolTipType {
           ? city.getPurchasedPlots.bind(city)
           : null;
     
-      if (!cityLocation) return void 0;
+      if (!cityLocation) return null;
     
       // Collect all plots: city center + purchased plots
       const plots = [cityLocation];
@@ -566,7 +566,7 @@ class EtfiToolTipType {
       }
     
       const items = Object.values(resourcesByType);
-      if (!items.length) return void 0;
+      if (!items.length) return null;
     
       // Trade Outpost: flat +2 Happiness per resource tile
       const happinessPerTile = 2;
@@ -614,11 +614,11 @@ class EtfiToolTipType {
     }
     getResortDetailsHTML(city) {
       if (!city || !city.Constructibles || !GameplayMap || !GameInfo?.Constructibles || !GameInfo?.Features || !GameInfo?.Yields) {
-        return void 0;
+        return null;
       }
 
       const improvements = city.Constructibles.getIdsOfClass("IMPROVEMENT") || [];
-      if (!improvements.length) return void 0;
+      if (!improvements.length) return null;
 
       const multiplier = getEraMultiplier(); // +1/+2/+3 per Age
 
@@ -756,7 +756,7 @@ class EtfiToolTipType {
       const wonderItems = Object.values(wonderBuckets);
 
       if (!Object.keys(globalDeltas).length) {
-        return void 0;
+        return null;
       }
 
       // ── Build header from global deltas (Resort effect only) ─────────────────
@@ -927,7 +927,7 @@ class EtfiToolTipType {
     }
     getTempleDetailsHTML(city) {
       if (!city || !city.Constructibles || !Constructibles || !GameInfo?.Constructibles) {
-        return void 0;
+        return null;
       }
 
       const constructibles = city.Constructibles;
@@ -963,13 +963,13 @@ class EtfiToolTipType {
         totalBuildings += 1;
       }
 
-      if (!totalBuildings) return void 0;
+      if (!totalBuildings) return null;
 
       // === NEW: sort so tiles with 2+ buildings come first ===
       const stacks = Object.values(byTile).sort(
         (a, b) => b.buildings.length - a.buildings.length
       );
-      if (!stacks.length) return void 0;
+      if (!stacks.length) return null;
 
       const bullet = "•";
 
@@ -1037,7 +1037,7 @@ class EtfiToolTipType {
       const projectType = this.getProjectType() ?? -1;
       const project = GameInfo.Projects.lookup(projectType);
       if (!project) {
-        return void 0;
+        return null;
       }
       if (project.PrereqPopulation > 0) {
         return Locale.compose("LOC_UI_PRODUCTION_REQUIRES_POPULATION", project.PrereqPopulation);
@@ -1048,7 +1048,7 @@ class EtfiToolTipType {
           return Locale.compose("LOC_UI_PRODUCTION_REQUIRES_CONSTRUCTIBLE", Locale.compose(definition.Name));
         }
       }
-      return void 0;
+      return null;
     }
     isBlank() {
       return !this.target;
