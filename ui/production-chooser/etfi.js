@@ -84,6 +84,18 @@ function getEraMultiplier(base = 1) {
   }
   return multiplier;
 }
+
+function renderHeaderBadge(iconId, value) {
+  return `
+    <div 
+      class="flex items-center justify-center gap-2 mb-2 rounded-md px-3 py-2"
+      style="background-color: rgba(10, 10, 20, 0.25); color:#f5f5f5; text-align:center;"
+    >
+      <fxs-icon data-icon-id="${iconId}" class="size-5"></fxs-icon>
+      <span class="font-semibold">+${value}</span>
+    </div>
+  `;
+}
 // #endregion
 
 // #region EtfiToolTipType
@@ -181,7 +193,7 @@ class EtfiToolTipType {
     }
     update() {
       if (!this.target) {
-        console.error("ProductionProjectTooltipType.update: update triggered with no valid target");
+        console.error("EtfiTooltipType.update: update triggered with no valid target");
         return;
       }
       const projectType = this.getProjectType();
@@ -263,10 +275,10 @@ class EtfiToolTipType {
 
       switch (projectNameKey) {
         case ETFI_PROJECT_TYPES.TOWN_FARMING:
-          return this.getGranaryDetailsHTML(city);
+          return this.getFoodFocusDetailsHTML(city);
 
         case ETFI_PROJECT_TYPES.TOWN_FISHING:
-          return this.getFishingDetailsHTML(city);
+          return this.getFoodFocusDetailsHTML(city);
 
         case ETFI_PROJECT_TYPES.TOWN_MINING:
           return this.getMiningDetailsHTML(city);
@@ -346,19 +358,13 @@ class EtfiToolTipType {
     // NEW:
     renderImprovementDetailsHTML(summary, yieldIconId) {
       if (!summary) return void 0;
-
+    
       const { items, total, multiplier, baseCount } = summary;
       const labelTotalImprovements = Locale.compose("LOC_MOD_ETFI_TOTAL_IMPROVEMENTS");
-
+    
       let html = `
         <div class="flex flex-col w-full">
-          <div             
-            class="flex items-center justify-center gap-2 mb-2 rounded-md px-3 py-2"
-            style="background-color: rgba(10, 10, 20, 0.25); color:#f5f5f5; text-align:center;"
-          >
-            <fxs-icon data-icon-id="${yieldIconId}" class="size-5"></fxs-icon>
-            <span class="font-semibold">+${total}</span>
-          </div>
+          ${renderHeaderBadge(yieldIconId, total)}
       `;
 
       // Breakdown per improvement type (+ new Total Improvements row)
@@ -397,16 +403,7 @@ class EtfiToolTipType {
       return html;
     }
     // NEW: 
-    getGranaryDetailsHTML(city) {
-      const summary = this.getImprovementSummaryForSet(
-        city, ETFI_IMPROVEMENTS.sets.food
-      );
-      if (!summary) return void 0;
-    
-      return this.renderImprovementDetailsHTML(summary, ETFI_YIELDS.FOOD);
-    }
-    // NEW:
-    getFishingDetailsHTML(city) {
+    getFoodFocusDetailsHTML(city) {
       const summary = this.getImprovementSummaryForSet(
         city, ETFI_IMPROVEMENTS.sets.food
       );
@@ -455,18 +452,8 @@ class EtfiToolTipType {
 
       let html = `
         <div class="flex flex-col w-full">
-          <div             
-            class="flex items-center justify-center gap-2 mb-2 rounded-md px-3 py-2"
-            style="background-color: rgba(10, 10, 20, 0.25); color:#f5f5f5; text-align:center;"
-          >
-            <fxs-icon data-icon-id="${ETFI_YIELDS.INFLUENCE}" class="size-5"></fxs-icon>
-            <span class="font-semibold">+${totalConnections}</span>
-          </div>
-
-          <div 
-            class="mt-1 text-accent-2"
-            style="font-size: 0.8em; line-height: 1.4;"
-          >
+          ${renderHeaderBadge(ETFI_YIELDS.INFLUENCE, totalConnections)}
+        <div class="mt-1 text-accent-2" style="font-size: 0.8em; line-height: 1.4;">
             <div class="flex justify-between mb-1">
               <span>${labelTotalConnections}</span>
               <span>${totalConnections}</span>
@@ -590,24 +577,14 @@ class EtfiToolTipType {
     
       let html = `
         <div class="flex flex-col w-full">
-          <div 
-            class="flex items-center justify-center gap-2 mb-2 rounded-md px-3 py-2"
-            style="background-color: rgba(10, 10, 20, 0.25); color:#f5f5f5; text-align:center;"
-          >
-            <fxs-icon data-icon-id="${ETFI_YIELDS.HAPPINESS}" class="size-5"></fxs-icon>
-            <span class="font-semibold">+${totalHappiness}</span>
-          </div>
-    
-          <div 
-            class="mt-1 text-accent-2"
-            style="font-size: 0.8em; line-height: 1.4;"
-          >
+          ${renderHeaderBadge(ETFI_YIELDS.HAPPINESS, totalHappiness)}
+          <div class="mt-1 text-accent-2" style="font-size: 0.8em; line-height: 1.4;">
             <div class="flex justify-between mb-1">
               <span>${labelTotalResources}</span>
               <span>${totalResourceTiles}</span>
             </div>
             <div class="mt-1 border-t border-white/10"></div>
-  `;
+      `;
     
       for (const item of items) {
         const happinessFromThisResource = item.count * happinessPerTile;
@@ -875,15 +852,18 @@ class EtfiToolTipType {
       if (wonderItems.length) {
         const labelNaturalWonder =
           Locale.compose("LOC_MOD_ETFI_NATURAL_WONDER") || "Natural Wonder";
-      
+
+        // New: only show the "Natural Wonder" label if there are non-wonder improvements
+        const showWonderLabel = improvementItems.length > 0;
+
         html += `
           <div class="mt-2" style="font-size: 0.8em; line-height: 1.4;">
         `;
-      
+
         for (const w of wonderItems) {
           const yields = w.yields || {};
           let yieldsHtml = "";
-      
+
           // Order: Happiness, Gold, then all others
           const primaryOrder = [ETFI_YIELDS.HAPPINESS, ETFI_YIELDS.GOLD];
           const secondaryOrder = [];
@@ -893,7 +873,7 @@ class EtfiToolTipType {
             secondaryOrder.push(yType);
           }
           const orderedYields = primaryOrder.concat(secondaryOrder);
-      
+
           for (const yType of orderedYields) {
             const val = yields[yType];
             if (!val) continue;
@@ -906,16 +886,23 @@ class EtfiToolTipType {
               </span>
             `;
           }
-      
+
           html += `
             <div class="mt-2">
+          `;
+
+          if (showWonderLabel) {
+            html += `
               <!-- Label on its own line -->
               <div class="text-white/90" style="font-size: 0.75em;">
                 ${labelNaturalWonder}
               </div>
               <!-- Divider -->
               <div class="mt-1 mb-1 border-t border-white/10"></div>
-      
+            `;
+          }
+
+          html += `
               <!-- Improvement details row -->
               <div class="flex justify-between items-center">
                 <div class="flex items-center gap-2">
@@ -931,6 +918,7 @@ class EtfiToolTipType {
             </div>
           `;
         }
+
         html += `</div>`;
       }
 
@@ -991,18 +979,8 @@ class EtfiToolTipType {
       // Header: +1 Happiness per building in this town
       let html = `
         <div class="flex flex-col w-full">
-          <div
-            class="flex items-center justify-center gap-2 mb-2 rounded-md px-3 py-2"
-            style="background-color: rgba(10, 10, 20, 0.25); color:#f5f5f5; text-align:center;"
-          >
-            <fxs-icon data-icon-id="${ETFI_YIELDS.HAPPINESS}" class="size-5"></fxs-icon>
-            <span class="font-semibold">+${totalBuildings}</span>
-          </div>
-
-          <div
-            class="mt-1 text-accent-2"
-            style="font-size: 0.8em; line-height: 1.4;"
-          >
+          ${renderHeaderBadge(ETFI_YIELDS.HAPPINESS, totalBuildings)}
+          <div class="mt-1 text-accent-2" style="font-size: 0.8em; line-height: 1.4;">
             <div class="flex justify-between mb-1">
               <span>${labelTotalBuildings}</span>
               <span>${totalBuildings}</span>
