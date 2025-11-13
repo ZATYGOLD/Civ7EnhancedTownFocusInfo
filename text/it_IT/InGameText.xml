@@ -67,5 +67,14 @@
     <Replace Tag="LOC_MOD_ETFI_RESOURCES" Language="it_IT">
       <Text>Risorse</Text>
     </Replace>
+    <Replace Tag="LOC_MOD_ETFI_TOTAL_IMPROVEMENTS" Language="it_IT">
+      <Text>Miglioramenti totali</Text>
+    </Replace>
+    <Replace Tag="LOC_MOD_ETFI_TOTAL_CONNECTIONS" Language="it_IT">
+      <Text>Connessioni totali</Text>
+    </Replace>
+    <Replace Tag="LOC_MOD_ETFI_TOTAL_BUILDINGS" Language="it_IT">
+      <Text>Edifici totali</Text>
+    </Replace>
   </LocalizedText>
 </Database>
