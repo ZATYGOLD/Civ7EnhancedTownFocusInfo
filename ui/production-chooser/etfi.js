@@ -472,7 +472,7 @@ class EtfiToolTipType {
               <span>${totalConnections}</span>
             </div>
             <div class="mt-1 border-t border-white/10"></div>
-            <div class="flex justify-between items-center">
+            <div class="flex justify-between items-center mt-1">
               <div class="flex items-center gap-2">
                 <fxs-icon data-icon-id="${ETFI_ICONS.CITY}" class="size-4"></fxs-icon>
                 <span class="opacity-60">| </span>
@@ -594,7 +594,7 @@ class EtfiToolTipType {
             class="flex items-center justify-center gap-2 mb-2 rounded-md px-3 py-2"
             style="background-color: rgba(10, 10, 20, 0.25); color:#f5f5f5; text-align:center;"
           >
-            <fxs-icon data-icon-id="${ETFI_YIELDS.HAPPINESS}" class="size-6"></fxs-icon>
+            <fxs-icon data-icon-id="${ETFI_YIELDS.HAPPINESS}" class="size-5"></fxs-icon>
             <span class="font-semibold">+${totalHappiness}</span>
           </div>
     
@@ -606,11 +606,12 @@ class EtfiToolTipType {
               <span>${labelTotalResources}</span>
               <span>${totalResourceTiles}</span>
             </div>
-      `;
+            <div class="mt-1 border-t border-white/10"></div>
+  `;
     
       for (const item of items) {
         const happinessFromThisResource = item.count * happinessPerTile;
-    
+
         html += `
           <div class="flex justify-between items-center mt-1">
             <div class="flex items-center gap-2">
@@ -626,15 +627,12 @@ class EtfiToolTipType {
           </div>
         `;
       }
-    
-      // html += `
-      //       <div class="flex justify-between mt-2 pt-1 border-t border-white/10">
-      //         <span>${labelPerResource}</span>
-      //         <span>x${happinessPerTile}</span>
-      //       </div>
-      //     </div>
-      //   </div>
-      // `;
+
+      // Close opened containers for valid HTML
+      html += `
+            </div>
+          </div>
+      `;
       return html;
     }
     getResortDetailsHTML(city) {
