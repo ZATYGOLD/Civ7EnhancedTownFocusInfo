@@ -1,5 +1,5 @@
 // ui/production-chooser/details/food-details.js
-
+//
 // Standalone helpers & constants for Food/Fishing details.
 // (Kept local to avoid broad refactors while we migrate one detail at a time.)
 
@@ -104,12 +104,14 @@ function renderImprovementDetailsHTML(summary, yieldIconId) {
 
   const { items, total, multiplier, baseCount } = summary;
   const labelTotalImprovements = Locale.compose("LOC_MOD_ETFI_TOTAL_IMPROVEMENTS");
+  const labelBonusYields = Locale.compose("LOC_MOD_ETFI_BONUS_YIELDS") || "Bonus Yields";
 
   let html = `
     <div class="flex flex-col w-full">
       ${renderHeaderBadge(yieldIconId, total)}
   `;
 
+  // Main breakdown
   html += `
     <div class="mt-1 text-accent-2" style="font-size: 0.8em; line-height: 1.4;">
       <div class="flex justify-between mb-1">
@@ -137,7 +139,28 @@ function renderImprovementDetailsHTML(summary, yieldIconId) {
     `;
   }
 
-  html += `</div></div>`;
+  // Close main breakdown
+  html += `</div>`;
+
+  // Bonus Yields — single line placeholder
+  html += `
+    <div class="mt-3 text-accent-2" style="font-size: 0.8em; line-height: 1.4;">
+      <div class="flex justify-between mb-1">
+        <span>${labelBonusYields}</span>
+        <span></span>
+      </div>
+      <div class="mt-1 border-t border-white/10"></div>
+      <div class="flex justify-end items-center mt-1">
+        <span class="inline-flex items-center gap-1">
+          <fxs-icon data-icon-id="${yieldIconId}" class="size-4"></fxs-icon>
+          <span class="font-semibold">+0</span>
+        </span>
+      </div>
+    </div>
+  `;
+
+  // Close wrapper
+  html += `</div>`;
   return html;
 }
 
