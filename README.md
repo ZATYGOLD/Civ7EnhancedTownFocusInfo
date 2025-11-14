@@ -2,6 +2,20 @@
 
 A mod for Civilization VII that enhances the display of town focus yield bonuses, showing detailed breakdowns of improvements, buildings, and trade routes that contribute to specialization bonuses.
 
+## Version 2.0.1
+
+### What's New
+
+- blah blah blah
+
+### Features
+
+- blah blah
+
+### Languages
+
+- blah
+
 ## Version 2.0.0
 
 ### What's New
@@ -15,6 +29,16 @@ A mod for Civilization VII that enhances the display of town focus yield bonuses
 
 - Urban Town Center details
 - Tooltip improvements are calculated as warehouse bonuses and displayed as their improvement name
+
+### Languages
+
+- English
+- Japanese
+- Italian
+- Russian
+- Polish
+- Simplified Chinese
+- Korean
 
 ## Version 1.2.4
 
