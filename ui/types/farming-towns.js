@@ -3,6 +3,8 @@
 // Standalone helpers & constants for Food/Fishing details.
 // (Kept local to avoid broad refactors while we migrate one detail at a time.)
 
+import { renderEtfiPolicyBonusYieldsHTML } from "../../modifiers/etfi-policy-bonus-yields.js";
+
 const ETFI_YIELDS = {
   FOOD: "YIELD_FOOD",
 };
@@ -104,7 +106,6 @@ function renderImprovementDetailsHTML(summary, yieldIconId) {
 
   const { items, total, multiplier, baseCount } = summary;
   const labelTotalImprovements = Locale.compose("LOC_MOD_ETFI_TOTAL_IMPROVEMENTS");
-  const labelBonusYields = Locale.compose("LOC_MOD_ETFI_BONUS_YIELDS") || "Bonus Yields";
 
   let html = `
     <div class="flex flex-col w-full">
@@ -116,7 +117,11 @@ function renderImprovementDetailsHTML(summary, yieldIconId) {
     <div class="mt-1 text-accent-2" style="font-size: 0.8em; line-height: 1.4;">
       <div class="flex justify-between mb-1">
         <span>${labelTotalImprovements}</span>
-        <span>${typeof baseCount === "number" ? baseCount : Math.round(total / (multiplier || 1))}</span>
+        <span>${
+          typeof baseCount === "number"
+            ? baseCount
+            : Math.round(total / (multiplier || 1))
+        }</span>
       </div>
       <div class="mt-1 border-t border-white/10"></div>
   `;
@@ -142,22 +147,8 @@ function renderImprovementDetailsHTML(summary, yieldIconId) {
   // Close main breakdown
   html += `</div>`;
 
-  // Bonus Yields — single line placeholder
-  html += `
-    <div class="mt-3 text-accent-2" style="font-size: 0.8em; line-height: 1.4;">
-      <div class="flex justify-between mb-1">
-        <span>${labelBonusYields}</span>
-        <span></span>
-      </div>
-      <div class="mt-1 border-t border-white/10"></div>
-      <div class="flex justify-end items-center mt-1">
-        <span class="inline-flex items-center gap-1">
-          <fxs-icon data-icon-id="${yieldIconId}" class="size-4"></fxs-icon>
-          <span class="font-semibold">+0</span>
-        </span>
-      </div>
-    </div>
-  `;
+  // Bonus Yields: shared helper
+  html += renderEtfiPolicyBonusYieldsHTML(yieldIconId);
 
   // Close wrapper
   html += `</div>`;
@@ -169,7 +160,10 @@ export default class FoodFocusDetails {
    * Returns HTML for Farming/Fishing focus, or null if no qualifying improvements.
    */
   render(city) {
-    const summary = getImprovementSummaryForSet(city, ETFI_IMPROVEMENTS.sets.food);
+    const summary = getImprovementSummaryForSet(
+      city,
+      ETFI_IMPROVEMENTS.sets.food
+    );
     if (!summary) return null;
     return renderImprovementDetailsHTML(summary, ETFI_YIELDS.FOOD);
   }
