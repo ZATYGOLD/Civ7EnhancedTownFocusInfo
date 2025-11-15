@@ -12,7 +12,7 @@ import FoodFocusDetails from '../types/farming-towns.js';
 import MiningDetails from '../types/mining-town.js';
 import HubDetails from '../types/hub-town.js';
 import ResortDetails from '../types/resort-town.js';
-import TradeDetails from '../types/trade-outpost.js';
+import TradeDetails from '../types/trade-town.js';
 import TempleDetails from '../types/temple-town.js';
 import UrbanCenterDetails from '../types/urban-town.js';
 
