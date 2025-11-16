@@ -15,7 +15,7 @@ A mod for Civilization VII that enhances the display of town focus yield bonuses
 ### Languages
 
 - French (New)
-- Tradtional Chinese (New)
+- Traditional Chinese (New)
 
 ## Version 2.0.0
 
