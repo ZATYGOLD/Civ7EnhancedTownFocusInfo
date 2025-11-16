@@ -184,6 +184,9 @@ export default class UrbanCenterDetails {
       `;
     };
 
+    // Temporarily removed:
+    // <div class="mt-3"></div>
+    // ${renderSection(withoutMaint, labelWithoutMaint)}
     return `
       <div class="flex flex-col w-full">
         <div
@@ -192,12 +195,7 @@ export default class UrbanCenterDetails {
         >
           ${headerYieldsHtml}
         </div>
-
         ${renderSection(withMaint, labelWithMaint)}
-
-        <div class="mt-3"></div>
-
-        ${renderSection(withoutMaint, labelWithoutMaint)}
       </div>
     `;
   }
