@@ -10,7 +10,7 @@ A mod for Civilization VII that enhances the display of town focus yield bonuses
 
 ### Features
 
-- None
+- Show empty details when appropriate
 
 ### Languages
 
@@ -58,7 +58,7 @@ A mod for Civilization VII that enhances the display of town focus yield bonuses
 
 ### Features
 
-- Tooltiip improvements allowing Unique improvements warehouse bonus
+- Tooltip improvements allowing Unique improvements warehouse bonus
 
 ## Version 1.1.10
 
