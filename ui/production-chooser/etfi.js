@@ -8,13 +8,13 @@ import TooltipManager from '/core/ui/tooltips/tooltip-manager.js';
 import { IsElement } from '/core/ui/utilities/utilities-dom.chunk.js';
 import { c as GetTownFocusBlp } from '/base-standard/ui/production-chooser/production-chooser-helpers.chunk.js';
 import { A as AdvisorUtilities } from '/base-standard/ui/tutorial/tutorial-support.chunk.js';
-import FoodFocusDetails from '../types/farming-towns.js';
-import MiningDetails from '../types/mining-town.js';
-import HubDetails from '../types/hub-town.js';
-import ResortDetails from '../types/resort-town.js';
-import TradeDetails from '../types/trade-town.js';
-import TempleDetails from '../types/temple-town.js';
-import UrbanCenterDetails from '../types/urban-town.js';
+import FoodFocusDetails from '../town-focuses/farming-towns.js';
+import MiningDetails from '../town-focuses/mining-town.js';
+import HubDetails from '../town-focuses/hub-town.js';
+import ResortDetails from '../town-focuses/resort-town.js';
+import TradeDetails from '../town-focuses/trade-town.js';
+import TempleDetails from '../town-focuses/temple-town.js';
+import UrbanCenterDetails from '../town-focuses/urban-town.js';
 
 // #region Localization constants
 const ETFI_PROJECT_TYPES = {
