@@ -1,9 +1,7 @@
 // Urban Center: "+100% towards" => effective 50% discount on maintenance.
-// Shows GOLD and HAPPINESS savings from completed buildings.
-// Two sections: (1) Buildings with maintenance, (2) Buildings without.
-// Within each section, group by quarter; if a quarter has 2+ buildings in that
-// section, render them on a single row and sum their yields.
-// Returns null when there are no completed buildings.
+// Shows GOLD and HAPPINESS savings from completed buildings that have maintenance.
+// Single section: Buildings with maintenance, grouped by quarter.
+// Returns null when there are no completed maintenance buildings.
 
 import { ETFI_YIELDS, fmt1, renderHeaderChips } from "../../etfi-utilities.js";
 
@@ -23,7 +21,6 @@ export default class UrbanCenterDetails {
     const ORDERED_YIELDS = [ETFI_YIELDS.GOLD, ETFI_YIELDS.HAPPINESS];
 
     const withMaint = [];
-    const withoutMaint = [];
     const grandTotals = {
       [ETFI_YIELDS.GOLD]: 0,
       [ETFI_YIELDS.HAPPINESS]: 0,
@@ -58,26 +55,25 @@ export default class UrbanCenterDetails {
         if (yType === ETFI_YIELDS.HAPPINESS) h += saved;
       }
 
-      const rec = {
+      // Only care about buildings where the discount actually yields something
+      if (g <= 0 && h <= 0) continue;
+
+      grandTotals[ETFI_YIELDS.GOLD] += g;
+      grandTotals[ETFI_YIELDS.HAPPINESS] += h;
+
+      withMaint.push({
         quarterKey,
         iconId: info.ConstructibleType,
         nameKey: info.Name,
         g,
         h,
-      };
-
-      if (g > 0 || h > 0) {
-        grandTotals[ETFI_YIELDS.GOLD] += g;
-        grandTotals[ETFI_YIELDS.HAPPINESS] += h;
-        withMaint.push(rec);
-      } else {
-        withoutMaint.push({ ...rec, g: 0, h: 0 });
-      }
+      });
     }
 
-    if (!withMaint.length && !withoutMaint.length) return null;
+    // If there are no maintenance-paying buildings, this panel is irrelevant
+    if (!withMaint.length) return null;
 
-    // Keep quarters adjacent; buildings-with-maint first by value, without-maint alpha by name.
+    // Keep quarters adjacent; buildings-with-maint first by value
     withMaint.sort((a, b) => {
       if (a.quarterKey !== b.quarterKey) return a.quarterKey.localeCompare(b.quarterKey);
       const ta = a.g + a.h;
@@ -85,12 +81,7 @@ export default class UrbanCenterDetails {
       return tb - ta;
     });
 
-    withoutMaint.sort((a, b) => {
-      if (a.quarterKey !== b.quarterKey) return a.quarterKey.localeCompare(b.quarterKey);
-      return Locale.compose(a.nameKey).localeCompare(Locale.compose(b.nameKey));
-    });
-
-    // Group by quarter within a section; merge rows if that quarter has 2+ items in that section
+    // Group by quarter within the section; merge rows if that quarter has 2+ items
     const renderRowsForSection = (items) => {
       const byQ = new Map();
       for (const it of items) {
@@ -166,15 +157,11 @@ export default class UrbanCenterDetails {
       return html;
     };
 
-    const labelWithMaint =
-      Locale.compose("LOC_MOD_ETFI_BUILDINGS_WITH_MAINTENANCE") ||
-      "Buildings with Maintenance";
-    const labelWithoutMaint =
-      Locale.compose("LOC_MOD_ETFI_BUILDINGS_WITHOUT_MAINTENANCE") ||
-      "Buildings without Maintenance";
+    const labelWithMaint = Locale.compose("LOC_MOD_ETFI_BUILDINGS_WITH_MAINTENANCE") || "Buildings with Maintenance";
 
     const renderSection = (items, label) => {
       const count = items.length;
+
       return `
         <div class="mt-1 text-accent-2" style="font-size: 0.8em; line-height: 1.4;">
           <div class="flex justify-between mb-1">
@@ -199,10 +186,6 @@ export default class UrbanCenterDetails {
         </div>
 
         ${renderSection(withMaint, labelWithMaint)}
-
-        <div class="mt-3"></div>
-
-        ${renderSection(withoutMaint, labelWithoutMaint)}
       </div>
     `;
   }
