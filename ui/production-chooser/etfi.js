@@ -8,7 +8,7 @@ import TooltipManager from '/core/ui/tooltips/tooltip-manager.js';
 import { IsElement } from '/core/ui/utilities/utilities-dom.chunk.js';
 import { c as GetTownFocusBlp } from '/base-standard/ui/production-chooser/production-chooser-helpers.chunk.js';
 import { A as AdvisorUtilities } from '/base-standard/ui/tutorial/tutorial-support.chunk.js';
-import FoodFocusDetails from '../types/farming-towns.js';
+import FoodFocusDetails from '../types/farm-fish-towns.js';
 import MiningDetails from '../types/mining-town.js';
 import HubDetails from '../types/hub-town.js';
 import ResortDetails from '../types/resort-town.js';
