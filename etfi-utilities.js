@@ -9,6 +9,15 @@ export const ETFI_YIELDS = Object.freeze({
     INFLUENCE: "YIELD_DIPLOMACY",
 });
 
+const HEADER_YIELD_COLORS = {
+    [ETFI_YIELDS.FOOD]:       "rgba(128, 179,  77, 0.50)", // base #80b34d
+    [ETFI_YIELDS.PRODUCTION]: "rgba(163,  61,  41, 0.50)", // base #a33d29
+    [ETFI_YIELDS.GOLD]:       "rgba(246, 206, 85, 0.50)", // base #f6ce55
+    [ETFI_YIELDS.SCIENCE]:    "rgba(108, 166, 224, 0.50)", // base #6ca6e0
+    [ETFI_YIELDS.CULTURE]:    "rgba( 92,  92, 214, 0.50)", // base #5c5cd6
+    [ETFI_YIELDS.HAPPINESS]:  "rgba(245, 153,  61, 0.50)", // base #f5993d
+    [ETFI_YIELDS.INFLUENCE]:  "rgba(175, 183, 207, 0.50)", // base #afb7cf
+  };
 // #region Logic Helpers
 export function fmt1(x) {
     const v = Math.round(x * 10) / 10;
@@ -77,13 +86,15 @@ export function getImprovementSummaryForSet({ city, targetSet, displayNameMap, b
 
 // #region Render Helpers
 export function renderHeaderBadge(iconId, value) {
+    const order = [iconId];
+    const totals = { [iconId]: value };
+  
     return `
       <div 
-        class="flex items-center justify-center gap-2 mb-2 rounded-md px-3 py-2"
+        class="flex items-center justify-center gap-2 mb-2 rounded-md px-3 py-2 flex-wrap"
         style="background-color: rgba(10, 10, 20, 0.25); color:#f5f5f5; text-align:center;"
       >
-        <fxs-icon data-icon-id="${iconId}" class="size-5"></fxs-icon>
-        <span class="font-semibold">+${value}</span>
+        ${renderHeaderChips(order, totals)}
       </div>
     `;
 }
@@ -91,33 +102,38 @@ export function renderHeaderBadge(iconId, value) {
 export function renderHeaderChips(yieldOrder, totals) {
     let html = "";
     if (!yieldOrder || !totals) return html;
-
-    // First check if any yield is actually > 0
-    const hasPositive = yieldOrder.some((yType) => {
-        const v = totals[yType];
-        return typeof v === "number" && v > 0;
-    });
-
+  
     for (const yType of yieldOrder) {
-        const val = totals[yType];
-
-        // If we have at least one positive value, only show positives
-        if (hasPositive) {
-            if (typeof val !== "number" || val <= 0) continue;
-        } else {
-            // No positive values: if it's not a number at all, skip it
-            if (typeof val !== "number") continue;
-            // but DO show 0 so the header isn't empty
-        }
-
-        html += `
-        <div class="flex items-center gap-2 mr-2">
-          <fxs-icon data-icon-id="${yType}" class="size-5"></fxs-icon>
-          <span class="font-semibold">+${fmt1(val)}</span>
+      const val = totals[yType];
+  
+      // Only skip if it's *not* a number at all.
+      // 0, 1, -1, etc. are all allowed and will render.
+      if (typeof val !== "number") continue;
+  
+      const color = HEADER_YIELD_COLORS[yType] || "rgba(255, 255, 255, 0.25)";
+  
+      html += `
+        <div class="flex items-center mr-1">
+          <div
+            class="flex items-center justify-center gap-1"
+            style="
+              /* top | right | bottom | left */
+              padding: 0.5px 4px 0.5px 8px;
+              min-height: 0.5rem;
+              border-radius: 9999px;
+              background-color: ${color};
+              border: 1px solid ${color};
+              color: #f2f2f2;
+              font-size: 0.9em;
+            "
+          >
+            <span class="font-semibold">+${fmt1(val)}</span>
+            <fxs-icon data-icon-id="${yType}" class="size-7"></fxs-icon>
+          </div>
         </div>
       `;
     }
-
+  
     return html;
 }
 
@@ -126,15 +142,20 @@ export function renderImprovementDetailsHTML(summary, yieldIconId) {
   
     const { items, total, multiplier, baseCount } = summary;
     const labelTotalImprovements = Locale.compose("LOC_MOD_ETFI_TOTAL_IMPROVEMENTS");
+
+    // Use the same pill header style as other town focuses
+    const headerYieldsHtml = renderHeaderChips(
+        [yieldIconId],
+        { [yieldIconId]: total }
+    );
   
     let html = `
       <div class="flex flex-col w-full">
-        <div 
-          class="flex items-center justify-center gap-2 mb-2 rounded-md px-3 py-2"
+        <div
+          class="flex items-center justify-center gap-2 mb-2 rounded-md px-3 py-2 flex-wrap"
           style="background-color: rgba(10, 10, 20, 0.25); color:#f5f5f5; text-align:center;"
         >
-          <fxs-icon data-icon-id="${yieldIconId}" class="size-5"></fxs-icon>
-          <span class="font-semibold">+${total}</span>
+          ${headerYieldsHtml}
         </div>
     `;
   
