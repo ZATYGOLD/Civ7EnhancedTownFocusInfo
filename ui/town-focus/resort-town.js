@@ -7,14 +7,7 @@ import { ETFI_YIELDS, getEraMultiplier, fmt1, renderHeader } from "../../etfi-ut
 
 export default class ResortDetails {
   render(city) {
-    if (
-      !city ||
-      !city.Constructibles ||
-      !GameplayMap ||
-      !GameInfo?.Constructibles ||
-      !GameInfo?.Features ||
-      !GameInfo?.Yields
-    ) {
+    if (!city || !city.Constructibles || !GameplayMap || !GameInfo?.Constructibles || !GameInfo?.Features || !GameInfo?.Yields) {
       return null;
     }
 

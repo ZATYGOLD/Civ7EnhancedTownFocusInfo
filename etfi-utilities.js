@@ -15,6 +15,7 @@ export const ETFI_YIELDS = Object.freeze({
   SCIENCE: "YIELD_SCIENCE",
   CULTURE: "YIELD_CULTURE",
   INFLUENCE: "YIELD_DIPLOMACY",
+  TRADE: "YIELD_TRADES"
 });
 
 // Base background colors for the "pill" elements in the header.

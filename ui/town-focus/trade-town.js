@@ -65,15 +65,22 @@ export default class TradeDetails {
     const items = Object.values(resourcesByType);
     if (!items.length) return null;
 
-    // Trade Outpost rule: +2 Happiness per resource tile
+    // Trade Outpost rule:+5 Trade range and +2 Happiness per resource tile
+    const tradeRange = 5;
     const happinessPerTile = 2;
     const totalHappiness = totalResourceTiles * happinessPerTile;
 
     const labelTotalResources = Locale.compose("LOC_MOD_ETFI_TOTAL_RESOURCES");
 
+    const ORDERED_YIELDS = [ETFI_YIELDS.TRADE, ETFI_YIELDS.HAPPINESS];
+    const totals = {
+      [ETFI_YIELDS.TRADE]: 5,
+      [ETFI_YIELDS.HAPPINESS]: totalHappiness,
+    };
+
     let html = `
       <div class="flex flex-col w-full">
-        ${renderHeader(ETFI_YIELDS.HAPPINESS, totalHappiness)}
+        ${renderHeader(ORDERED_YIELDS, totals)}
         <div class="mt-1 text-accent-2" style="font-size: 0.8em; line-height: 1.4%;">
           <div class="flex justify-between mb-1">
             <span>${labelTotalResources}</span>
