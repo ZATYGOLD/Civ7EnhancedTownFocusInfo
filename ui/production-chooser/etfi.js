@@ -8,14 +8,14 @@ import TooltipManager from '/core/ui/tooltips/tooltip-manager.js';
 import { IsElement } from '/core/ui/utilities/utilities-dom.chunk.js';
 import { c as GetTownFocusBlp } from '/base-standard/ui/production-chooser/production-chooser-helpers.chunk.js';
 import { A as AdvisorUtilities } from '/base-standard/ui/tutorial/tutorial-support.chunk.js';
-import FoodFocusDetails from '../town-focus/farm-fish-towns.js';
-import MiningDetails from '../town-focus/mining-town.js';
-import HubDetails from '../town-focus/hub-town.js';
-import ResortDetails from '../town-focus/resort-town.js';
-import TradeDetails from '../town-focus/trade-town.js';
-import TempleDetails from '../town-focus/temple-town.js';
-import UrbanCenterDetails from '../town-focus/urban-town.js';
-import FortTownDetails from '../town-focus/fort-town.js';
+import FoodFocusDetails from '../etfi-town-focus/farm-fish-towns.js';
+import MiningDetails from '../etfi-town-focus/mining-town.js';
+import HubDetails from '../etfi-town-focus/hub-town.js';
+import ResortDetails from '../etfi-town-focus/resort-town.js';
+import TradeDetails from '../etfi-town-focus/trade-town.js';
+import TempleDetails from '../etfi-town-focus/temple-town.js';
+import UrbanCenterDetails from '../etfi-town-focus/urban-town.js';
+import FortTownDetails from '../etfi-town-focus/fort-town.js';
 import { ETFI_YIELDS } from '../../etfi-utilities.js';
 
 // #region Localization constants
