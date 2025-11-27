@@ -2,7 +2,7 @@
 // Groups buildings by tile; stacks (2+ on a tile) are listed first.
 // Returns null if the city has no completed buildings.
 
-import { ETFI_YIELDS, renderHeaderBadge } from "../../etfi-utilities.js";
+import { ETFI_YIELDS, renderHeader } from "../../etfi-utilities.js";
 
 export default class TempleDetails {
   render(city) {
@@ -51,7 +51,7 @@ export default class TempleDetails {
 
     let html = `
       <div class="flex flex-col w-full">
-        ${renderHeaderBadge(ETFI_YIELDS.HAPPINESS, totalBuildings)}
+        ${renderHeader(ETFI_YIELDS.HAPPINESS, totalBuildings)}
 
         <div class="mt-1 text-accent-2" style="font-size: 0.8em; line-height: 1.4;">
           <div class="flex justify-between mb-1">

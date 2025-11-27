@@ -3,7 +3,7 @@
 // Header shows summed deltas; body lists improvement buckets and wonder buckets.
 // Returns null if there are no applicable deltas (caller can render +0 fallback).
 
-import { ETFI_YIELDS, getEraMultiplier, fmt1, renderHeaderChips } from "../../etfi-utilities.js";
+import { ETFI_YIELDS, getEraMultiplier, fmt1, renderHeader } from "../../etfi-utilities.js";
 
 export default class ResortDetails {
   render(city) {
@@ -149,7 +149,7 @@ export default class ResortDetails {
       ETFI_YIELDS.CULTURE,
     ];
 
-    const headerYieldsHtml = renderHeaderChips(headerOrder, globalDeltas);
+    const headerYieldsHtml = renderHeader(headerOrder, globalDeltas);
 
     // Label + base counts
     const labelTotalImprovements = Locale.compose("LOC_MOD_ETFI_TOTAL_IMPROVEMENTS");

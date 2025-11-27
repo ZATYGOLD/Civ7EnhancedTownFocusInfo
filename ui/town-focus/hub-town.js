@@ -3,7 +3,7 @@
 // - Header: total Influence (connections).
 // - Body: separate rows for Cities and Towns.
 
-import { ETFI_YIELDS, renderHeaderBadge } from "../../etfi-utilities.js";
+import { ETFI_YIELDS, renderHeader } from "../../etfi-utilities.js";
 
 const ETFI_ICONS = {
   CITY: "CITY_URBAN",
@@ -44,7 +44,7 @@ export default class HubDetails {
 
     let html = `
       <div class="flex flex-col w-full">
-        ${renderHeaderBadge(ETFI_YIELDS.INFLUENCE, totalConnections)}
+        ${renderHeader(ETFI_YIELDS.INFLUENCE, totalConnections)}
         <div class="mt-1 text-accent-2" style="font-size: 0.8em; line-height: 1.4;">
           <div class="flex justify-between mb-1">
             <span>${labelTotalConnections}</span>

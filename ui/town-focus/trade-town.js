@@ -3,7 +3,7 @@
 // - Shows total Happiness, total resource tiles, and per-resource breakdown.
 // Returns null if no resource tiles are found (caller can render +0 fallback).
 
-import { ETFI_YIELDS, renderHeaderBadge } from "../../etfi-utilities.js";
+import { ETFI_YIELDS, renderHeader } from "../../etfi-utilities.js";
 
 export default class TradeDetails {
   /**
@@ -73,7 +73,7 @@ export default class TradeDetails {
 
     let html = `
       <div class="flex flex-col w-full">
-        ${renderHeaderBadge(ETFI_YIELDS.HAPPINESS, totalHappiness)}
+        ${renderHeader(ETFI_YIELDS.HAPPINESS, totalHappiness)}
         <div class="mt-1 text-accent-2" style="font-size: 0.8em; line-height: 1.4%;">
           <div class="flex justify-between mb-1">
             <span>${labelTotalResources}</span>

@@ -3,7 +3,7 @@
 // Single section: Buildings with maintenance, grouped by quarter.
 // Returns null when there are no completed maintenance buildings.
 
-import { ETFI_YIELDS, fmt1, renderHeaderChips } from "../../etfi-utilities.js";
+import { ETFI_YIELDS, fmt1, renderHeader } from "../../etfi-utilities.js";
 
 export default class UrbanCenterDetails {
   render(city) {
@@ -174,7 +174,7 @@ export default class UrbanCenterDetails {
       `;
     };
 
-    const headerYieldsHtml = renderHeaderChips(ORDERED_YIELDS, grandTotals);
+    const headerYieldsHtml = renderHeader(ORDERED_YIELDS, grandTotals);
 
     return `
       <div class="flex flex-col w-full">
