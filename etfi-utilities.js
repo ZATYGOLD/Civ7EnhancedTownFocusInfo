@@ -371,4 +371,40 @@ export function renderImprovementDetailsHTML(summary, yieldIconId) {
   return html;
 }
 
+/**
+ * Render a standard details row with:
+ * - left side: arbitrary content (icons + names, usually)
+ * - right side: a yield icon and a numeric value, right-aligned
+ *
+ * The row looks like:
+ *   [leftHtml......................]   [ yieldIcon  +value ]
+ *
+ * @param {Object} options
+ * @param {string} options.leftHtml     - HTML snippet for the left side
+ * @param {string} options.yieldIconId  - data-icon-id for the right-side icon
+ * @param {number|string} options.yieldValue - value to display next to the icon
+ * @param {string} [options.rowTextStyle]    - optional inline style for the left side
+ */
+export function renderDetailsRow({
+  leftHtml,
+  yieldIconId,
+  yieldValue,
+  rowTextStyle = "",
+} = {}) {
+  const styleAttr = rowTextStyle ? ` style="${rowTextStyle}"` : "";
+
+  return `
+    <div class="flex items-center mt-1">
+      <div class="flex items-center gap-2 min-w-0 flex-1"${styleAttr}>
+        ${leftHtml}
+      </div>
+      <div class="flex items-center gap-1 ml-3 shrink-0 justify-end text-right">
+        <fxs-icon data-icon-id="${yieldIconId}" class="size-4"></fxs-icon>
+        <span class="font-semibold">+${yieldValue}</span>
+      </div>
+    </div>
+  `;
+}
+
+
 // #endregion Details Rendering
