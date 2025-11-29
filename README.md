@@ -6,9 +6,10 @@ A mod for Civilization VII that enhances the display of town focus yield bonuses
 
 ### What's New
 
-- Updated Fort town to show the number of walls and the total "Health" gained
+- Updated Fort town and Religious Site to show the number of walls
+- Fort Town now displays the total "Health" gained per Age relevant wall
 - Fixed Religious Site bug where the walls were not be calculated into the total happiness
-- Improved readbility for Resort Town, Urban Town, and Fort Town
+- Improved readbility for Resort Town, Urban Town, Religious Site, and Fort Town
 - Added helpers
 
 ### Features
