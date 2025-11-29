@@ -259,7 +259,7 @@ export function renderHeader(yieldOrder, totals) {
     // 0, positive, and negative numbers are all valid and should show.
     if (typeof raw !== "number") continue;
 
-    const chipHtml = createHeaderChipHtml(yType, raw, isColorful);
+    const chipHtml = formatYieldBackground(yType, raw, isColorful);
     if (chipHtml) {
       chips.push(chipHtml);
     }
@@ -314,14 +314,29 @@ export function renderHeader(yieldOrder, totals) {
  * @param {boolean} isColorful - whether to use tinted pill style
  * @returns {string} HTML snippet for one pill
  */
-function createHeaderChipHtml(yType, rawValue, isColorful) {
+function formatYieldBackground(yType, rawValue, isColorful) {
   const baseColor = HEADER_YIELD_COLORS[yType] || DEFAULT_HEADER_BG;
 
   // Colorful mode: tinted pill. Non-colorful: transparent, no border, tighter padding.
-  const bgColor = isColorful ? baseColor : "transparent";
-  const borderCss = isColorful ? `1px solid ${baseColor}` : "none";
+  const bgColor   = isColorful ? baseColor : "transparent";
+  const borderCss = isColorful ? `2px solid ${baseColor}` : "none";
   const paddingCss = isColorful ? "0.5px 4px 0.5px 8px" : "0";
   const radiusCss = isColorful ? "9999px" : "0";
+
+  const formatted = fmt1(rawValue);
+
+  // For very short values, give the number a small min-width in em so
+  // single-digit values don't look squished compared to 2–3 digit values.
+  const len = formatted.length;
+  let spanStyle = "text-align:right;";
+
+  if (len <= 1) {
+    // 1-digit like "3"
+    spanStyle = "display:inline-block; min-width: 1.9em; text-align:right;";
+  } else if (len === 2) {
+    // 2 digits like "12"
+    spanStyle = "display:inline-block; min-width: 2.1em; text-align:right;";
+  } // 3+ digits just use natural width
 
   return `
     <div class="flex items-center mx-1">
@@ -339,7 +354,7 @@ function createHeaderChipHtml(yType, rawValue, isColorful) {
         "
       >
         <fxs-icon data-icon-id="${yType}" class="size-7"></fxs-icon>
-        <span class="font-semibold">+${fmt1(rawValue)}</span>
+        <span class="font-semibold" style="${spanStyle}">+${formatted}</span>
       </div>
     </div>
   `;
