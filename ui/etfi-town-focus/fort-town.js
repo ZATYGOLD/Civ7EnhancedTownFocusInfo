@@ -26,17 +26,19 @@ export default class FortTownDetails {
       const info = GameInfo.Constructibles?.lookup(instance.type);
       if (!info) continue;
 
-      const displayName = Locale.compose(info.Name) || "";
-      const isWall = displayName.includes("Wall") || displayName.includes("Fortification"); // or extend with Fortification, etc.
+      //const displayName = Locale.compose(info.Name) || "";
+      const typeName = info.ConstructibleType || "";
+      const isWall = typeName.includes("WALLS") || typeName.includes("FORTIFICATION");
+      //const isWall = displayName.includes("Wall") || displayName.includes("Fortification"); // or extend with Fortification, etc.
       if (!isWall) continue;
 
       // --- Age gating logic ---
       // Ancient Walls only count in Antiquity
       // Medieval Walls only count in Exploration
       // Defensive Walls only count in Modern
-      const isAntiquityWall   = displayName.includes("Ancient");
-      const isExplorationWall = displayName.includes("Medieval");
-      const isModernWall      = displayName.includes("Defensive");
+      const isAntiquityWall   = typeName.includes("ANCIENT");
+      const isExplorationWall = typeName.includes("MEDIEVAL");
+      const isModernWall = typeName.includes("DEFENSIVE");
 
       let qualifiesForAge = false;
       if (ageType === "AGE_ANTIQUITY"   && isAntiquityWall)   qualifiesForAge = true;
