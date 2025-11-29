@@ -278,10 +278,18 @@ export function renderHeader(yieldOrder, totals) {
     `;
   }
 
-  // At most 2 yields on the first line; any remaining go on a second line.
-  const firstRowHtml = chips.slice(0, 2).join("");
-  const secondRowHtml = chips.length > 2 ? chips.slice(2).join("") : "";
+  // Layout rule:
+  // - If 3 or fewer: all on a single line.
+  // - If more than 3: 2 on the first line, the rest on the second line.
+  let firstRowHtml = "";
+  let secondRowHtml = "";
 
+  if (chips.length <= 3) {
+    firstRowHtml = chips.join("");
+  } else {
+    firstRowHtml = chips.slice(0, 2).join("");
+    secondRowHtml = chips.slice(2).join("");
+  }
   return `
     <div 
       class="flex flex-col items-center justify-center mb-2 rounded-md px-3 py-2"
