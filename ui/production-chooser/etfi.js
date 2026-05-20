@@ -5,9 +5,10 @@
  * Version: 2.0.2
  */
 import TooltipManager from '/core/ui/tooltips/tooltip-manager.js';
-import { IsElement } from '/core/ui/utilities/utilities-dom.chunk.js';
-import { b as GetTownFocusBlp } from '/base-standard/ui/production-chooser/production-chooser-helpers.chunk.js';
-import { A as AdvisorUtilities } from '/base-standard/ui/tutorial/tutorial-support.chunk.js';
+import { IsElement } from '/core/ui/utilities/utilities-dom.js';
+import { GetTownFocusBlp } from '/base-standard/ui/production-chooser/production-chooser-helpers.js';
+import { AdvisorUtilities } from '/base-standard/ui/tutorial/advisor-utilities.js';
+
 import FoodFocusDetails from '../etfi-town-focus/farm-fish-towns.js';
 import MiningDetails from '../etfi-town-focus/mining-town.js';
 import HubDetails from '../etfi-town-focus/hub-town.js';
@@ -16,20 +17,128 @@ import TradeDetails from '../etfi-town-focus/trade-town.js';
 import TempleDetails from '../etfi-town-focus/temple-town.js';
 import UrbanCenterDetails from '../etfi-town-focus/urban-town.js';
 import FortTownDetails from '../etfi-town-focus/fort-town.js';
-import { ETFI_YIELDS } from '../../etfi-utilities.js';
 
-// #region Localization constants
-const ETFI_PROJECT_TYPES = {
-  TOWN_FARMING:"LOC_PROJECT_TOWN_GRANARY_NAME",
-  TOWN_FISHING: "LOC_PROJECT_TOWN_FISHING_NAME",
-  TOWN_MINING: "LOC_PROJECT_TOWN_PRODUCTION_NAME",
-  TOWN_HUB: "LOC_PROJECT_TOWN_INN_NAME",
-  TOWN_TRADE: "LOC_PROJECT_TOWN_TRADE_NAME",
-  TOWN_RESORT: "LOC_PROJECT_TOWN_RESORT_NAME",
-  TOWN_TEMPLE:"LOC_PROJECT_TOWN_TEMPLE_NAME",
-  TOWN_URBAN: "LOC_PROJECT_TOWN_URBAN_CENTER_NAME",
-  TOWN_FORT: "LOC_PROJECT_TOWN_FORT_NAME"
+import { ETFI_YIELDS, renderHeader } from '../../etfi-utilities.js';
+
+// #region ETFI town focus registry
+
+const ETFI_PROJECT_KEY_ALIASES = {
+  FARMING: [
+    "PROJECT_TOWN_GRANARY",
+    "TOWN_GRANARY",
+    "LOC_PROJECT_TOWN_GRANARY_NAME",
+    "LOC_UI_FOOD_CHOOSER_FOCUS_GROWTH",
+  ],
+
+  FISHING: [
+    "PROJECT_TOWN_FISHING",
+    "TOWN_FISHING",
+    "LOC_PROJECT_TOWN_FISHING_NAME",
+  ],
+
+  MINING: [
+    "PROJECT_TOWN_PRODUCTION",
+    "PROJECT_TOWN_MINING",
+    "TOWN_PRODUCTION",
+    "TOWN_MINING",
+    "LOC_PROJECT_TOWN_PRODUCTION_NAME",
+  ],
+
+  HUB: [
+    "PROJECT_TOWN_INN",
+    "PROJECT_TOWN_HUB",
+    "TOWN_INN",
+    "TOWN_HUB",
+    "LOC_PROJECT_TOWN_INN_NAME",
+  ],
+
+  TRADE: [
+    "PROJECT_TOWN_TRADE",
+    "TOWN_TRADE",
+    "LOC_PROJECT_TOWN_TRADE_NAME",
+  ],
+
+  RESORT: [
+    "PROJECT_TOWN_RESORT",
+    "TOWN_RESORT",
+    "LOC_PROJECT_TOWN_RESORT_NAME",
+  ],
+
+  TEMPLE: [
+    "PROJECT_TOWN_TEMPLE",
+    "TOWN_TEMPLE",
+    "LOC_PROJECT_TOWN_TEMPLE_NAME",
+  ],
+
+  URBAN: [
+    "PROJECT_TOWN_URBAN_CENTER",
+    "PROJECT_TOWN_URBAN",
+    "TOWN_URBAN_CENTER",
+    "TOWN_URBAN",
+    "LOC_PROJECT_TOWN_URBAN_CENTER_NAME",
+  ],
+
+  FORT: [
+    "PROJECT_TOWN_FORT",
+    "TOWN_FORT",
+    "LOC_PROJECT_TOWN_FORT_NAME",
+  ],
 };
+
+const ETFI_TOWN_FOCUS_REGISTRY = new Map();
+
+function registerTownFocus(keys, config) {
+  for (const key of keys) {
+    ETFI_TOWN_FOCUS_REGISTRY.set(key, config);
+  }
+}
+
+registerTownFocus(ETFI_PROJECT_KEY_ALIASES.FARMING, {
+  yields: [ETFI_YIELDS.FOOD],
+  createRenderer: () => new FoodFocusDetails(),
+});
+
+registerTownFocus(ETFI_PROJECT_KEY_ALIASES.FISHING, {
+  yields: [ETFI_YIELDS.FOOD],
+  createRenderer: () => new FoodFocusDetails(),
+});
+
+registerTownFocus(ETFI_PROJECT_KEY_ALIASES.MINING, {
+  yields: [ETFI_YIELDS.PRODUCTION],
+  createRenderer: () => new MiningDetails(),
+});
+
+registerTownFocus(ETFI_PROJECT_KEY_ALIASES.HUB, {
+  yields: [ETFI_YIELDS.INFLUENCE],
+  createRenderer: () => new HubDetails(),
+});
+
+registerTownFocus(ETFI_PROJECT_KEY_ALIASES.TRADE, {
+  yields: [ETFI_YIELDS.TRADE, ETFI_YIELDS.HAPPINESS],
+  createRenderer: () => new TradeDetails(),
+});
+
+registerTownFocus(ETFI_PROJECT_KEY_ALIASES.RESORT, {
+  yields: [ETFI_YIELDS.HAPPINESS, ETFI_YIELDS.GOLD],
+  createRenderer: () => new ResortDetails(),
+});
+
+registerTownFocus(ETFI_PROJECT_KEY_ALIASES.TEMPLE, {
+  yields: [ETFI_YIELDS.HAPPINESS],
+  createRenderer: () => new TempleDetails(),
+});
+
+registerTownFocus(ETFI_PROJECT_KEY_ALIASES.URBAN, {
+  yields: [ETFI_YIELDS.GOLD, ETFI_YIELDS.HAPPINESS],
+  createRenderer: () => new UrbanCenterDetails(),
+});
+
+registerTownFocus(ETFI_PROJECT_KEY_ALIASES.FORT, {
+  yields: [ETFI_YIELDS.FORTIFY],
+  createRenderer: () => new FortTownDetails(),
+});
+
+// #endregion
 
 // #region EtfiToolTipType
 const bulletChar = String.fromCodePoint(8226);
@@ -200,119 +309,104 @@ class EtfiToolTipType {
       }
       this.gemsContainer.classList.toggle("hidden", !recommendations);
     }
-    getDetailsText(city) {  // NEW: central dispatcher for ETFI details text, with fallback to empty header if no details available
-      if (!this.target) return null;
-
-      const projectNameKey = this.target.dataset.name; // e.g. "LOC_PROJECT_TOWN_GRANARY_NAME"
-      if (!projectNameKey) return null;
-
-      switch (projectNameKey) {
-        case ETFI_PROJECT_TYPES.TOWN_FARMING:
-        case ETFI_PROJECT_TYPES.TOWN_FISHING: {
-          const html = new FoodFocusDetails().render(city);
-          return html || this.onRenderEmptyDetailsHTML(projectNameKey);
-        }
-
-        case ETFI_PROJECT_TYPES.TOWN_MINING: {
-          const html = new MiningDetails().render(city);
-          return html || this.onRenderEmptyDetailsHTML(projectNameKey);
-        }
-        
-        case ETFI_PROJECT_TYPES.TOWN_HUB: {
-          const html = new HubDetails().render(city);
-          return html || this.onRenderEmptyDetailsHTML(projectNameKey);
-        }
-        
-        case ETFI_PROJECT_TYPES.TOWN_TRADE: {
-          const html = new TradeDetails().render(city);
-          return html || this.onRenderEmptyDetailsHTML(projectNameKey);
-        }
-
-        case ETFI_PROJECT_TYPES.TOWN_RESORT: {
-          const html = new ResortDetails().render(city);
-          return html || this.onRenderEmptyDetailsHTML(projectNameKey);
-        }
-
-        case ETFI_PROJECT_TYPES.TOWN_TEMPLE: {
-          const html = new TempleDetails().render(city);
-          return html || this.onRenderEmptyDetailsHTML(projectNameKey);
-        }
-        
-        case ETFI_PROJECT_TYPES.TOWN_URBAN: {
-          const html = new UrbanCenterDetails().render(city);
-          return html || this.onRenderEmptyDetailsHTML(projectNameKey);
-        }
-
-        case ETFI_PROJECT_TYPES.TOWN_FORT: {
-          const html = new FortTownDetails().render(city);
-          return html || this.onRenderEmptyDetailsHTML(projectNameKey);
-        }
-
-        default:
-          return null;
+    getProjectInfo() {
+      const projectType = this.getProjectType();
+    
+      if (projectType === null || projectType === undefined || Number.isNaN(projectType)) {
+        return null;
       }
+    
+      return GameInfo?.Projects?.lookup?.(projectType) ?? null;
     }
-    onRenderEmptyDetailsHTML(projectNameKey) { // NEW: render fallback empty header with +0 yields based on project type
-      const map = {};
-      map[ETFI_PROJECT_TYPES.TOWN_FARMING]  = [ETFI_YIELDS.FOOD];
-      map[ETFI_PROJECT_TYPES.TOWN_FISHING]  = [ETFI_YIELDS.FOOD];
-      map[ETFI_PROJECT_TYPES.TOWN_MINING]   = [ETFI_YIELDS.PRODUCTION];
-      map[ETFI_PROJECT_TYPES.TOWN_HUB]      = [ETFI_YIELDS.INFLUENCE];
-      map[ETFI_PROJECT_TYPES.TOWN_TRADE]    = [ETFI_YIELDS.HAPPINESS];
-      map[ETFI_PROJECT_TYPES.TOWN_RESORT]   = [ETFI_YIELDS.HAPPINESS, ETFI_YIELDS.GOLD];
-      map[ETFI_PROJECT_TYPES.TOWN_TEMPLE]   = [ETFI_YIELDS.HAPPINESS];
-      map[ETFI_PROJECT_TYPES.TOWN_URBAN]    = [ETFI_YIELDS.GOLD, ETFI_YIELDS.HAPPINESS];
 
-      const yields = map[projectNameKey] || [];
-
-      // Build standardized header chips with +0 values
-      let headerYieldsHtml = "";
-      if (yields.length) {
-        for (const yType of yields) {
-          headerYieldsHtml += `
-            <div class="flex items-center gap-2 mr-2">
-              <fxs-icon data-icon-id="${yType}" class="size-5"></fxs-icon>
-              <span class="font-semibold">+0</span>
-            </div>
-          `;
-        }
-      } else {
-        // Sensible fallback if we can't infer the relevant yields
-        headerYieldsHtml = `
-          <div class="flex items-center gap-2 mr-2">
-            <span class="font-semibold">+0</span>
-          </div>
-        `;
+    getTownFocusKey() {
+      if (!this.target || !IsElement(this.target, "town-focus-chooser-item")) {
+        return null;
       }
+    
+      const growthType = Number(this.target.dataset.growthType);
+      const projectType = this.getProjectType();
+    
+      // Default Growth focus. Source uses GrowthTypes.EXPAND + ProjectTypes.NO_PROJECT.
+      if (
+        typeof GrowthTypes !== "undefined" &&
+        growthType === GrowthTypes.EXPAND
+      ) {
+        return this.target.dataset.name ?? "LOC_UI_FOOD_CHOOSER_FOCUS_GROWTH";
+      }
+    
+      const projectInfo = this.getProjectInfo();
+      if (projectInfo?.ProjectType) {
+        return projectInfo.ProjectType;
+      }
+    
+      return this.target.dataset.name ?? null;
+    }
+    
+    getTownFocusRegistryEntry() {
+      if (!this.target || !IsElement(this.target, "town-focus-chooser-item")) {
+        return null;
+      }
+    
+      const focusKey = this.getTownFocusKey();
+    
+      if (focusKey && ETFI_TOWN_FOCUS_REGISTRY.has(focusKey)) {
+        return ETFI_TOWN_FOCUS_REGISTRY.get(focusKey);
+      }
+    
+      const projectInfo = this.getProjectInfo();
+      const nameKey = this.target.dataset.name;
+    
+      console.warn("[ETFI] No town focus registry entry found", {
+        focusKey,
+        projectType: this.getProjectType(),
+        projectTypeKey: projectInfo?.ProjectType,
+        nameKey,
+        projectInfo,
+        growthType: this.target.dataset.growthType,
+        target: this.target,
+      });
+    
+      return null;
+    }
 
+    getDetailsText(city) {
+      const entry = this.getTownFocusRegistryEntry();
+      if (!entry) return null;
+    
+      const html = entry.createRenderer().render(city);
+      return html || this.renderEmptyDetailsHTML(entry.yields);
+    }
+
+    renderEmptyDetailsHTML(yields) {
       return `
         <div class="flex flex-col w-full">
-          <div
-            class="flex items-center justify-center gap-4 mb-2 rounded-md px-3 py-2 flex-wrap"
-            style="background-color: rgba(10, 10, 20, 0.25); color:#f5f5f5; text-align:center;"
-          >
-            ${headerYieldsHtml}
-          </div>
+          ${renderHeader(yields, 0)}
         </div>
       `;
     }
+
     getRequirementsText() {
-      const projectType = this.getProjectType() ?? -1;
-      const project = GameInfo.Projects.lookup(projectType);
+      const project = this.getProjectInfo();
+    
       if (!project) {
         return null;
       }
+    
       if (project.PrereqPopulation > 0) {
         return Locale.compose("LOC_UI_PRODUCTION_REQUIRES_POPULATION", project.PrereqPopulation);
       }
+    
       if (project.PrereqConstructible) {
         const definition = GameInfo.Constructibles.lookup(project.PrereqConstructible);
         if (definition) {
           return Locale.compose("LOC_UI_PRODUCTION_REQUIRES_CONSTRUCTIBLE", Locale.compose(definition.Name));
         }
       }
+    
       return null;
     }
+
     isBlank() {
       return !this.target;
     }
