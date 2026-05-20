@@ -37,9 +37,6 @@ export default class MiningDetails {
 
     if (!summary) return null;
 
-    return renderImprovementDetailsHTML(
-      summary,
-      ETFI_YIELDS.PRODUCTION
-    );
+    return renderImprovementDetailsHTML(summary, ETFI_YIELDS.PRODUCTION);
   }
 }

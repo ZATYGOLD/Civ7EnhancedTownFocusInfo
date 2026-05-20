@@ -1,7 +1,7 @@
 // Resort details renderer.
 // +1 Happiness and Gold on Appealing tiles. +50% tile yields from Natural Wonders. Can purchase Happiness Buildings. 
 // In Modern, gives 4 Tourism per Breathtaking tile when at least 7 tiles are Breathtaking. 
-import { ETFI_YIELDS, getEraMultiplier, fmt1, renderHeader, getCompletedImprovements, renderIconName } from "../../etfi-utilities.js";
+import { ETFI_YIELDS, fmt1, renderHeader, getCompletedImprovements, renderIconName } from "../../etfi-utilities.js";
 
 export default class ResortDetails {
   render(city) {
@@ -10,7 +10,7 @@ export default class ResortDetails {
     const improvements = getCompletedImprovements(city);
     if (!improvements.length) return null;
 
-    const multiplier = getEraMultiplier();
+    const multiplier = 1;
 
     const improvementBuckets = Object.create(null);
     const wonderBuckets = Object.create(null);
@@ -90,50 +90,45 @@ export default class ResortDetails {
 
   getTileResortResult(improvement, multiplier) {
     const { x, y } = improvement.location;
-
+  
     const isNaturalWonder = GameplayMap.isNaturalWonder(x, y);
     const baseYields = this.getBaseYieldsForTile(x, y);
     const happyBase = baseYields[ETFI_YIELDS.HAPPINESS] || 0;
-
-    // If not a Natural Wonder and tile has no base Happiness, Resort adds nothing.
-    if (!isNaturalWonder && happyBase <= 0) return null;
-    
+  
+    // In-game Appeal gives base Happiness:
+    // Charming = +1 Happiness
+    // Breathtaking = +2 Happiness
+    const isAppealingTile = happyBase > 0;
+  
+    // If not Appealing and not a Natural Wonder, Resort adds nothing.
+    if (!isAppealingTile && !isNaturalWonder) return null;
+  
     const tileYields = { ...baseYields };
-
-    // Per-age H & G on tiles with at least 1 base Happiness.
-    if (happyBase > 0) {
-      tileYields[ETFI_YIELDS.HAPPINESS] =
-        (tileYields[ETFI_YIELDS.HAPPINESS] || 0) + multiplier;
-
-      tileYields[ETFI_YIELDS.GOLD] =
-        (tileYields[ETFI_YIELDS.GOLD] || 0) + multiplier;
+  
+    // Resort adds +1 Happiness and +1 Gold on Appealing tiles.
+    if (isAppealingTile) {
+      tileYields[ETFI_YIELDS.HAPPINESS] = (tileYields[ETFI_YIELDS.HAPPINESS] || 0) + multiplier;
+      tileYields[ETFI_YIELDS.GOLD] = (tileYields[ETFI_YIELDS.GOLD] || 0) + multiplier;
     }
-
-    // Natural Wonders get +50% yields after per-age bonuses.
+  
+    // Natural Wonders get +50% tile yields.
     if (isNaturalWonder) {
       for (const yieldType in tileYields) {
         tileYields[yieldType] *= 1.5;
       }
     }
-
+  
     const deltaYields = this.getDeltaYields(baseYields, tileYields);
-    if (!Object.keys(deltaYields).length) {
-      return null;
-    }
-
-    return { isNaturalWonder, deltaYields, featureInfo: isNaturalWonder ? this.getFeatureInfo(x, y) : null };
+    if (!Object.keys(deltaYields).length) return null;
+  
+    return { isNaturalWonder, deltaYields, featureInfo: isNaturalWonder ? this.getFeatureInfo(x, y) : null, isBreathtakingTile: happyBase >= 2 };
   }
 
   getBaseYieldsForTile(x, y) {
     const baseYields = Object.create(null);
 
     for (const yieldInfo of GameInfo.Yields) {
-      const amount = GameplayMap.getYield(
-        x,
-        y,
-        yieldInfo.YieldType,
-        GameContext.localPlayerID
-      );
+      const amount = GameplayMap.getYield(x, y, yieldInfo.YieldType, GameContext.localPlayerID);
 
       if (amount !== 0) {
         baseYields[yieldInfo.YieldType] = amount;

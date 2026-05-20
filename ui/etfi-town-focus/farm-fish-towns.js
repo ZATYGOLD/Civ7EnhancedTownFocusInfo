@@ -34,9 +34,6 @@ export default class FoodFocusDetails {
 
     if (!summary) return null;
 
-    return renderImprovementDetailsHTML(
-      summary,
-      ETFI_YIELDS.FOOD
-    );
+    return renderImprovementDetailsHTML(summary, ETFI_YIELDS.FOOD);
   }
 }
