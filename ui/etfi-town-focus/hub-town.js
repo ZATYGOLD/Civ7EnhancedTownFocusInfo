@@ -1,8 +1,6 @@
 // Hub (Inn) details renderer.
-// - +1 Influence per connected city/town.
-// - Header: total Influence.
-// - Body: separate rows for Cities and Towns.
-
+// +1 Influence per Settlement connected to this Town. 
+// Can purchase Diplomacy Buildings. Limited to 1 Hub Town per Continent. Only available in Exploration and Modern.
 import { ETFI_YIELDS, renderHeader, renderDetailsRow, renderIconName } from "../../etfi-utilities.js";
 
 const HUB_ICONS = Object.freeze({

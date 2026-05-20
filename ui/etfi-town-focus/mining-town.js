@@ -1,9 +1,8 @@
 // ui/production-chooser/details/mining-town.js
 
 // Mining / Production Town:
-// - +2 Production per qualifying production improvement.
-// - Era scaling is handled by getImprovementSummaryForSet(...)
-//   through baseMultiplier: 2.
+// +2 Production on Camps, Woodcutters, Clay Pits, Mines, and Quarries.
+// baseMultiplier: 2
 
 import {ETFI_YIELDS, getImprovementSummaryForSet, renderImprovementDetailsHTML } from "../../etfi-utilities.js";
 

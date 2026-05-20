@@ -1,11 +1,7 @@
 // ui/production-chooser/details/temple-town.js
 
-// Temple Town: +1 Happiness per completed BUILDING in this town.
-// Groups buildings by tile; stacks (2+ on a tile) are listed first.
-// Walls are counted separately and shown in their own section,
-// grouped by wall name with x<count> and +<count> Happiness.
-//
-// Returns null if the city has no completed non-wall buildings.
+// +2 Happiness on all buildings and +2 Relic Slots on Temples. +25% Gold toward purchasing Temples. 
+// Only available during the Exploration Age. 
 
 import { ETFI_YIELDS, renderHeader, renderDetailsRow, getCompletedBuildings, isWallRecord, groupBy, renderIconName } from "../../etfi-utilities.js";
 

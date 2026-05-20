@@ -1,10 +1,9 @@
 // ui/production-chooser/details/fort-town.js
-//
-// Fort Town: shows a Fortify header and wall breakdown.
-// Header value: +25 per "age-qualified" wall.
-// Details: all walls listed with xcount, but only age-qualified walls add Fortify value.
 
-import { ETFI_YIELDS, renderHeader, renderDetailsRow, getCompletedBuildings, isWallRecord, groupBy, renderIconName, } from "../../etfi-utilities.js";
+// Fort Town: shows a Fortify header and wall breakdown.
+// +5 Healing to Units and +25 Health to Fortifications. +1 Gold on Fortified Districts. 
+// Can purchase Military Buildings and Fortifications.    
+import { ETFI_YIELDS, renderHeader, renderDetailsRow, getCompletedBuildings, isWallRecord, groupBy, renderIconName } from "../../etfi-utilities.js";
 
 export default class FortTownDetails {
   render(city) { 

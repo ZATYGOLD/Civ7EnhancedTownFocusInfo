@@ -175,7 +175,7 @@ export function getImprovementSummaryForSet({ city, targetSet, displayNameMap, b
   if (!items.length) return null;
 
   const baseTotal = items.reduce((sum, it) => sum + it.count, 0);
-  const multiplier = getEraMultiplier(baseMultiplier);
+  const multiplier = baseMultiplier;
   const total = baseTotal * multiplier;
 
   return { items, total, multiplier, baseCount: baseTotal };

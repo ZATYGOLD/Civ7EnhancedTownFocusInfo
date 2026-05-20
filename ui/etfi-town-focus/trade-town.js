@@ -1,9 +1,6 @@
 // Trade (resources → Happiness) details renderer.
-// - +5 Trade range.
-// - +2 Happiness per resource tile (city center + purchased).
-// - Shows total Trade/Happiness, total resource tiles, and per-resource breakdown.
-// Returns null if no resource tiles are found (caller can render +0 fallback).
-
+// +1 Happiness to each Resource tile and +5 Trade Route range. 
+// Can purchase additional Gold Buildings. Must be in Distant Lands.
 import { ETFI_YIELDS, renderHeader, renderDetailsRow, renderIconName } from "../../etfi-utilities.js";
 
 export default class TradeDetails {
@@ -17,7 +14,7 @@ export default class TradeDetails {
     if (!resourceItems.length) return null;
 
     const tradeRange = 5;
-    const happinessPerTile = 2;
+    const happinessPerTile = 1;
     const totalResourceTiles = resourceItems.reduce(
       (sum, item) => sum + item.count,
       0

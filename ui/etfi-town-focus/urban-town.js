@@ -1,10 +1,8 @@
 // Author: Zatygold
 // ui/town-focus/urban-town.js
 
-// Urban Center: "+100% towards" => effective 50% discount on maintenance.
-// Shows GOLD and HAPPINESS savings from completed buildings that have maintenance.
-// Single section: Buildings with maintenance, grouped by quarter.
-// Returns null when there are no completed maintenance buildings.
+// Urban Center: +1 Science and Culture on Quarters. 
+// Can purchase Science and Culture Buildings.
 
 import { ETFI_YIELDS, fmt1, renderHeader, getCompletedBuildings, groupBy, renderIconName } from "../../etfi-utilities.js";
 

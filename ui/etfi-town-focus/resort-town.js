@@ -1,8 +1,6 @@
 // Resort details renderer.
-// Per-age H & G on tiles with ≥1 base Happiness; +50% on Natural Wonders.
-// Header shows summed deltas; body lists improvement buckets and wonder buckets.
-// Returns null if there are no applicable deltas (caller can render +0 fallback).
-
+// +1 Happiness and Gold on Appealing tiles. +50% tile yields from Natural Wonders. Can purchase Happiness Buildings. 
+// In Modern, gives 4 Tourism per Breathtaking tile when at least 7 tiles are Breathtaking. 
 import { ETFI_YIELDS, getEraMultiplier, fmt1, renderHeader, getCompletedImprovements, renderIconName } from "../../etfi-utilities.js";
 
 export default class ResortDetails {
