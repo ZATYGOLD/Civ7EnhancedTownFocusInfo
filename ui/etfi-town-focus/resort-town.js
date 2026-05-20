@@ -270,7 +270,7 @@ export default class ResortDetails {
 
     return {
       isModernAge, isActive,
-      shouldShowProgress: true,
+      shouldShowProgress: isModernAge,
       breathtakingTileCount,
       tilesNeeded,
       requiredTileCount: MIN_BREATHTAKING_TILES_FOR_TOURISM,
@@ -279,7 +279,7 @@ export default class ResortDetails {
   }
   
   renderTourismRow(tourismInfo) {
-    if (!tourismInfo?.shouldShowProgress) return "";
+    if (!tourismInfo?.isModernAge || !tourismInfo.shouldShowProgress) return "";
   
     const labelBreathtaking = "Breathtaking";
     const tourismValue = tourismInfo.totalTourism || 0;
