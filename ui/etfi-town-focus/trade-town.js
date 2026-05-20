@@ -1,7 +1,13 @@
 // Trade (resources → Happiness) details renderer.
-// +1 Happiness to each Resource tile and +5 Trade Route range. 
+// +1 Happiness to each Resource tile and +5 Trade Route range.
 // Can purchase additional Gold Buildings. Must be in Distant Lands.
-import { ETFI_YIELDS, renderHeader, renderDetailsRow, renderIconName } from "../../etfi-utilities.js";
+
+import {
+  ETFI_YIELDS,
+  renderHeader,
+  renderDetailsRow,
+  renderIconName,
+} from "../../etfi-utilities.js";
 
 export default class TradeDetails {
   render(city) {
@@ -11,11 +17,15 @@ export default class TradeDetails {
     if (!plots.length) return null;
 
     const resourceItems = this.getResourceItemsFromPlots(plots);
-    if (!resourceItems.length) return null;
 
     const tradeRange = 5;
     const happinessPerTile = 1;
-    const totalResourceTiles = resourceItems.reduce((sum, item) => sum + item.count, 0);
+
+    const totalResourceTiles = resourceItems.reduce(
+      (sum, item) => sum + item.count,
+      0
+    );
+
     const totalHappiness = totalResourceTiles * happinessPerTile;
 
     const labelTotalResources = Locale.compose("LOC_MOD_ETFI_TOTAL_RESOURCES");
@@ -97,7 +107,11 @@ export default class TradeDetails {
 
   getResourceItemsFromPlots(plots) {
     const resourcesByType = Object.create(null);
-    const noResource = typeof ResourceTypes !== "undefined" ? ResourceTypes.NO_RESOURCE : 0;
+
+    const noResource =
+      typeof ResourceTypes !== "undefined"
+        ? ResourceTypes.NO_RESOURCE
+        : 0;
 
     for (const plot of plots) {
       const resourceType = GameplayMap.getResourceType(plot.x, plot.y);
