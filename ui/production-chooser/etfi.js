@@ -94,46 +94,55 @@ function registerTownFocus(keys, config) {
 }
 
 registerTownFocus(ETFI_PROJECT_KEY_ALIASES.FARMING, {
+  debugName: "Farming / Growth",
   yields: [ETFI_YIELDS.FOOD],
   createRenderer: () => new FoodFocusDetails(),
 });
 
 registerTownFocus(ETFI_PROJECT_KEY_ALIASES.FISHING, {
+  debugName: "Fishing",
   yields: [ETFI_YIELDS.FOOD],
   createRenderer: () => new FoodFocusDetails(),
 });
 
 registerTownFocus(ETFI_PROJECT_KEY_ALIASES.MINING, {
+  debugName: "Mining / Production",
   yields: [ETFI_YIELDS.PRODUCTION],
   createRenderer: () => new MiningDetails(),
 });
 
 registerTownFocus(ETFI_PROJECT_KEY_ALIASES.HUB, {
+  debugName: "Hub / Inn",
   yields: [ETFI_YIELDS.INFLUENCE],
   createRenderer: () => new HubDetails(),
 });
 
 registerTownFocus(ETFI_PROJECT_KEY_ALIASES.TRADE, {
+  debugName: "Trade",
   yields: [ETFI_YIELDS.TRADE, ETFI_YIELDS.HAPPINESS],
   createRenderer: () => new TradeDetails(),
 });
 
 registerTownFocus(ETFI_PROJECT_KEY_ALIASES.RESORT, {
+  debugName: "Resort",
   yields: [ETFI_YIELDS.HAPPINESS, ETFI_YIELDS.GOLD],
   createRenderer: () => new ResortDetails(),
 });
 
 registerTownFocus(ETFI_PROJECT_KEY_ALIASES.TEMPLE, {
+  debugName: "Temple",
   yields: [ETFI_YIELDS.HAPPINESS],
   createRenderer: () => new TempleDetails(),
 });
 
 registerTownFocus(ETFI_PROJECT_KEY_ALIASES.URBAN, {
+  debugName: "Urban Center",
   yields: [ETFI_YIELDS.GOLD, ETFI_YIELDS.HAPPINESS],
   createRenderer: () => new UrbanCenterDetails(),
 });
 
 registerTownFocus(ETFI_PROJECT_KEY_ALIASES.FORT, {
+  debugName: "Fort",
   yields: [ETFI_YIELDS.FORTIFY],
   createRenderer: () => new FortTownDetails(),
 });
@@ -141,6 +150,7 @@ registerTownFocus(ETFI_PROJECT_KEY_ALIASES.FORT, {
 // #endregion
 
 // #region EtfiToolTipType
+
 const bulletChar = String.fromCodePoint(8226);
 
 class EtfiToolTipType {
@@ -325,7 +335,6 @@ class EtfiToolTipType {
       }
     
       const growthType = Number(this.target.dataset.growthType);
-      const projectType = this.getProjectType();
     
       // Default Growth focus. Source uses GrowthTypes.EXPAND + ProjectTypes.NO_PROJECT.
       if (
@@ -374,8 +383,22 @@ class EtfiToolTipType {
       const entry = this.getTownFocusRegistryEntry();
       if (!entry) return null;
     
-      const html = entry.createRenderer().render(city);
-      return html || this.renderEmptyDetailsHTML(entry.yields);
+      try {
+        const renderer = entry.createRenderer?.();
+        const html = renderer?.render?.(city);
+    
+        return html || this.renderEmptyDetailsHTML(entry.yields);
+      } catch (error) {
+        console.error("[ETFI] Failed to render town focus details", {
+          focus: entry.debugName,
+          error,
+          target: this.target,
+          projectType: this.getProjectType(),
+          projectInfo: this.getProjectInfo(),
+        });
+    
+        return this.renderEmptyDetailsHTML(entry.yields);
+      }
     }
 
     renderEmptyDetailsHTML(yields) {
