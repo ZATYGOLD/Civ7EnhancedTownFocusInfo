@@ -1,177 +1,179 @@
 // Author: Zatygold
 // ui/town-focus/urban-town.js
 
-// Urban Center: "+100% towards" => effective 50% discount on maintenance.
-// Shows GOLD and HAPPINESS savings from completed buildings that have maintenance.
-// Single section: Buildings with maintenance, grouped by quarter.
-// Returns null when there are no completed maintenance buildings.
+// Urban Center:
+// +1 Science and +1 Culture on Quarters.
+// Can purchase Science and Culture Buildings.
+//
+// Current assumption:
+// A Quarter is a tile with 2 or more completed buildings.
 
-import { ETFI_YIELDS, fmt1, renderHeader, getCompletedBuildings, groupBy, renderIconName } from "../../etfi-utilities.js";
+import {
+  ETFI_YIELDS,
+  renderHeader,
+  renderDetailsRow,
+  getCompletedBuildings,
+  isWallRecord,
+  groupBy,
+  renderIconName,
+} from "../../etfi-utilities.js";
+
+const SCIENCE_PER_QUARTER = 1;
+const CULTURE_PER_QUARTER = 1;
 
 export default class UrbanCenterDetails {
   render(city) {
-    if (!city?.Constructibles || !GameInfo?.Yields) {
-      return null;
-    }
+    if (!city) return null;
 
-    const completedBuildings = getCompletedBuildings(city);
+    const completedBuildings = getCompletedBuildings(city).filter((building) => !isWallRecord(building));
     if (!completedBuildings.length) return null;
 
-    // +100% towards => 1 - 1 / (1 + 1.0) = 0.5
-    const DISCOUNT = 1 - 1 / (1 + 1.0);
+    const buildingsByTile = groupBy(
+      completedBuildings.filter((building) => building.tileKey),
+      (building) => building.tileKey
+    );
 
-    const ORDERED_YIELDS = [ETFI_YIELDS.GOLD, ETFI_YIELDS.HAPPINESS];
+    const quarterStacks = [...buildingsByTile.values()]
+      .filter((stack) => stack.length >= 2)
+      .sort((a, b) => b.length - a.length);
 
-    const buildingsWithMaintenance = [];
-    const grandTotals = {
-      [ETFI_YIELDS.GOLD]: 0,
-      [ETFI_YIELDS.HAPPINESS]: 0,
+    if (!quarterStacks.length) return null;
+
+    const totalQuarters = quarterStacks.length;
+
+    const orderedYields = [
+      ETFI_YIELDS.SCIENCE,
+      ETFI_YIELDS.CULTURE,
+    ];
+
+    const totals = {
+      [ETFI_YIELDS.SCIENCE]: totalQuarters * SCIENCE_PER_QUARTER,
+      [ETFI_YIELDS.CULTURE]: totalQuarters * CULTURE_PER_QUARTER,
     };
 
-    for (const building of completedBuildings) {
-      if (!building.tileKey) continue;
+    const labelTotalQuarters =
+      Locale.compose("LOC_MOD_ETFI_BUILDING_QUARTERS") ||
+      "Quarters";
 
-      const maintenance = city.Constructibles.getMaintenance(building.instance.type) || {};
-      const savings = this.getMaintenanceSavings(maintenance, DISCOUNT);
-
-      if (savings.gold <= 0 && savings.happiness <= 0) continue;
-
-      grandTotals[ETFI_YIELDS.GOLD] += savings.gold;
-      grandTotals[ETFI_YIELDS.HAPPINESS] += savings.happiness;
-
-      buildingsWithMaintenance.push({
-        ...building,
-        gold: savings.gold,
-        happiness: savings.happiness,
-      });
-    }
-
-    if (!buildingsWithMaintenance.length) return null;
-
-    buildingsWithMaintenance.sort((a, b) => {
-      if (a.tileKey !== b.tileKey) return a.tileKey.localeCompare(b.tileKey);
-
-      const totalA = a.gold + a.happiness;
-      const totalB = b.gold + b.happiness;
-
-      return totalB - totalA;
-    });
-
-    const labelWithMaintenance =
-      Locale.compose("LOC_MOD_ETFI_BUILDINGS_WITH_MAINTENANCE") ||
-      "Buildings with Maintenance";
-
-    const headerYieldsHtml = renderHeader(ORDERED_YIELDS, grandTotals);
-
-    return `
+    let html = `
       <div class="flex flex-col w-full">
-        ${headerYieldsHtml}
-        ${this.renderMaintenanceSection(buildingsWithMaintenance, labelWithMaintenance)}
-      </div>
+        ${renderHeader(orderedYields, totals)}
+
+        <div class="mt-1 text-accent-2" style="font-size: 0.8em; line-height: 1.4;">
+          <div class="flex justify-between mb-1">
+            <span>${labelTotalQuarters}</span>
+            <span>${totalQuarters}</span>
+          </div>
+          <div class="mt-1 border-t border-white/10"></div>
     `;
-  }
 
-  getMaintenanceSavings(maintenance, discount) {
-    let gold = 0;
-    let happiness = 0;
+    for (const stack of quarterStacks) {
+      const leftHtml = this.renderQuarterStackLeftHtml(stack);
+      const rowTextStyle = this.getCompactRowTextStyle(stack);
 
-    for (const yieldIndex in maintenance) {
-      const raw = Number(maintenance[yieldIndex]) || 0;
-      if (raw <= 0) continue;
-
-      const yieldInfo = GameInfo.Yields[yieldIndex];
-      if (!yieldInfo) continue;
-
-      const yieldType = yieldInfo.YieldType;
-      const saved = raw * discount;
-
-      if (yieldType === ETFI_YIELDS.GOLD) {
-        gold += saved;
-      }
-
-      if (yieldType === ETFI_YIELDS.HAPPINESS) {
-        happiness += saved;
-      }
-    }
-
-    return { gold, happiness };
-  }
-
-  renderMaintenanceSection(items, label) {
-    const count = items.length;
-
-    return `
-      <div class="mt-1 text-accent-2" style="font-size: 0.8em; line-height: 1.4;">
-        <div class="flex justify-between mb-1">
-          <span>${label}</span>
-          <span>${count}</span>
-        </div>
-        <div class="mt-1 border-t border-white/10"></div>
-        ${this.renderRowsByQuarter(items)}
-      </div>
-    `;
-  }
-
-  renderRowsByQuarter(items) {
-    const byQuarter = groupBy(items, (item) => item.tileKey);
-
-    let html = "";
-
-    for (const [, quarterBuildings] of byQuarter) {
-      const leftHtml = this.renderQuarterBuildingsLeftHtml(quarterBuildings);
-
-      const totalGold = quarterBuildings.reduce(
-        (sum, item) => sum + (item.gold || 0),
-        0
-      );
-
-      const totalHappiness = quarterBuildings.reduce(
-        (sum, item) => sum + (item.happiness || 0),
-        0
-      );
-
-      html += this.renderMaintenanceRow({
+      html += this.renderScienceCultureRow({
         leftHtml,
-        gold: totalGold,
-        happiness: totalHappiness,
+        scienceValue: SCIENCE_PER_QUARTER,
+        cultureValue: CULTURE_PER_QUARTER,
+        rowTextStyle,
       });
     }
+
+    html += `
+        </div>
+      </div>
+    `;
 
     return html;
   }
 
-  renderQuarterBuildingsLeftHtml(buildings) {
-    return buildings
-      .map((building) =>
-        renderIconName({
-          iconId: building.iconId,
-          name: building.displayName || Locale.compose(building.nameKey),
-        }).trim()
-      )
-      .join(`<span class="mx-1">•</span>`);
+  renderQuarterStackLeftHtml(stack) {
+    return stack
+      .map((building, index) => {
+        const separator =
+          index > 0
+            ? `<span class="mx-0\\.5 opacity-70 shrink-0">•</span>`
+            : "";
+  
+        const name = building.displayName || Locale.compose(building.nameKey);
+  
+        return `
+          ${separator}
+          <span
+            class="inline-flex items-center min-w-0"
+            style="flex: 0 1 auto; overflow: hidden; column-gap: 0.125rem;"
+          >
+            <fxs-icon data-icon-id="${building.iconId}" class="size-4 shrink-0"></fxs-icon>
+            <span class="opacity-60 shrink-0">|</span>
+            <span
+              style="
+                min-width: 0;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+              "
+            >
+              ${name}
+            </span>
+          </span>
+        `;
+      })
+      .join("");
   }
 
-  renderMaintenanceRow({ leftHtml, gold, happiness }) {
-    const rightHtml = `
-      <span class="inline-flex items-center gap-1">
-        <fxs-icon data-icon-id="${ETFI_YIELDS.GOLD}" class="size-4"></fxs-icon>
-        <span class="font-semibold">+${fmt1(gold)}</span>
-      </span>
-      <span class="inline-flex items-center gap-1 ml-2">
-        <fxs-icon data-icon-id="${ETFI_YIELDS.HAPPINESS}" class="size-4"></fxs-icon>
-        <span class="font-semibold">+${fmt1(happiness)}</span>
-      </span>
-    `;
-
+  renderScienceCultureRow({
+    leftHtml,
+    scienceValue,
+    cultureValue,
+    rowTextStyle = "",
+  }) {
+    const styleAttr = rowTextStyle ? `${rowTextStyle}` : "";
+  
     return `
-      <div class="flex justify-between items-center mt-1">
-        <div class="flex items-center gap-2 min-w-0">
+      <div class="flex justify-between items-center mt-1 w-full">
+        <div
+          class="flex items-center min-w-0"
+          style="
+            flex: 1 1 auto;
+            max-width: 74%;
+            overflow: hidden;
+            white-space: nowrap;
+            column-gap: 0.125rem;
+            ${styleAttr}
+          "
+        >
           ${leftHtml}
         </div>
-        <div class="flex items-center gap-2 flex-wrap justify-end">
-          ${rightHtml}
+  
+        <div
+          class="flex items-center justify-end text-right shrink-0"
+          style="flex: 0 0 auto; margin-left: 0.35rem; column-gap: 0.25rem;"
+        >
+          <span class="inline-flex items-center gap-1">
+            <fxs-icon data-icon-id="${ETFI_YIELDS.SCIENCE}" class="size-4"></fxs-icon>
+            <span class="font-semibold">+${scienceValue}</span>
+          </span>
+  
+          <span class="inline-flex items-center gap-1">
+            <fxs-icon data-icon-id="${ETFI_YIELDS.CULTURE}" class="size-4"></fxs-icon>
+            <span class="font-semibold">+${cultureValue}</span>
+          </span>
         </div>
       </div>
     `;
+  }
+
+  getCompactRowTextStyle(stack) {
+    const totalNameLength = stack.reduce((sum, building) => {
+      const name =
+        building.displayName ||
+        Locale.compose(building.nameKey) ||
+        "";
+
+      return sum + name.length;
+    }, 0);
+
+    const needsSmallerText = stack.length >= 3 || totalNameLength > 40;
+    return needsSmallerText ? "font-size: 0.8em;" : "";
   }
 }

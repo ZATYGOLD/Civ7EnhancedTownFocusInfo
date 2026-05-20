@@ -1,9 +1,9 @@
 // ui/production-chooser/details/farm-fish-towns.js
 
 // Food / Fishing Town:
-// - +1 Food per qualifying food improvement.
-// - Era scaling is handled by getImprovementSummaryForSet(...)
-//   through baseMultiplier: 1.
+// +1 Food on Farms, Pastures, Plantations, and Fishing Boats. 
+// Can purchase additional Food and Water Buildings.
+// baseMultiplier: 1
 
 import { ETFI_YIELDS, getImprovementSummaryForSet, renderImprovementDetailsHTML } from "../../etfi-utilities.js";
 
@@ -34,9 +34,6 @@ export default class FoodFocusDetails {
 
     if (!summary) return null;
 
-    return renderImprovementDetailsHTML(
-      summary,
-      ETFI_YIELDS.FOOD
-    );
+    return renderImprovementDetailsHTML(summary, ETFI_YIELDS.FOOD);
   }
 }

@@ -1,13 +1,23 @@
 // ui/production-chooser/details/temple-town.js
 
-// Temple Town: +1 Happiness per completed BUILDING in this town.
-// Groups buildings by tile; stacks (2+ on a tile) are listed first.
-// Walls are counted separately and shown in their own section,
-// grouped by wall name with x<count> and +<count> Happiness.
-//
-// Returns null if the city has no completed non-wall buildings.
+// Religious Site / Temple Town:
+// - +2 Happiness on all completed buildings.
+// - +2 Relic Slots on Temples.
+// - +25% Gold toward purchasing Temples.
+// - Only available during the Exploration Age.
 
-import { ETFI_YIELDS, renderHeader, renderDetailsRow, getCompletedBuildings, isWallRecord, groupBy, renderIconName } from "../../etfi-utilities.js";
+import {
+  ETFI_YIELDS,
+  renderHeader,
+  renderDetailsRow,
+  getCompletedBuildings,
+  groupBy,
+  renderIconName,
+} from "../../etfi-utilities.js";
+
+const HAPPINESS_PER_BUILDING = 2;
+const RELIC_SLOTS_PER_TEMPLE = 2;
+const TEMPLE_PURCHASE_GOLD_BONUS_PERCENT = 25;
 
 export default class TempleDetails {
   render(city) {
@@ -16,21 +26,23 @@ export default class TempleDetails {
     const completedBuildings = getCompletedBuildings(city);
     if (!completedBuildings.length) return null;
 
-    const normalBuildings = completedBuildings.filter((record) => !isWallRecord(record));
-    const wallBuildings = completedBuildings.filter(isWallRecord);
+    const totalBuildings = completedBuildings.length;
+    const totalHappiness = totalBuildings * HAPPINESS_PER_BUILDING;
 
-    const totalBuildings = normalBuildings.length;
-    const totalWalls = wallBuildings.length;
+    const templeBuildings = completedBuildings.filter((record) =>
+      this.isTempleRecord(record)
+    );
 
-    // Keep the old behavior: no completed non-wall buildings means no Temple details.
-    if (!totalBuildings) return null;
+    const totalRelicSlots =
+      templeBuildings.length * RELIC_SLOTS_PER_TEMPLE;
 
     const labelTotalBuildings = Locale.compose("LOC_MOD_ETFI_TOTAL_BUILDINGS");
-    const labelTotalWalls = Locale.compose("LOC_MOD_ETFI_TOTAL_WALLS");
-    const totalHappiness = totalBuildings + totalWalls;
+    const labelTempleBonus = "Temple Bonus";
+    const labelRelicSlots = "Relic Slots";
+    const labelTemplePurchaseBonus = "Temple Purchase Bonus";
 
     const buildingsByTile = groupBy(
-      normalBuildings.filter((record) => record.tileKey),
+      completedBuildings.filter((record) => record.tileKey),
       (record) => record.tileKey
     );
 
@@ -51,7 +63,7 @@ export default class TempleDetails {
     `;
 
     for (const stack of buildingStacks) {
-      const bonus = stack.length;
+      const bonus = stack.length * HAPPINESS_PER_BUILDING;
       const leftHtml = this.renderBuildingStackLeftHtml(stack);
       const rowTextStyle = this.getCompactRowTextStyle(stack);
 
@@ -63,41 +75,25 @@ export default class TempleDetails {
       });
     }
 
-    if (totalWalls > 0) {
+    if (templeBuildings.length > 0) {
       html += `
           <div style="height: 0.7rem;"></div>
 
           <div class="flex justify-between mb-1">
-            <span>${labelTotalWalls}</span>
-            <span>${totalWalls}</span>
+            <span>${labelTempleBonus}</span>
+            <span>${templeBuildings.length}</span>
           </div>
           <div class="mt-1 border-t border-white/10"></div>
       `;
 
-      const wallsByName = groupBy(wallBuildings, (record) => record.nameKey);
-      const wallGroups = [...wallsByName.values()];
-
-      const wallsNeedSmallerText = this.shouldUseCompactWallText(wallGroups);
-      const wallsRowTextStyle = wallsNeedSmallerText ? "font-size: 0.8em;" : "";
-
-      for (const group of wallGroups) {
-        const firstWall = group[0];
-        const count = group.length;
-
-        const leftHtml = renderIconName({
-          iconId: firstWall.iconId,
-          name: firstWall.displayName || Locale.compose(firstWall.nameKey),
-          count,
-        });
-
-        html += renderDetailsRow({
-          leftHtml,
-          yieldIconId: ETFI_YIELDS.HAPPINESS,
-          yieldValue: count,
-          rowTextStyle: wallsRowTextStyle,
-        });
-      }
+      html += this.renderRelicSlotsRow({
+        templeBuildings,
+        labelRelicSlots,
+        totalRelicSlots,
+      });
     }
+
+    //html += this.renderTemplePurchaseBonusRow(labelTemplePurchaseBonus);
 
     html += `
         </div>
@@ -105,6 +101,26 @@ export default class TempleDetails {
     `;
 
     return html;
+  }
+
+  isTempleRecord(record) {
+    const typeName = (
+      record?.type ||
+      record?.info?.ConstructibleType ||
+      ""
+    )
+      .toString()
+      .toUpperCase();
+
+    const nameKey = (
+      record?.nameKey ||
+      record?.info?.Name ||
+      ""
+    )
+      .toString()
+      .toUpperCase();
+
+    return typeName.includes("TEMPLE") || nameKey.includes("TEMPLE");
   }
 
   renderBuildingStackLeftHtml(stack) {
@@ -120,6 +136,45 @@ export default class TempleDetails {
       .join(`<span class="mx-1">${bullet}</span>`);
   }
 
+  renderRelicSlotsRow({ templeBuildings, labelRelicSlots, totalRelicSlots }) {
+    const firstTemple = templeBuildings[0];
+
+    const leftHtml = renderIconName({
+      iconId: firstTemple?.iconId,
+      name: labelRelicSlots,
+      count: templeBuildings.length,
+    });
+
+    return `
+      <div class="flex justify-between items-center mt-1">
+        <div class="flex items-center gap-2 min-w-0">
+          ${leftHtml}
+        </div>
+
+        <div class="flex items-center gap-1">
+          <span class="font-semibold">+${totalRelicSlots}</span>
+        </div>
+      </div>
+    `;
+  }
+
+  renderTemplePurchaseBonusRow(labelTemplePurchaseBonus) {
+    return `
+      <div class="flex justify-between items-center mt-1">
+        <div class="flex items-center gap-2">
+          <fxs-icon data-icon-id="${ETFI_YIELDS.GOLD}" class="size-5"></fxs-icon>
+          <span class="opacity-60">| </span>
+          <span>${labelTemplePurchaseBonus}</span>
+        </div>
+
+        <div class="flex items-center gap-1">
+          <fxs-icon data-icon-id="${ETFI_YIELDS.GOLD}" class="size-4"></fxs-icon>
+          <span class="font-semibold">+${TEMPLE_PURCHASE_GOLD_BONUS_PERCENT}%</span>
+        </div>
+      </div>
+    `;
+  }
+
   getCompactRowTextStyle(stack) {
     const totalNameLength = stack.reduce((sum, record) => {
       const name = record.displayName || Locale.compose(record.nameKey) || "";
@@ -128,15 +183,5 @@ export default class TempleDetails {
 
     const needsSmallerText = stack.length >= 3 || totalNameLength > 40;
     return needsSmallerText ? "font-size: 0.8em;" : "";
-  }
-
-  shouldUseCompactWallText(wallGroups) {
-    const totalWallNameLength = wallGroups.reduce((sum, group) => {
-      const firstWall = group[0];
-      const name = firstWall?.displayName || Locale.compose(firstWall?.nameKey) || "";
-      return sum + name.length;
-    }, 0);
-
-    return wallGroups.length >= 3 || totalWallNameLength > 40;
   }
 }
