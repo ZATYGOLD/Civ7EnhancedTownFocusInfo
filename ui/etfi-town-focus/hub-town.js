@@ -1,7 +1,15 @@
 // Hub (Inn) details renderer.
-// +1 Influence per Settlement connected to this Town. 
-// Can purchase Diplomacy Buildings. Limited to 1 Hub Town per Continent. Only available in Exploration and Modern.
-import { ETFI_YIELDS, renderHeader, renderDetailsRow, renderIconName } from "../../etfi-utilities.js";
+// +1 Influence per Settlement connected to this Town.
+// Can purchase Diplomacy Buildings.
+// Limited to 1 Hub Town per Continent.
+// Only available in Exploration and Modern.
+
+import {
+  ETFI_YIELDS,
+  renderHeader,
+  renderDetailsRow,
+  renderIconName,
+} from "../../etfi-utilities.js";
 
 const HUB_ICONS = Object.freeze({
   CITY: "CITY_URBAN",
@@ -10,28 +18,37 @@ const HUB_ICONS = Object.freeze({
 
 export default class HubDetails {
   render(city) {
-    if (!city || !Cities || typeof city.getConnectedCities !== "function") {
+    if (
+      !city ||
+      typeof Cities === "undefined" ||
+      typeof city.getConnectedCities !== "function"
+    ) {
       return null;
     }
 
     const connectedSettlements = this.getConnectedSettlements(city);
-    const totalConnections =
+
+    const totalSettlements =
       connectedSettlements.cities.length + connectedSettlements.towns.length;
 
-    if (totalConnections === 0) return null;
+    if (totalSettlements === 0) return null;
 
     const labelCities = Locale.compose("LOC_MOD_ETFI_CONNECTED_CITIES");
     const labelTowns = Locale.compose("LOC_MOD_ETFI_CONNECTED_TOWNS");
-    const labelTotalConnections = Locale.compose("LOC_MOD_ETFI_TOTAL_CONNECTIONS");
+
+    const labelTotalSettlements =
+      Locale.compose("LOC_MOD_ETFI_TOTAL_SETTLEMENTS") ||
+      Locale.compose("LOC_MOD_ETFI_TOTAL_CONNECTIONS") ||
+      "Total Settlements";
 
     return `
       <div class="flex flex-col w-full">
-        ${renderHeader(ETFI_YIELDS.INFLUENCE, totalConnections)}
+        ${renderHeader(ETFI_YIELDS.INFLUENCE, totalSettlements)}
 
         <div class="mt-1 text-accent-2" style="font-size: 0.8em; line-height: 1.4;">
           <div class="flex justify-between mb-1">
-            <span>${labelTotalConnections}</span>
-            <span>${totalConnections}</span>
+            <span>${labelTotalSettlements}</span>
+            <span>${totalSettlements}</span>
           </div>
 
           <div class="mt-1 border-t border-white/10"></div>
@@ -79,6 +96,8 @@ export default class HubDetails {
   renderSettlementRow({ iconId, label, names }) {
     const count = names.length;
 
+    if (count <= 0) return "";
+
     const leftHtml = renderIconName({
       iconId,
       name: label,
@@ -93,15 +112,9 @@ export default class HubDetails {
         yieldValue: count,
       })}
 
-      ${
-        count > 0
-          ? `
-            <div class="ml-6 opacity-80" style="font-size: 0.8em;">
-              ${names.join(" • ")}
-            </div>
-          `
-          : ""
-      }
+      <div class="ml-6 opacity-80" style="font-size: 0.8em;">
+        ${names.join(" • ")}
+      </div>
     `;
   }
 }
