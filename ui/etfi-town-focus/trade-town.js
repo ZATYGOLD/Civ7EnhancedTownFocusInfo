@@ -1,78 +1,32 @@
 // Trade (resources → Happiness) details renderer.
+// - +5 Trade range.
 // - +2 Happiness per resource tile (city center + purchased).
-// - Shows total Happiness, total resource tiles, and per-resource breakdown.
+// - Shows total Trade/Happiness, total resource tiles, and per-resource breakdown.
 // Returns null if no resource tiles are found (caller can render +0 fallback).
 
-import { ETFI_YIELDS, renderHeader } from "../../etfi-utilities.js";
+import { ETFI_YIELDS, renderHeader, renderDetailsRow, renderIconName } from "../../etfi-utilities.js";
 
 export default class TradeDetails {
-  /**
-   * Shows total purchased+center resource tiles and +Happiness from them.
-   * - Header: +Happiness total
-   * - Summary: Total resource tiles
-   * - Rows: one per resource type (icon | name x count | +Happiness)
-   * Returns null if no resource tiles are found.
-   */
   render(city) {
     if (!city || !GameplayMap || !GameInfo?.Resources) return null;
 
-    const cityLocation = city.location;
-    const getPurchasedPlots =
-      typeof city.getPurchasedPlots === "function"
-        ? city.getPurchasedPlots.bind(city)
-        : null;
+    const plots = this.getCityResourceSearchPlots(city);
+    if (!plots.length) return null;
 
-    if (!cityLocation) return null;
+    const resourceItems = this.getResourceItemsFromPlots(plots);
+    if (!resourceItems.length) return null;
 
-    // Collect plots: city center + purchased plots
-    const plots = [cityLocation];
-    const purchasedPlotIndices = getPurchasedPlots ? getPurchasedPlots() : [];
-
-    if (Array.isArray(purchasedPlotIndices)) {
-      for (const plotIndex of purchasedPlotIndices) {
-        const plotCoords = GameplayMap.getLocationFromIndex(plotIndex);
-        if (plotCoords && plotCoords.x != null && plotCoords.y != null) {
-          plots.push(plotCoords);
-        }
-      }
-    }
-
-    const NO_RESOURCE =
-      (typeof ResourceTypes !== "undefined" && ResourceTypes.NO_RESOURCE) || 0;
-
-    const resourcesByType = Object.create(null);
-    let totalResourceTiles = 0;
-
-    for (const plot of plots) {
-      if (!plot || plot.x == null || plot.y == null) continue;
-
-      const resourceType = GameplayMap.getResourceType(plot.x, plot.y);
-      if (resourceType === NO_RESOURCE) continue;
-
-      const resourceInfo = GameInfo.Resources.lookup(resourceType);
-      if (!resourceInfo) continue;
-
-      const iconId = resourceInfo.ResourceType; // e.g. RESOURCE_IRON
-      const name = Locale.compose(resourceInfo.Name);
-
-      if (!resourcesByType[iconId]) {
-        resourcesByType[iconId] = { iconId, name, count: 0 };
-      }
-      resourcesByType[iconId].count += 1;
-      totalResourceTiles += 1;
-    }
-
-    const items = Object.values(resourcesByType);
-    if (!items.length) return null;
-
-    // Trade Outpost rule:+5 Trade range and +2 Happiness per resource tile
     const tradeRange = 5;
     const happinessPerTile = 2;
+    const totalResourceTiles = resourceItems.reduce(
+      (sum, item) => sum + item.count,
+      0
+    );
     const totalHappiness = totalResourceTiles * happinessPerTile;
 
     const labelTotalResources = Locale.compose("LOC_MOD_ETFI_TOTAL_RESOURCES");
 
-    const ORDERED_YIELDS = [ETFI_YIELDS.TRADE, ETFI_YIELDS.HAPPINESS];
+    const orderedYields = [ETFI_YIELDS.TRADE, ETFI_YIELDS.HAPPINESS];
     const totals = {
       [ETFI_YIELDS.TRADE]: tradeRange,
       [ETFI_YIELDS.HAPPINESS]: totalHappiness,
@@ -80,8 +34,8 @@ export default class TradeDetails {
 
     let html = `
       <div class="flex flex-col w-full">
-        ${renderHeader(ORDERED_YIELDS, totals)}
-        <div class="mt-1 text-accent-2" style="font-size: 0.8em; line-height: 1.4%;">
+        ${renderHeader(orderedYields, totals)}
+        <div class="mt-1 text-accent-2" style="font-size: 0.8em; line-height: 1.4;">
           <div class="flex justify-between mb-1">
             <span>${labelTotalResources}</span>
             <span>${totalResourceTiles}</span>
@@ -89,24 +43,92 @@ export default class TradeDetails {
           <div class="mt-1 border-t border-white/10"></div>
     `;
 
-    for (const item of items) {
+    for (const item of resourceItems) {
       const happinessFromThisResource = item.count * happinessPerTile;
-      html += `
-        <div class="flex justify-between items-center mt-1">
-          <div class="flex items-center gap-2">
-            <fxs-icon data-icon-id="${item.iconId}" class="size-5"></fxs-icon>
-            <span class="opacity-60">| </span>
-            <span>${item.name}</span>
-            <span class="opacity-70 ml-1">x${item.count}</span>
-          </div>
-          <div class="flex items-center gap-1">
-            <fxs-icon data-icon-id="${ETFI_YIELDS.HAPPINESS}" class="size-4"></fxs-icon>
-            <span class="font-semibold">+${happinessFromThisResource}</span>
-          </div>
-        </div>
-      `;
+
+      const leftHtml = renderIconName({
+        iconId: item.iconId,
+        name: item.name,
+        count: item.count,
+      });
+
+      html += renderDetailsRow({
+        leftHtml,
+        yieldIconId: ETFI_YIELDS.HAPPINESS,
+        yieldValue: happinessFromThisResource,
+      });
     }
 
+    html += `
+        </div>
+      </div>
+    `;
+
     return html;
+  }
+
+  getCityResourceSearchPlots(city) {
+    const cityLocation = city.location;
+    if (!cityLocation) return [];
+
+    const plots = [];
+    const seenPlotKeys = new Set();
+
+    const addPlot = (plot) => {
+      if (!plot || plot.x == null || plot.y == null) return;
+
+      const key = `${plot.x},${plot.y}`;
+      if (seenPlotKeys.has(key)) return;
+
+      seenPlotKeys.add(key);
+      plots.push(plot);
+    };
+
+    addPlot(cityLocation);
+
+    const purchasedPlotIndices =
+      typeof city.getPurchasedPlots === "function"
+        ? city.getPurchasedPlots()
+        : [];
+
+    if (Array.isArray(purchasedPlotIndices)) {
+      for (const plotIndex of purchasedPlotIndices) {
+        const plotCoords = GameplayMap.getLocationFromIndex(plotIndex);
+        addPlot(plotCoords);
+      }
+    }
+
+    return plots;
+  }
+
+  getResourceItemsFromPlots(plots) {
+    const resourcesByType = Object.create(null);
+    const noResource =
+      typeof ResourceTypes !== "undefined"
+        ? ResourceTypes.NO_RESOURCE
+        : 0;
+
+    for (const plot of plots) {
+      const resourceType = GameplayMap.getResourceType(plot.x, plot.y);
+      if (resourceType === noResource) continue;
+
+      const resourceInfo = GameInfo.Resources.lookup(resourceType);
+      if (!resourceInfo) continue;
+
+      const iconId = resourceInfo.ResourceType;
+      const name = Locale.compose(resourceInfo.Name);
+
+      if (!resourcesByType[iconId]) {
+        resourcesByType[iconId] = {
+          iconId,
+          name,
+          count: 0,
+        };
+      }
+
+      resourcesByType[iconId].count += 1;
+    }
+
+    return Object.values(resourcesByType);
   }
 }

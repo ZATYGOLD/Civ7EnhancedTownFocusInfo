@@ -181,6 +181,123 @@ export function getImprovementSummaryForSet({ city, targetSet, displayNameMap, b
   return { items, total, multiplier, baseCount: baseTotal };
 }
 
+/**
+ * Get normalized constructible records from a city by class.
+ *
+ * This avoids repeating:
+ * - city.Constructibles.getIdsOfClass(...)
+ * - Constructibles.get(...)
+ * - GameInfo.Constructibles.lookup(...)
+ * - instance.complete checks
+ * - tile key creation
+ *
+ * @param {Object} city
+ * @param {string} constructibleClass - "BUILDING", "IMPROVEMENT", etc.
+ * @param {Object} options
+ * @param {boolean} [options.completedOnly=false]
+ * @returns {Array}
+ */
+export function getConstructibleRecordsByClass(city, constructibleClass, { completedOnly = false } = {}) {
+  if (!city?.Constructibles || !Constructibles || !GameInfo?.Constructibles) {
+    return [];
+  }
+
+  const ids = city.Constructibles.getIdsOfClass(constructibleClass) || [];
+  const records = [];
+
+  for (const id of ids) {
+    const instance = Constructibles.get(id);
+    if (!instance) continue;
+
+    if (completedOnly && !instance.complete) continue;
+
+    const info = GameInfo.Constructibles.lookup(instance.type);
+    if (!info) continue;
+
+    const location = instance.location ?? null;
+    const hasLocation =
+      location &&
+      location.x !== null &&
+      location.x !== undefined &&
+      location.y !== null &&
+      location.y !== undefined;
+
+    records.push({
+      id,
+      instance,
+      info,
+      type: info.ConstructibleType,
+      iconId: info.ConstructibleType,
+      nameKey: info.Name,
+      displayName: Locale.compose(info.Name),
+      location,
+      tileKey: hasLocation ? `${location.x},${location.y}` : null,
+      complete: !!instance.complete,
+    });
+  }
+
+  return records;
+}
+
+export function getCompletedBuildings(city) {
+  return getConstructibleRecordsByClass(city, "BUILDING", {
+    completedOnly: true,
+  });
+}
+
+export function getCompletedImprovements(city) {
+  return getConstructibleRecordsByClass(city, "IMPROVEMENT", {
+    completedOnly: true,
+  });
+}
+
+export function isWallConstructibleInfo(info) {
+  const typeName = info?.ConstructibleType || "";
+  return typeName.includes("WALLS") || typeName.includes("FORTIFICATION");
+}
+
+export function isWallRecord(record) {
+  return isWallConstructibleInfo(record?.info);
+}
+
+export function groupBy(items, getKey) {
+  const groups = new Map();
+
+  for (const item of items || []) {
+    const key = getKey(item);
+    if (key === null || key === undefined || key === "") continue;
+
+    if (!groups.has(key)) {
+      groups.set(key, []);
+    }
+
+    groups.get(key).push(item);
+  }
+
+  return groups;
+}
+
+export function renderIconName({
+  iconId,
+  name,
+  count = null,
+  iconSizeClass = "size-5",
+} = {}) {
+  const countHtml =
+    typeof count === "number"
+      ? `<span class="opacity-70 ml-1">x${count}</span>`
+      : "";
+
+  return `
+    <span class="inline-flex items-center gap-2 whitespace-nowrap">
+      <fxs-icon data-icon-id="${iconId}" class="${iconSizeClass}"></fxs-icon>
+      <span class="opacity-60">| </span>
+      <span>${name}</span>
+      ${countHtml}
+    </span>
+  `;
+}
+
 // #endregion Logic Helpers
 
 // #region Header Rendering

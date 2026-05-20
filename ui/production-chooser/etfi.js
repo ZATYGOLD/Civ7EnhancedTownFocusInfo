@@ -20,7 +20,7 @@ import FortTownDetails from '../etfi-town-focus/fort-town.js';
 
 import { ETFI_YIELDS, renderHeader } from '../../etfi-utilities.js';
 
-// #region ETFI town focus registry
+// #region ETFI aliases
 
 const ETFI_PROJECT_KEY_ALIASES = {
   FARMING: [
@@ -85,6 +85,25 @@ const ETFI_PROJECT_KEY_ALIASES = {
   ],
 };
 
+// #endregion
+
+// #region ETFI Fallback Yields
+
+const ETFI_FALLBACK_YIELDS = Object.freeze({
+  FOOD: [ETFI_YIELDS.FOOD],
+  PRODUCTION: [ETFI_YIELDS.PRODUCTION],
+  INFLUENCE: [ETFI_YIELDS.INFLUENCE],
+  TRADE: [ETFI_YIELDS.TRADE, ETFI_YIELDS.HAPPINESS],
+  RESORT: [ETFI_YIELDS.HAPPINESS, ETFI_YIELDS.GOLD],
+  TEMPLE: [ETFI_YIELDS.HAPPINESS],
+  URBAN: [ETFI_YIELDS.GOLD, ETFI_YIELDS.HAPPINESS],
+  FORT: [ETFI_YIELDS.FORTIFY],
+});
+
+// #endregion
+
+// #region #region ETFI registry
+
 const ETFI_TOWN_FOCUS_REGISTRY = new Map();
 
 function registerTownFocus(keys, config) {
@@ -95,55 +114,55 @@ function registerTownFocus(keys, config) {
 
 registerTownFocus(ETFI_PROJECT_KEY_ALIASES.FARMING, {
   debugName: "Farming / Growth",
-  yields: [ETFI_YIELDS.FOOD],
+  yields: ETFI_FALLBACK_YIELDS.FOOD,
   createRenderer: () => new FoodFocusDetails(),
 });
 
 registerTownFocus(ETFI_PROJECT_KEY_ALIASES.FISHING, {
   debugName: "Fishing",
-  yields: [ETFI_YIELDS.FOOD],
+  yields: ETFI_FALLBACK_YIELDS.FOOD,
   createRenderer: () => new FoodFocusDetails(),
 });
 
 registerTownFocus(ETFI_PROJECT_KEY_ALIASES.MINING, {
   debugName: "Mining / Production",
-  yields: [ETFI_YIELDS.PRODUCTION],
+  yields: ETFI_FALLBACK_YIELDS.PRODUCTION,
   createRenderer: () => new MiningDetails(),
 });
 
 registerTownFocus(ETFI_PROJECT_KEY_ALIASES.HUB, {
   debugName: "Hub / Inn",
-  yields: [ETFI_YIELDS.INFLUENCE],
+  yields: ETFI_FALLBACK_YIELDS.INFLUENCE,
   createRenderer: () => new HubDetails(),
 });
 
 registerTownFocus(ETFI_PROJECT_KEY_ALIASES.TRADE, {
   debugName: "Trade",
-  yields: [ETFI_YIELDS.TRADE, ETFI_YIELDS.HAPPINESS],
+  yields: ETFI_FALLBACK_YIELDS.TRADE,
   createRenderer: () => new TradeDetails(),
 });
 
 registerTownFocus(ETFI_PROJECT_KEY_ALIASES.RESORT, {
   debugName: "Resort",
-  yields: [ETFI_YIELDS.HAPPINESS, ETFI_YIELDS.GOLD],
+  yields: ETFI_FALLBACK_YIELDS.RESORT,
   createRenderer: () => new ResortDetails(),
 });
 
 registerTownFocus(ETFI_PROJECT_KEY_ALIASES.TEMPLE, {
   debugName: "Temple",
-  yields: [ETFI_YIELDS.HAPPINESS],
+  yields: ETFI_FALLBACK_YIELDS.TEMPLE,
   createRenderer: () => new TempleDetails(),
 });
 
 registerTownFocus(ETFI_PROJECT_KEY_ALIASES.URBAN, {
   debugName: "Urban Center",
-  yields: [ETFI_YIELDS.GOLD, ETFI_YIELDS.HAPPINESS],
+  yields: ETFI_FALLBACK_YIELDS.URBAN,
   createRenderer: () => new UrbanCenterDetails(),
 });
 
 registerTownFocus(ETFI_PROJECT_KEY_ALIASES.FORT, {
   debugName: "Fort",
-  yields: [ETFI_YIELDS.FORTIFY],
+  yields: ETFI_FALLBACK_YIELDS.FORT,
   createRenderer: () => new FortTownDetails(),
 });
 
@@ -402,9 +421,10 @@ class EtfiToolTipType {
     }
 
     renderEmptyDetailsHTML(yields) {
+      const normalizedYields = Array.isArray(yields) ? yields.filter(Boolean) : yields ? [yields] : [];
       return `
         <div class="flex flex-col w-full">
-          ${renderHeader(yields, 0)}
+          ${renderHeader(normalizedYields, 0)}
         </div>
       `;
     }

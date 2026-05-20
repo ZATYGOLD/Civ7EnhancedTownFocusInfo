@@ -1,45 +1,46 @@
-// ui/production-chooser/details/mining-town.js (example path)
+// ui/production-chooser/details/mining-town.js
 
-import { ETFI_YIELDS, getImprovementSummaryForSet, renderImprovementDetailsHTML } from "../../etfi-utilities.js";
+// Mining / Production Town:
+// - +2 Production per qualifying production improvement.
+// - Era scaling is handled by getImprovementSummaryForSet(...)
+//   through baseMultiplier: 2.
 
-// Mining / Production improvement configuration
-const ETFI_IMPROVEMENTS = {
-  displayNames: {
-    IMPROVEMENT_CAMP: "LOC_MOD_ETFI_IMPROVEMENT_CAMP",
-    IMPROVEMENT_WOODCUTTER: "LOC_MOD_ETFI_IMPROVEMENT_WOODCUTTER",
-    IMPROVEMENT_WOODCUTTER_RESOURCE: "LOC_MOD_ETFI_IMPROVEMENT_WOODCUTTER",
-    IMPROVEMENT_CLAY_PIT: "LOC_MOD_ETFI_IMPROVEMENT_CLAY_PIT",
-    IMPROVEMENT_MINE: "LOC_MOD_ETFI_IMPROVEMENT_MINE",
-    IMPROVEMENT_MINE_RESOURCE: "LOC_MOD_ETFI_IMPROVEMENT_MINE",
-    IMPROVEMENT_QUARRY: "LOC_MOD_ETFI_IMPROVEMENT_QUARRY",
-  },
-  sets: {
-    production: new Set([
-      "IMPROVEMENT_CAMP",
-      "IMPROVEMENT_WOODCUTTER",
-      "IMPROVEMENT_WOODCUTTER_RESOURCE",
-      "IMPROVEMENT_CLAY_PIT",
-      "IMPROVEMENT_MINE",
-      "IMPROVEMENT_MINE_RESOURCE",
-      "IMPROVEMENT_QUARRY",
-    ]),
-  },
-};
+import {ETFI_YIELDS, getImprovementSummaryForSet, renderImprovementDetailsHTML } from "../../etfi-utilities.js";
+
+const MINING_IMPROVEMENT_DISPLAY_NAMES = Object.freeze({
+  IMPROVEMENT_CAMP: "LOC_MOD_ETFI_IMPROVEMENT_CAMP",
+  IMPROVEMENT_WOODCUTTER: "LOC_MOD_ETFI_IMPROVEMENT_WOODCUTTER",
+  IMPROVEMENT_WOODCUTTER_RESOURCE: "LOC_MOD_ETFI_IMPROVEMENT_WOODCUTTER",
+  IMPROVEMENT_CLAY_PIT: "LOC_MOD_ETFI_IMPROVEMENT_CLAY_PIT",
+  IMPROVEMENT_MINE: "LOC_MOD_ETFI_IMPROVEMENT_MINE",
+  IMPROVEMENT_MINE_RESOURCE: "LOC_MOD_ETFI_IMPROVEMENT_MINE",
+  IMPROVEMENT_QUARRY: "LOC_MOD_ETFI_IMPROVEMENT_QUARRY",
+});
+
+const MINING_IMPROVEMENTS = new Set([
+  "IMPROVEMENT_CAMP",
+  "IMPROVEMENT_WOODCUTTER",
+  "IMPROVEMENT_WOODCUTTER_RESOURCE",
+  "IMPROVEMENT_CLAY_PIT",
+  "IMPROVEMENT_MINE",
+  "IMPROVEMENT_MINE_RESOURCE",
+  "IMPROVEMENT_QUARRY",
+]);
 
 export default class MiningDetails {
-  /**
-   * Returns HTML for Mining/Production focus, or null if no qualifying improvements.
-   * Uses baseMultiplier = 2 per Mining rules.
-   */
   render(city) {
     const summary = getImprovementSummaryForSet({
       city,
-      targetSet: ETFI_IMPROVEMENTS.sets.production,
-      displayNameMap: ETFI_IMPROVEMENTS.displayNames,
-      baseMultiplier: 2, // Mining gets double era scaling
+      targetSet: MINING_IMPROVEMENTS,
+      displayNameMap: MINING_IMPROVEMENT_DISPLAY_NAMES,
+      baseMultiplier: 2,
     });
 
     if (!summary) return null;
-    return renderImprovementDetailsHTML(summary, ETFI_YIELDS.PRODUCTION);
+
+    return renderImprovementDetailsHTML(
+      summary,
+      ETFI_YIELDS.PRODUCTION
+    );
   }
 }
