@@ -7,8 +7,9 @@
 import {
   ETFI_YIELDS,
   getImprovementSummaryForSet,
-  renderImprovementDetailsHTML,
 } from "../../etfi-utilities.js";
+
+import { renderImprovementDetailsHTML } from "./town-focus-html.js";
 
 const PRODUCTION_PER_IMPROVEMENT = 2;
 

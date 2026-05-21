@@ -1,6 +1,11 @@
 // File Path: ui/etfi-town-focus/town-focus-html.js
 
-import { fmt1, renderHeader, renderIconName } from "../../etfi-utilities.js";
+import { ETFI_Settings } from "../../core/settings.js";
+import { ETFI_YIELDS, fmt1 } from "../../etfi-utilities.js";
+
+// -----------------------------------------------------------------------------
+// Shared visual constants
+// -----------------------------------------------------------------------------
 
 const DETAILS_BODY_CLASS = "mt-1 text-accent-2";
 const DETAILS_BODY_STYLE = "font-size: 0.8em; line-height: 1.4;";
@@ -24,6 +29,164 @@ const FOCUS_ROW_RIGHT_STYLE = `
   column-gap: 0.25rem;
   row-gap: 0.125rem;
 `;
+
+const HEADER_BAR_STYLE =
+  "background-color: rgba(10, 10, 20, 0.25); color:#f5f5f5; text-align:center;";
+
+const DEFAULT_HEADER_BG = "rgba(255, 255, 255, 0.25)";
+
+const HEADER_YIELD_COLORS = Object.freeze({
+  [ETFI_YIELDS.FOOD]: "rgba(128, 179, 77, 0.35)",
+  [ETFI_YIELDS.PRODUCTION]: "rgba(163, 61, 41, 0.35)",
+  [ETFI_YIELDS.GOLD]: "rgba(246, 206, 85, 0.35)",
+  [ETFI_YIELDS.SCIENCE]: "rgba(108, 166, 224, 0.35)",
+  [ETFI_YIELDS.CULTURE]: "rgba(92, 92, 214, 0.35)",
+  [ETFI_YIELDS.HAPPINESS]: "rgba(245, 153, 61, 0.35)",
+  [ETFI_YIELDS.INFLUENCE]: "rgba(175, 183, 207, 0.35)",
+  [ETFI_YIELDS.FORTIFY]: "rgba(204, 208, 219, 0.35)",
+});
+
+// -----------------------------------------------------------------------------
+// Header rendering
+// -----------------------------------------------------------------------------
+
+export function renderHeader(yieldOrder, totals) {
+  const order = Array.isArray(yieldOrder)
+    ? yieldOrder.filter(Boolean)
+    : yieldOrder
+      ? [yieldOrder]
+      : [];
+
+  if (!order.length) {
+    return renderHeaderBar("");
+  }
+
+  const values = normalizeHeaderTotals(order, totals);
+  const isColorful = !!ETFI_Settings?.IsColorful;
+
+  const chips = [];
+
+  for (const yieldType of order) {
+    const value = values[yieldType];
+
+    if (typeof value !== "number") continue;
+
+    const chipHtml = renderHeaderYieldChip({
+      yieldType,
+      value,
+      isColorful,
+    });
+
+    if (chipHtml) {
+      chips.push(chipHtml);
+    }
+  }
+
+  if (!chips.length) {
+    return renderHeaderBar("");
+  }
+
+  const firstRowHtml =
+    chips.length <= 3 ? chips.join("") : chips.slice(0, 2).join("");
+
+  const secondRowHtml =
+    chips.length <= 3 ? "" : chips.slice(2).join("");
+
+  return renderHeaderBar(`
+    <div class="flex items-center justify-center gap-2 flex-wrap">
+      ${firstRowHtml}
+    </div>
+
+    ${
+      secondRowHtml
+        ? `
+          <div class="flex items-center justify-center gap-2 flex-wrap mt-1">
+            ${secondRowHtml}
+          </div>
+        `
+        : ""
+    }
+  `);
+}
+
+function normalizeHeaderTotals(order, totals) {
+  if (typeof totals === "number") {
+    const values = {};
+
+    for (const yieldType of order) {
+      values[yieldType] = totals;
+    }
+
+    return values;
+  }
+
+  if (totals && typeof totals === "object") {
+    return totals;
+  }
+
+  return {};
+}
+
+function renderHeaderBar(contentHtml) {
+  return `
+    <div
+      class="flex flex-col items-center justify-center mb-2 rounded-md px-3 py-2"
+      style="${HEADER_BAR_STYLE}"
+    >
+      ${contentHtml}
+    </div>
+  `;
+}
+
+function renderHeaderYieldChip({ yieldType, value, isColorful }) {
+  const baseColor = HEADER_YIELD_COLORS[yieldType] || DEFAULT_HEADER_BG;
+
+  const backgroundColor = isColorful ? baseColor : "transparent";
+  const borderCss = isColorful ? `2px solid ${baseColor}` : "none";
+  const paddingCss = isColorful ? "0.5px 8px 0.5px 8px" : "0";
+  const radiusCss = isColorful ? "9999px" : "0";
+
+  const formatted = formatFocusValue(value);
+  const valueStyle = getHeaderValueStyle(formatted);
+
+  return `
+    <div class="flex items-center mx-1">
+      <div
+        class="flex items-center justify-center gap-1"
+        style="
+          padding: ${paddingCss};
+          min-height: 0.5rem;
+          border-radius: ${radiusCss};
+          background-color: ${backgroundColor};
+          border: ${borderCss};
+          color: #f2f2f2;
+          font-size: 0.9em;
+        "
+      >
+        <fxs-icon data-icon-id="${yieldType}" class="size-7"></fxs-icon>
+        <span class="font-semibold" style="${valueStyle}">+${formatted}</span>
+      </div>
+    </div>
+  `;
+}
+
+function getHeaderValueStyle(formattedValue) {
+  const length = formattedValue.length;
+
+  if (length <= 1) {
+    return "display:inline-block; min-width: 1.9em; text-align:right;";
+  }
+
+  if (length === 2) {
+    return "display:inline-block; min-width: 2.1em; text-align:right;";
+  }
+
+  return "text-align:right;";
+}
+
+// -----------------------------------------------------------------------------
+// Shell / section rendering
+// -----------------------------------------------------------------------------
 
 export function renderFocusDetails({
   headerYields,
@@ -69,6 +232,10 @@ export function renderFocusSectionHeader({
     ${renderFocusDivider()}
   `;
 }
+
+// -----------------------------------------------------------------------------
+// Row rendering
+// -----------------------------------------------------------------------------
 
 export function renderFocusRow({
   leftHtml,
@@ -156,28 +323,60 @@ export function renderFocusYieldValue({
   `;
 }
 
-export function formatFocusValue(value) {
-  const numberValue = Number(value || 0);
-
-  if (Number.isInteger(numberValue)) {
-    return String(numberValue);
-  }
-
-  return fmt1(numberValue);
+// Compatibility helper.
+// This lets older files migrate away from renderDetailsRow safely.
+export function renderDetailsRow({
+  leftHtml,
+  yieldIconId,
+  yieldValue,
+  rowTextStyle = "",
+} = {}) {
+  return renderFocusRow({
+    leftHtml,
+    yieldIconId,
+    yieldValue,
+    rowTextStyle,
+  });
 }
+
+// -----------------------------------------------------------------------------
+// Icon / name rendering
+// -----------------------------------------------------------------------------
 
 export function renderFocusIconName({
   iconId,
   name,
-  count,
+  count = null,
   iconSizeClass = FOCUS_ICON_SIZE_CLASS,
-}) {
-  return renderIconName({
-    iconId,
-    name,
-    count,
-    iconSizeClass,
-  });
+} = {}) {
+  const countHtml =
+    typeof count === "number"
+      ? `<span class="opacity-70 ml-1 shrink-0">x${count}</span>`
+      : "";
+
+  return `
+    <span class="inline-flex items-center gap-1 whitespace-nowrap min-w-0">
+      <fxs-icon data-icon-id="${iconId}" class="${iconSizeClass} shrink-0"></fxs-icon>
+      <span class="opacity-60 shrink-0">|</span>
+      <span
+        style="
+          min-width: 0;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        "
+      >
+        ${name}
+      </span>
+      ${countHtml}
+    </span>
+  `;
+}
+
+// Compatibility helper.
+// This replaces the old renderIconName from etfi-utilities.js.
+export function renderIconName(options = {}) {
+  return renderFocusIconName(options);
 }
 
 export function renderFocusRecordList(records) {
@@ -188,30 +387,74 @@ export function renderFocusRecordList(records) {
           ? `<span class="opacity-70 shrink-0" style="margin: 0 0.125rem;">•</span>`
           : "";
 
-      const name = getRecordDisplayName(record);
-
       return `
         ${separator}
-        <span
-          class="inline-flex items-center min-w-0"
-          style="flex: 0 1 auto; overflow: hidden; column-gap: 0.125rem;"
-        >
-          <fxs-icon data-icon-id="${record.iconId}" class="${FOCUS_ICON_SIZE_CLASS} shrink-0"></fxs-icon>
-          <span class="opacity-60 shrink-0">|</span>
-          <span
-            style="
-              min-width: 0;
-              white-space: nowrap;
-              overflow: hidden;
-              text-overflow: ellipsis;
-            "
-          >
-            ${name}
-          </span>
-        </span>
+        ${renderFocusIconName({
+          iconId: record.iconId,
+          name: getRecordDisplayName(record),
+          iconSizeClass: FOCUS_ICON_SIZE_CLASS,
+        })}
       `;
     })
     .join("");
+}
+
+// -----------------------------------------------------------------------------
+// Improvement details rendering
+// -----------------------------------------------------------------------------
+
+export function renderImprovementDetailsHTML(summary, yieldIconId) {
+  if (!summary) return null;
+
+  const { items, total, multiplier, baseCount } = summary;
+
+  const totalImprovementCount =
+    typeof baseCount === "number"
+      ? baseCount
+      : Math.round(total / (multiplier || 1));
+
+  const bodyHtml = (items || [])
+    .map((item) => {
+      const yieldValue = item.count * multiplier;
+
+      return renderFocusRow({
+        leftHtml: renderFocusIconName({
+          iconId: item.iconId,
+          name: item.displayName,
+          count: item.count,
+        }),
+        yieldIconId,
+        yieldValue,
+      });
+    })
+    .join("");
+
+  return renderFocusDetails({
+    headerYields: [yieldIconId],
+    headerTotals: {
+      [yieldIconId]: total,
+    },
+    summaryLabel: composeFocusLabel(
+      "LOC_MOD_ETFI_TOTAL_IMPROVEMENTS",
+      "Total Improvements"
+    ),
+    summaryValue: totalImprovementCount,
+    bodyHtml,
+  });
+}
+
+// -----------------------------------------------------------------------------
+// Formatting / labels
+// -----------------------------------------------------------------------------
+
+export function formatFocusValue(value) {
+  const numberValue = Number(value || 0);
+
+  if (Number.isInteger(numberValue)) {
+    return String(numberValue);
+  }
+
+  return fmt1(numberValue);
 }
 
 export function getFocusCompactTextStyle(records) {
