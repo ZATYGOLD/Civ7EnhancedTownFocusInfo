@@ -185,21 +185,14 @@ class EtfiToolTipType {
     divider = document.createElement("div");
     glow = document.createElement("div");
     description = document.createElement("p");
-    detailsContainer = document.createElement("div");  // NEW: extra “details” block (ETFI info)
+    etfiContainer = document.createElement("etfi-details"); 
     productionCost = document.createElement("div");
     requirementsContainer = document.createElement("div");
     requirementsText = document.createElement("div");
     gemsContainer = document.createElement("div");
    
     constructor() {
-      this.glow.classList.add(
-        "h-24",
-        "absolute",
-        "inset-x-0",
-        "-top-7",
-        "img-fxs-header-glow",
-        "pointer-events-none"
-      );
+      this.glow.classList.add("h-24", "absolute", "inset-x-0", "-top-7", "img-fxs-header-glow", "pointer-events-none");
       this.tooltip.className = "flex w-96 text-accent-2 font-body text-sm";
       this.header.setAttribute("filigree-style", "none");
       this.header.setAttribute("header-bg-glow", "true");
@@ -210,7 +203,10 @@ class EtfiToolTipType {
       dividerRight.classList.add("filigree-shell-small-right");
       this.divider.className = "flex flex-row items-center self-center";
       this.divider.append(dividerLeft, this.icon, dividerRight);
-      this.detailsContainer.className = "flex mt-2 p-2 production-chooser-tooltip__subtext-bg etfi-details"; // NEW: details block
+
+      //this.detailsContainer.className = "flex mt-2 p-2 production-chooser-tooltip__subtext-bg etfi-details"; // NEW: details block
+      this.etfiContainer.classList.add("mb-1");
+
       this.productionCost.className = "mt-2";
       this.requirementsContainer.className = "flex mt-2 p-2 production-chooser-tooltip__subtext-bg";
       this.requirementsContainer.append(this.requirementsText);
@@ -220,7 +216,7 @@ class EtfiToolTipType {
         this.header,
         this.divider,
         this.description,
-        this.detailsContainer, // NEW: ETFI Container
+        this.etfiContainer, // NEW: ETFI Container
         this.productionCost,
         this.requirementsContainer,
         this.gemsContainer
@@ -309,11 +305,11 @@ class EtfiToolTipType {
 
       // NEW: apply detailsText
       if (detailsText) {
-        this.detailsContainer.innerHTML = detailsText;
-        this.detailsContainer.classList.remove("hidden");
+        this.etfiContainer.innerHTML = detailsText;
+        this.etfiContainer.classList.remove("hidden");
       } else {
-        this.detailsContainer.innerHTML = "";
-        this.detailsContainer.classList.add("hidden");
+        this.etfiContainer.innerHTML = "";
+        this.etfiContainer.classList.add("hidden");
       }
 
       if (requirementsText) {
