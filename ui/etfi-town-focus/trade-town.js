@@ -1,3 +1,5 @@
+// File Path: ui/etfi-town-focus/trade-town.js
+
 // Trade (resources → Happiness) details renderer.
 // +1 Happiness to each Resource tile and +5 Trade Route range.
 // Can purchase additional Gold Buildings. Must be in Distant Lands.

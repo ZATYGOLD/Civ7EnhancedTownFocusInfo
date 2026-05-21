@@ -1,4 +1,4 @@
-// ui/production-chooser/details/mining-town.js
+// File Path: ui/etfi-town-focus/mining-town.js
 
 // Mining / Production Town:
 // +2 Production on Camps, Woodcutters, Clay Pits, Mines, and Quarries.

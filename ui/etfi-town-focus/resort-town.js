@@ -1,4 +1,6 @@
-// Resort details renderer.
+// File Path: ui/etfi-town-focus/resrot-town.js
+
+//Resort details renderer.
 // +1 Happiness and Gold on Appealing tiles. +50% tile yields from Natural Wonders. Can purchase Happiness Buildings. 
 // In Modern, gives 4 Tourism per Breathtaking tile when at least 7 tiles are Breathtaking. 
 import { ETFI_YIELDS, fmt1, renderHeader, getCompletedImprovements, renderIconName } from "../../etfi-utilities.js";

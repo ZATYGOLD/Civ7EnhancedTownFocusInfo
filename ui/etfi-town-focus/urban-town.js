@@ -1,5 +1,5 @@
 // Author: Zatygold
-// ui/town-focus/urban-town.js
+// File Path: ui/etfi-town-focus/urban-town.js
 
 // Urban Center:
 // +1 Science and +1 Culture on Quarters.

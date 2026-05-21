@@ -1,4 +1,4 @@
-// ui/production-chooser/details/fort-town.js
+// File Path: ui/etfi-town-focus/fort-town.js
 
 // Fort Town:
 // - +5 Healing to Units.

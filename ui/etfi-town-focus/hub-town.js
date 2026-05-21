@@ -1,3 +1,5 @@
+// File Path: ui/etfi-town-focus/hub-town.js
+
 // Hub (Inn) details renderer.
 // +1 Influence per Settlement connected to this Town.
 // Can purchase Diplomacy Buildings.

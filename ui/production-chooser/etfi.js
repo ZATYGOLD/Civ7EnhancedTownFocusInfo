@@ -1,9 +1,11 @@
+// File Path: ui/production-chooser/etfi.js
 
 /**
  * Enhanced Town Focus Info Mod - Makes Town Focus Tooltips more informative
  * Author: Zatygold
  * Version: 2.0.2
  */
+
 import TooltipManager from '/core/ui/tooltips/tooltip-manager.js';
 import { IsElement } from '/core/ui/utilities/utilities-dom.js';
 import { GetTownFocusBlp } from '/base-standard/ui/production-chooser/production-chooser-helpers.js';

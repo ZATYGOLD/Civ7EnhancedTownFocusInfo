@@ -1,4 +1,4 @@
-// ui/production-chooser/details/temple-town.js
+//File Path: ui/etfi-town-focus/temple-town.js
 
 // Religious Site / Temple Town:
 // - +2 Happiness on all completed buildings.

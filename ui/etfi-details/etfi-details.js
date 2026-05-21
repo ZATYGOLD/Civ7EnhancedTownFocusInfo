@@ -1,3 +1,5 @@
+// File Path: /ui/etfi-details/etfi-details.js
+
 import { getModifierTextByContext, parseConstructibleAdjacencyNameOnly } from '/core/ui/utilities/utilities-core-textprovider.js';
 import { getConstructibleTagsFromType } from '/base-standard/ui/utilities/utilities-tags.js';
 import styles from '/base-standard/ui/constructible-details/constructible-details.scss.js';

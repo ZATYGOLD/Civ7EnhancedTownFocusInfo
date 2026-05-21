@@ -1,4 +1,4 @@
-// ui/production-chooser/details/farm-fish-towns.js
+// File Path: ui/etfi-town-focus/farm-fish-towns.js
 
 // Food / Fishing Town:
 // +1 Food on Farms, Pastures, Plantations, and Fishing Boats. 
