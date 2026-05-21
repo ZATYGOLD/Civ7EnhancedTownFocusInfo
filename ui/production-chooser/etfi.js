@@ -9,16 +9,14 @@ import { IsElement } from '/core/ui/utilities/utilities-dom.js';
 import { GetTownFocusBlp } from '/base-standard/ui/production-chooser/production-chooser-helpers.js';
 import { AdvisorUtilities } from '/base-standard/ui/tutorial/advisor-utilities.js';
 
-import { EtfiDetails } from '../etfi-details/etfi-details.js';
-
-import FoodFocusDetails from '../etfi-details/farm-fish-towns.js';
-import MiningDetails from '../etfi-details/mining-town.js';
-import HubDetails from '../etfi-details/hub-town.js';
-import ResortDetails from '../etfi-details/resort-town.js';
-import TradeDetails from '../etfi-details/trade-town.js';
-import TempleDetails from '../etfi-details/temple-town.js';
-import UrbanCenterDetails from '../etfi-details/urban-town.js';
-import FortTownDetails from '../etfi-details/fort-town.js';
+import FoodFocusDetails from '../etfi-town-focus/farm-fish-towns.js';
+import MiningDetails from '../etfi-town-focus/mining-town.js';
+import HubDetails from '../etfi-town-focus/hub-town.js';
+import ResortDetails from '../etfi-town-focus/resort-town.js';
+import TradeDetails from '../etfi-town-focus/trade-town.js';
+import TempleDetails from '../etfi-town-focus/temple-town.js';
+import UrbanCenterDetails from '../etfi-town-focus/urban-town.js';
+import FortTownDetails from '../etfi-town-focus/fort-town.js';
 
 import { ETFI_YIELDS, renderHeader } from '../../etfi-utilities.js';
 
@@ -173,7 +171,6 @@ registerTownFocus(ETFI_PROJECT_KEY_ALIASES.FORT, {
 
 const bulletChar = String.fromCodePoint(8226);
 
-// Overwrites ProductionProjectTooltipType in '/base-standard/ui/production-chooser/panel-production-tooltip.js
 class EtfiToolTipType {
     _target = null;
     get target() {
@@ -188,7 +185,7 @@ class EtfiToolTipType {
     divider = document.createElement("div");
     glow = document.createElement("div");
     description = document.createElement("p");
-    detailsContainer = document.createElement("etfi-details");  // NEW: extra “details” block (ETFI info)
+    detailsContainer = document.createElement("div");  // NEW: extra “details” block (ETFI info)
     productionCost = document.createElement("div");
     requirementsContainer = document.createElement("div");
     requirementsText = document.createElement("div");
@@ -340,8 +337,6 @@ class EtfiToolTipType {
       }
       this.gemsContainer.classList.toggle("hidden", !recommendations);
     }
-
-    // #region ETFI Extra Logic
     getProjectInfo() {
       const projectType = this.getProjectType();
     
@@ -432,7 +427,6 @@ class EtfiToolTipType {
         </div>
       `;
     }
-    // #endregion
 
     getRequirementsText() {
       const project = this.getProjectInfo();
