@@ -5,6 +5,8 @@ import styles from '/base-standard/ui/constructible-details/constructible-detail
 const bulletChar = String.fromCodePoint(8226);
 
 class EtfiDetails extends Component {
+    contentDiv = document.createElement("div");
+
   onInitialize() {
     super.onInitialize();
     this.render();
@@ -14,14 +16,36 @@ class EtfiDetails extends Component {
   }
   render() {
     this.Root.classList.add("mt-10", "img-base-ticket-bg-container");
+
+    this.contentDiv.className = "w-full";
+    this.Root.appendChild(this.contentDiv);
   }
   update() {
  
   }
+  updateFromAttributes() {
+    const contentHtml = this.Root.getAttribute("content-html") ?? "";
+    this.setContent(contentHtml);
+  }
+
+  setContent(contentHtml) {
+    const hasContent = !!contentHtml && contentHtml.trim().length > 0;
+
+    this.contentDiv.innerHTML = hasContent ? contentHtml : "";
+    this.Root.classList.toggle("hidden", !hasContent);
+  }
+
+  clear() {
+    this.setContent("");
+  }
   onAttributeChanged(name, oldValue, newValue) {
     switch (name) {
+        case "content-html":
+            this.setContent(newValue ?? "");
+            break;
       default:
         super.onAttributeChanged(name, oldValue, newValue);
+        break;
     }
   }
 }
@@ -31,11 +55,11 @@ Controls.define("etfi-details", {
   classNames: ["etfi-details", "hidden"],
   styles: [styles],
   attributes: [
-    { name: "city-id", description: "Selected city ID" },
-    { name: "project-type", description: "Town focus project type/hash" },
-    { name: "growth-type", description: "Town focus growth type" },
-    { name: "focus-name", description: "Town focus name key" },
-  ]
+    {
+        name: "content-html",
+        description: "Rendered ETFI details HTML",
+    },
+  ],
 });
 
 export { EtfiDetails };

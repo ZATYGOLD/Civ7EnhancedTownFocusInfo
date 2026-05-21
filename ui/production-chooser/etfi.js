@@ -205,10 +205,7 @@ class EtfiToolTipType {
       dividerRight.classList.add("filigree-shell-small-right");
       this.divider.className = "flex flex-row items-center self-center";
       this.divider.append(dividerLeft, this.icon, dividerRight);
-
-      //this.detailsContainer.className = "flex mt-2 p-2 production-chooser-tooltip__subtext-bg etfi-details"; // NEW: details block
-      this.etfiContainer.classList.add("mb-1");
-
+      this.etfiContainer.classList.add("mb-1"); // NEW: details block
       this.productionCost.className = "mt-2";
       this.requirementsContainer.className = "flex mt-2 p-2 production-chooser-tooltip__subtext-bg";
       this.requirementsContainer.append(this.requirementsText);
@@ -305,14 +302,7 @@ class EtfiToolTipType {
         this.productionCost.classList.add("hidden");
       }
 
-      // NEW: apply detailsText
-      if (detailsText) {
-        this.etfiContainer.innerHTML = detailsText;
-        this.etfiContainer.classList.remove("hidden");
-      } else {
-        this.etfiContainer.innerHTML = "";
-        this.etfiContainer.classList.add("hidden");
-      }
+      this.etfiContainer.setAttribute("content-html", detailsText || "");
 
       if (requirementsText) {
         this.requirementsText.innerHTML = requirementsText;
