@@ -5,7 +5,33 @@ import { fmt1, renderHeader, renderIconName } from "../../etfi-utilities.js";
 const DETAILS_BODY_CLASS = "mt-1 text-accent-2";
 const DETAILS_BODY_STYLE = "font-size: 0.8em; line-height: 1.4;";
 
-export function renderFocusDetails({ headerYields, headerTotals, summaryLabel, summaryValue, bodyHtml = "" }) {
+const FOCUS_ROW_MARGIN_CLASS = "mt-1";
+const FOCUS_ICON_SIZE_CLASS = "size-4";
+
+const FOCUS_ROW_LEFT_CLASS = "flex items-center gap-1 min-w-0";
+const FOCUS_ROW_LEFT_STYLE = `
+  flex: 1 1 auto;
+  max-width: 72%;
+  overflow: hidden;
+`;
+
+const FOCUS_ROW_RIGHT_CLASS =
+  "flex flex-wrap justify-end items-center shrink-0 text-right";
+
+const FOCUS_ROW_RIGHT_STYLE = `
+  flex: 0 0 auto;
+  margin-left: 0.35rem;
+  column-gap: 0.25rem;
+  row-gap: 0.125rem;
+`;
+
+export function renderFocusDetails({
+  headerYields,
+  headerTotals,
+  summaryLabel,
+  summaryValue,
+  bodyHtml = "",
+}) {
   return `
     <div class="flex flex-col w-full">
       ${renderHeader(headerYields, headerTotals)}
@@ -38,7 +64,7 @@ export function renderFocusSectionHeader({
   includeSpacer = true,
 }) {
   return `
-    ${includeSpacer ? `<div style="height: 0.7rem;"></div>` : ""}
+    ${includeSpacer ? `<div class="mt-2"></div>` : ""}
     ${renderFocusSummaryRow(label, value)}
     ${renderFocusDivider()}
   `;
@@ -51,12 +77,28 @@ export function renderFocusRow({
   yields = null,
   rightHtml = "",
   rowTextStyle = "",
-  leftClass = "flex items-center gap-2 min-w-0",
-  rightClass = "flex flex-wrap justify-end items-center gap-2 shrink-0 text-right",
+  leftClass = FOCUS_ROW_LEFT_CLASS,
+  rightClass = FOCUS_ROW_RIGHT_CLASS,
+  leftStyle = "",
+  rightStyle = "",
   align = "center",
 }) {
   const alignClass = align === "start" ? "items-start" : "items-center";
-  const styleAttr = rowTextStyle ? ` style="${rowTextStyle}"` : "";
+
+  const finalLeftStyle = [
+    FOCUS_ROW_LEFT_STYLE,
+    leftStyle,
+    rowTextStyle,
+  ]
+    .filter(Boolean)
+    .join(";");
+
+  const finalRightStyle = [
+    FOCUS_ROW_RIGHT_STYLE,
+    rightStyle,
+  ]
+    .filter(Boolean)
+    .join(";");
 
   const resolvedRightHtml =
     rightHtml ||
@@ -70,12 +112,12 @@ export function renderFocusRow({
     );
 
   return `
-    <div class="flex justify-between ${alignClass} mt-1 w-full">
-      <div class="${leftClass}"${styleAttr}>
+    <div class="flex justify-between ${alignClass} ${FOCUS_ROW_MARGIN_CLASS} w-full">
+      <div class="${leftClass}" style="${finalLeftStyle}">
         ${leftHtml}
       </div>
 
-      <div class="${rightClass}">
+      <div class="${rightClass}" style="${finalRightStyle}">
         ${resolvedRightHtml}
       </div>
     </div>
@@ -104,10 +146,12 @@ export function renderFocusYieldValue({
 }) {
   if (!showZero && !value) return "";
 
+  const classAttribute = fontWeightClass ? ` class="${fontWeightClass}"` : "";
+
   return `
-    <span class="inline-flex items-center gap-1">
-      <fxs-icon data-icon-id="${iconId}" class="size-4"></fxs-icon>
-      <span class="${fontWeightClass}">+${formatFocusValue(value)}</span>
+    <span class="inline-flex items-center gap-1 shrink-0">
+      <fxs-icon data-icon-id="${iconId}" class="${FOCUS_ICON_SIZE_CLASS} shrink-0"></fxs-icon>
+      <span${classAttribute}>+${formatFocusValue(value)}</span>
     </span>
   `;
 }
@@ -126,7 +170,7 @@ export function renderFocusIconName({
   iconId,
   name,
   count,
-  iconSizeClass = "size-5",
+  iconSizeClass = FOCUS_ICON_SIZE_CLASS,
 }) {
   return renderIconName({
     iconId,
@@ -141,7 +185,7 @@ export function renderFocusRecordList(records) {
     .map((record, index) => {
       const separator =
         index > 0
-          ? `<span class="mx-0\\.5 opacity-70 shrink-0">•</span>`
+          ? `<span class="opacity-70 shrink-0" style="margin: 0 0.125rem;">•</span>`
           : "";
 
       const name = getRecordDisplayName(record);
@@ -152,7 +196,7 @@ export function renderFocusRecordList(records) {
           class="inline-flex items-center min-w-0"
           style="flex: 0 1 auto; overflow: hidden; column-gap: 0.125rem;"
         >
-          <fxs-icon data-icon-id="${record.iconId}" class="size-4 shrink-0"></fxs-icon>
+          <fxs-icon data-icon-id="${record.iconId}" class="${FOCUS_ICON_SIZE_CLASS} shrink-0"></fxs-icon>
           <span class="opacity-60 shrink-0">|</span>
           <span
             style="
