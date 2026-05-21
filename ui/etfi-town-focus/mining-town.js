@@ -2,9 +2,15 @@
 
 // Mining / Production Town:
 // +2 Production on Camps, Woodcutters, Clay Pits, Mines, and Quarries.
-// baseMultiplier: 2
+// Can purchase additional Production Buildings.
 
-import {ETFI_YIELDS, getImprovementSummaryForSet, renderImprovementDetailsHTML } from "../../etfi-utilities.js";
+import {
+  ETFI_YIELDS,
+  getImprovementSummaryForSet,
+  renderImprovementDetailsHTML,
+} from "../../etfi-utilities.js";
+
+const PRODUCTION_PER_IMPROVEMENT = 2;
 
 const MINING_IMPROVEMENT_DISPLAY_NAMES = Object.freeze({
   IMPROVEMENT_CAMP: "LOC_MOD_ETFI_IMPROVEMENT_CAMP",
@@ -32,11 +38,14 @@ export default class MiningDetails {
       city,
       targetSet: MINING_IMPROVEMENTS,
       displayNameMap: MINING_IMPROVEMENT_DISPLAY_NAMES,
-      baseMultiplier: 2,
+      baseMultiplier: PRODUCTION_PER_IMPROVEMENT,
     });
 
     if (!summary) return null;
 
-    return renderImprovementDetailsHTML(summary, ETFI_YIELDS.PRODUCTION);
+    return renderImprovementDetailsHTML(
+      summary,
+      ETFI_YIELDS.PRODUCTION
+    );
   }
 }

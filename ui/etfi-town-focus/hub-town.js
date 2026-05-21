@@ -6,12 +6,14 @@
 // Limited to 1 Hub Town per Continent.
 // Only available in Exploration and Modern.
 
+import { ETFI_YIELDS } from "../../etfi-utilities.js";
+
 import {
-  ETFI_YIELDS,
-  renderHeader,
-  renderDetailsRow,
-  renderIconName,
-} from "../../etfi-utilities.js";
+  renderFocusDetails,
+  renderFocusRow,
+  renderFocusIconName,
+  composeFocusLabel,
+} from "./town-focus-html.js";
 
 const HUB_ICONS = Object.freeze({
   CITY: "CITY_URBAN",
@@ -35,40 +37,30 @@ export default class HubDetails {
 
     if (totalSettlements === 0) return null;
 
-    const labelCities = Locale.compose("LOC_MOD_ETFI_CONNECTED_CITIES");
-    const labelTowns = Locale.compose("LOC_MOD_ETFI_CONNECTED_TOWNS");
+    const bodyHtml = `
+      ${this.renderSettlementRow({
+        iconId: HUB_ICONS.CITY,
+        label: composeFocusLabel("LOC_MOD_ETFI_CONNECTED_CITIES", "Cities"),
+        names: connectedSettlements.cities,
+      })}
 
-    const labelTotalSettlements =
-      Locale.compose("LOC_MOD_ETFI_TOTAL_SETTLEMENTS") ||
-      Locale.compose("LOC_MOD_ETFI_TOTAL_CONNECTIONS") ||
-      "Total Settlements";
-
-    return `
-      <div class="flex flex-col w-full">
-        ${renderHeader(ETFI_YIELDS.INFLUENCE, totalSettlements)}
-
-        <div class="mt-1 text-accent-2" style="font-size: 0.8em; line-height: 1.4;">
-          <div class="flex justify-between mb-1">
-            <span>${labelTotalSettlements}</span>
-            <span>${totalSettlements}</span>
-          </div>
-
-          <div class="mt-1 border-t border-white/10"></div>
-
-          ${this.renderSettlementRow({
-            iconId: HUB_ICONS.CITY,
-            label: labelCities,
-            names: connectedSettlements.cities,
-          })}
-
-          ${this.renderSettlementRow({
-            iconId: HUB_ICONS.TOWN,
-            label: labelTowns,
-            names: connectedSettlements.towns,
-          })}
-        </div>
-      </div>
+      ${this.renderSettlementRow({
+        iconId: HUB_ICONS.TOWN,
+        label: composeFocusLabel("LOC_MOD_ETFI_CONNECTED_TOWNS", "Towns"),
+        names: connectedSettlements.towns,
+      })}
     `;
+
+    return renderFocusDetails({
+      headerYields: ETFI_YIELDS.INFLUENCE,
+      headerTotals: totalSettlements,
+      summaryLabel: composeFocusLabel(
+        "LOC_MOD_ETFI_TOTAL_SETTLEMENTS",
+        "Total Settlements"
+      ),
+      summaryValue: totalSettlements,
+      bodyHtml,
+    });
   }
 
   getConnectedSettlements(city) {
@@ -100,19 +92,19 @@ export default class HubDetails {
 
     if (count <= 0) return "";
 
-    const leftHtml = renderIconName({
-      iconId,
-      name: label,
-      count,
-      iconSizeClass: "size-4",
+    const rowHtml = renderFocusRow({
+      leftHtml: renderFocusIconName({
+        iconId,
+        name: label,
+        count,
+        iconSizeClass: "size-4",
+      }),
+      yieldIconId: ETFI_YIELDS.INFLUENCE,
+      yieldValue: count,
     });
 
     return `
-      ${renderDetailsRow({
-        leftHtml,
-        yieldIconId: ETFI_YIELDS.INFLUENCE,
-        yieldValue: count,
-      })}
+      ${rowHtml}
 
       <div class="ml-6 opacity-80" style="font-size: 0.8em;">
         ${names.join(" • ")}

@@ -1,11 +1,16 @@
 // File Path: ui/etfi-town-focus/farm-fish-towns.js
 
 // Food / Fishing Town:
-// +1 Food on Farms, Pastures, Plantations, and Fishing Boats. 
+// +1 Food on Farms, Pastures, Plantations, and Fishing Boats.
 // Can purchase additional Food and Water Buildings.
-// baseMultiplier: 1
 
-import { ETFI_YIELDS, getImprovementSummaryForSet, renderImprovementDetailsHTML } from "../../etfi-utilities.js";
+import {
+  ETFI_YIELDS,
+  getImprovementSummaryForSet,
+  renderImprovementDetailsHTML,
+} from "../../etfi-utilities.js";
+
+const FOOD_PER_IMPROVEMENT = 1;
 
 const FOOD_IMPROVEMENT_DISPLAY_NAMES = Object.freeze({
   IMPROVEMENT_FISHING_BOAT: "LOC_MOD_ETFI_IMPROVEMENT_FISHING_BOAT",
@@ -29,7 +34,7 @@ export default class FoodFocusDetails {
       city,
       targetSet: FOOD_IMPROVEMENTS,
       displayNameMap: FOOD_IMPROVEMENT_DISPLAY_NAMES,
-      baseMultiplier: 1,
+      baseMultiplier: FOOD_PER_IMPROVEMENT,
     });
 
     if (!summary) return null;
