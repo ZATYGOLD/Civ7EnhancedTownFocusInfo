@@ -49,61 +49,63 @@ const HEADER_YIELD_COLORS = Object.freeze({
 // Header rendering
 // -----------------------------------------------------------------------------
 
-export function renderHeader(yieldOrder, totals) {
-  const order = Array.isArray(yieldOrder)
-    ? yieldOrder.filter(Boolean) : yieldOrder ? [yieldOrder] : [];
-
-  if (!order.length) {
-    return renderHeaderBar("");
-  }
-
-  const values = normalizeHeaderTotals(order, totals);
-  const isColorful = !!ETFI_Settings?.IsColorful;
-
-  const chips = [];
-
-  for (const yieldType of order) {
-    const value = values[yieldType];
-
-    if (typeof value !== "number") continue;
-
-    const chipHtml = renderHeaderYieldChip({
-      yieldType,
-      value,
-      isColorful,
-    });
-
-    if (chipHtml) {
-      chips.push(chipHtml);
+export function renderHeader(yieldOrder, totals, extraChipHtml = "") {
+    const order = Array.isArray(yieldOrder)
+      ? yieldOrder.filter(Boolean)
+      : yieldOrder
+        ? [yieldOrder]
+        : [];
+  
+    const values = normalizeHeaderTotals(order, totals);
+    const isColorful = !!ETFI_Settings?.IsColorful;
+  
+    const chips = [];
+  
+    for (const yieldType of order) {
+      const value = values[yieldType];
+  
+      if (typeof value !== "number") continue;
+  
+      const chipHtml = renderHeaderYieldChip({
+        yieldType,
+        value,
+        isColorful,
+      });
+  
+      if (chipHtml) {
+        chips.push(chipHtml);
+      }
     }
-  }
-
-  if (!chips.length) {
-    return renderHeaderBar("");
-  }
-
-  const firstRowHtml =
-    chips.length <= 3 ? chips.join("") : chips.slice(0, 2).join("");
-
-  const secondRowHtml =
-    chips.length <= 3 ? "" : chips.slice(2).join("");
-
-  return renderHeaderBar(`
-    <div class="flex items-center justify-center gap-2 flex-wrap">
-      ${firstRowHtml}
-    </div>
-
-    ${
-      secondRowHtml
-        ? `
-          <div class="flex items-center justify-center gap-2 flex-wrap mt-1">
-            ${secondRowHtml}
-          </div>
-        `
-        : ""
+  
+    const extraChips = normalizeHeaderExtraChips(extraChipHtml);
+    chips.push(...extraChips);
+  
+    if (!chips.length) {
+      return renderHeaderBar("");
     }
-  `);
-}
+  
+    const firstRowHtml =
+      chips.length <= 3 ? chips.join("") : chips.slice(0, 2).join("");
+  
+    const secondRowHtml =
+      chips.length <= 3 ? "" : chips.slice(2).join("");
+  
+    return renderHeaderBar(`
+      <div class="flex items-center justify-center gap-2 flex-wrap">
+        ${firstRowHtml}
+      </div>
+  
+      ${
+        secondRowHtml
+          ? `
+            <div class="flex items-center justify-center gap-2 flex-wrap mt-1">
+              ${secondRowHtml}
+            </div>
+          `
+          : ""
+      }
+    `);
+  }
 
 function normalizeHeaderTotals(order, totals) {
   if (typeof totals === "number") {
@@ -125,6 +127,18 @@ function normalizeHeaderTotals(order, totals) {
 
   return {};
 }
+
+function normalizeHeaderExtraChips(extraChipHtml = "") {
+    if (Array.isArray(extraChipHtml)) {
+      return extraChipHtml.filter((html) => html && html.trim());
+    }
+  
+    if (extraChipHtml && extraChipHtml.trim()) {
+      return [extraChipHtml];
+    }
+  
+    return [];
+  }
 
 function getHeaderItemKey(item) {
   if (typeof item === "string") {
@@ -171,22 +185,6 @@ function renderHeaderBar(contentHtml) {
     </div>
   `;
 }
-
-function renderHeaderExtraPills(headerExtraHtml = "") {
-    const html = Array.isArray(headerExtraHtml)
-      ? headerExtraHtml.filter(Boolean).join("")
-      : headerExtraHtml;
-  
-    if (!html || !html.trim()) {
-      return "";
-    }
-  
-    return `
-      <div class="flex items-center justify-center gap-2 flex-wrap mb-2">
-        ${html}
-      </div>
-    `;
-  }
 
 function renderHeaderYieldChip({ yieldType, value, isColorful }) {
     const baseColor = HEADER_YIELD_COLORS[yieldType] || DEFAULT_HEADER_BG;
@@ -312,8 +310,7 @@ export function renderFocusDetails({
   
     return `
       <div class="flex flex-col w-full">
-        ${renderHeader(headerYields, headerTotals)}
-        ${renderHeaderExtraPills(headerExtraHtml)}
+        ${renderHeader(headerYields, headerTotals, headerExtraHtml)}
   
         <div class="${DETAILS_BODY_CLASS}" style="${DETAILS_BODY_STYLE}">
           ${
