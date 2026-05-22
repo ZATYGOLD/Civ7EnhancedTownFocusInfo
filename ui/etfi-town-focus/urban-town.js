@@ -5,14 +5,46 @@
 // +1 Science and +1 Culture on Quarters.
 // Can purchase Science and Culture Buildings.
 //
-// Current assumption:
-// A Quarter is a tile with 2 or more completed non-wall buildings.
+// A normal Quarter is a tile with 2 or more completed non-wall buildings.
+// Some special single-building districts/quarters, like Rail Station, count as
+// a Quarter by themselves. Those should be added to the special set below.
 
-import { ETFI_YIELDS, getCompletedBuildings, isWallRecord, groupBy, } from "../../etfi-utilities.js";
-import { renderFocusDetails, renderFocusRow, renderFocusRecordList, getFocusCompactTextStyle, composeFocusLabel, } from "./town-focus-html.js";
+import {
+  ETFI_YIELDS,
+  getCompletedBuildings,
+  isWallRecord,
+  groupBy,
+} from "../../etfi-utilities.js";
+
+import {
+  renderFocusDetails,
+  renderFocusRow,
+  renderFocusRecordList,
+  getFocusCompactTextStyle,
+  composeFocusLabel,
+} from "./town-focus-html.js";
 
 const SCIENCE_PER_QUARTER = 1;
 const CULTURE_PER_QUARTER = 1;
+
+const SPECIAL_QUARTER_BUILDING_TYPES = new Set([
+  "BUILDING_RAIL_STATION",
+  "BUILDING_RAILYARD",
+  "BUILDING_LAUNCH_PAD",
+  "BUILDING_AIRFIELD"
+
+  // Add confirmed special single-building Quarter constructible types here.
+  // Example:
+  // "BUILDING_SOME_SPECIAL_QUARTER",
+]);
+
+const SPECIAL_QUARTER_BUILDING_NAME_KEYS = new Set([
+  "LOC_BUILDING_RAIL_STATION_NAME",
+
+  // Add confirmed special single-building Quarter name keys here if needed.
+  // Example:
+  // "LOC_BUILDING_SOME_SPECIAL_QUARTER_NAME",
+]);
 
 export default class UrbanCenterDetails {
   render(city) {
@@ -30,7 +62,7 @@ export default class UrbanCenterDetails {
     );
 
     const quarterStacks = [...buildingsByTile.values()]
-      .filter((stack) => stack.length >= 2)
+      .filter((stack) => this.isQuarterStack(stack))
       .sort((a, b) => b.length - a.length);
 
     if (!quarterStacks.length) return null;
@@ -63,16 +95,13 @@ export default class UrbanCenterDetails {
               value: CULTURE_PER_QUARTER,
             },
           ],
-          rowTextStyle: `
-            flex: 1 1 auto;
+          rowTextStyle: compactTextStyle,
+          leftStyle: `
             max-width: 74%;
-            overflow: hidden;
             white-space: nowrap;
             column-gap: 0.125rem;
-            ${compactTextStyle}
           `,
           leftClass: "flex items-center min-w-0",
-          rightClass: "flex items-center justify-end text-right shrink-0 gap-1",
         });
       })
       .join("");
@@ -87,5 +116,47 @@ export default class UrbanCenterDetails {
       summaryValue: totalQuarters,
       bodyHtml,
     });
+  }
+
+  isQuarterStack(stack) {
+    if (!Array.isArray(stack) || stack.length === 0) {
+      return false;
+    }
+
+    if (stack.length >= 2) {
+      return true;
+    }
+
+    return this.isSpecialQuarterBuilding(stack[0]);
+  }
+
+  isSpecialQuarterBuilding(record) {
+    const typeName = this.getRecordTypeName(record);
+    const nameKey = this.getRecordNameKey(record);
+
+    return (
+      SPECIAL_QUARTER_BUILDING_TYPES.has(typeName) ||
+      SPECIAL_QUARTER_BUILDING_NAME_KEYS.has(nameKey)
+    );
+  }
+
+  getRecordTypeName(record) {
+    return (
+      record?.type ||
+      record?.info?.ConstructibleType ||
+      ""
+    )
+      .toString()
+      .toUpperCase();
+  }
+
+  getRecordNameKey(record) {
+    return (
+      record?.nameKey ||
+      record?.info?.Name ||
+      ""
+    )
+      .toString()
+      .toUpperCase();
   }
 }
