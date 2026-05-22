@@ -2,12 +2,21 @@
 
 A mod for Civilization VII that enhances the display of town focus yield bonuses, showing detailed breakdowns of improvements, buildings, and trade routes that contribute to specialization bonuses.
 
+## Version 2.2.2
+
+## What's New
+
+- Fixed UI
+- Added Modern Age Tourism to the Resort Town details
+- Added Factory Town
+- Added Relic slots to Religious Site details
+
 ## Version 2.2.0
 
 ## What's New
 
 - Updated all town focuses for Game Patch 1.4.0
-- This is just a hot fix for compatiblity and a more changes and proper cleanup will be coming 
+- This is just a hot fix for compatiblity and more changes and proper cleanup will be coming 
 
 ## Version 2.1.1
 
