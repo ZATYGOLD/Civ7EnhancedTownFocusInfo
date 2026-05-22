@@ -5,6 +5,6 @@
 // Can purchase Military Buildings and Fortifications.    
 import { ETFI_YIELDS } from "../../etfi-utilities.js";
 
-export default class FortTownDetails {
+export default class FactoryTownDetails {
 
 }
