@@ -1,7 +1,8 @@
 // File Path: ui/etfi-town-focus/town-focus-html.js
 
-import { ETFI_Settings } from "../../core/settings.js";
-import { ETFI_YIELDS, fmt1 } from "../../etfi-utilities.js";
+import { Pill } from '/base-standard/ui-next/components/pills.js';
+import { ETFI_Settings } from '../../core/settings.js';
+import { ETFI_YIELDS, fmt1 } from '../../etfi-utilities.js';
 
 // -----------------------------------------------------------------------------
 // Shared visual constants
@@ -31,7 +32,7 @@ const FOCUS_ROW_RIGHT_STYLE = `
 `;
 
 const HEADER_BAR_STYLE =
-  "background-color: rgba(10, 10, 20, 0.25); color:#f5f5f5; text-align:center;";
+  "background-color: rgba(0, 0, 0, 0); color:#f5f5f5; text-align:center;";
 
 const DEFAULT_HEADER_BG = "rgba(255, 255, 255, 0.25)";
 
@@ -139,36 +140,47 @@ function renderHeaderBar(contentHtml) {
 }
 
 function renderHeaderYieldChip({ yieldType, value, isColorful }) {
-  const baseColor = HEADER_YIELD_COLORS[yieldType] || DEFAULT_HEADER_BG;
-
-  const backgroundColor = isColorful ? baseColor : "transparent";
-  const borderCss = isColorful ? `2px solid ${baseColor}` : "none";
-  const paddingCss = isColorful ? "0.5px 8px 0.5px 8px" : "0";
-  const radiusCss = isColorful ? "9999px" : "0";
-
-  const formatted = formatFocusValue(value);
-  const valueStyle = getHeaderValueStyle(formatted);
-
-  return `
-    <div class="flex items-center mx-1">
-      <div
-        class="flex items-center justify-center gap-1"
-        style="
-          padding: ${paddingCss};
-          min-height: 0.5rem;
-          border-radius: ${radiusCss};
-          background-color: ${backgroundColor};
-          border: ${borderCss};
-          color: #f2f2f2;
-          font-size: 0.9em;
-        "
-      >
-        <fxs-icon data-icon-id="${yieldType}" class="size-7"></fxs-icon>
-        <span class="font-semibold" style="${valueStyle}">+${formatted}</span>
-      </div>
-    </div>
-  `;
+    const baseColor = HEADER_YIELD_COLORS[yieldType] || DEFAULT_HEADER_BG;
+  
+    const formatted = formatFocusValue(value);
+    const valueStyle = getHeaderValueStyle(formatted);
+  
+    const iconElement = document.createElement("fxs-icon");
+    iconElement.setAttribute("data-icon-id", yieldType);
+    iconElement.className = "size-7 shrink-0";
+  
+    const valueElement = document.createElement("span");
+    valueElement.className = "font-semibold";
+    valueElement.setAttribute("style", valueStyle);
+    valueElement.textContent = `+${formatted}`;
+  
+    const pillElement = Pill({
+      class: "mx-1 gap-1 text-sm text-accent-2",
+      backgroundStyle: getHeaderPillBackgroundStyle({
+        baseColor,
+        isColorful,
+      }),
+      children: [
+        iconElement,
+        valueElement,
+      ],
+    });
+  
+    return pillElement?.outerHTML ?? "";
 }
+
+function getHeaderPillBackgroundStyle({ baseColor, isColorful }) {
+    if (isColorful) {
+      return {
+        "background-color": baseColor,
+      };
+    }
+  
+    // Match the game's default Pill background.
+    return {
+      "background-color": "#23252b",
+    };
+  }
 
 function getHeaderValueStyle(formattedValue) {
   const length = formattedValue.length;

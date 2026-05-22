@@ -304,10 +304,6 @@ class EtfiToolTipType {
       }
 
       this.etfiContainer.setAttribute("content-html", detailsText || "");
-      // this.etfiContainer.setAttribute("city-id", String(cityID));
-      // this.etfiContainer.setAttribute("project-type", String(projectType));
-      // this.etfiContainer.setAttribute("growth-type", String(growthType));
-      // this.etfiContainer.setAttribute("focus-name", name);
 
       if (requirementsText) {
         this.requirementsText.innerHTML = requirementsText;
