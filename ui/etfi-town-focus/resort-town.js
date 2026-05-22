@@ -4,12 +4,9 @@
 // +1 Happiness and Gold on Appealing tiles.
 // +50% tile yields from Natural Wonders.
 // Can purchase Happiness Buildings.
-// In Modern, gives 4 Tourism per Breathtaking tile when at least 7 tiles are Breathtaking.
+// In Modern, gives 4 Tourism per Breathtaking tile when at least 7 tiles are Breathtaking after Researching Globalism's Mastery.
 
-import {
-  ETFI_YIELDS,
-  getCompletedImprovements,
-} from "../../etfi-utilities.js";
+import { ETFI_YIELDS, getCompletedImprovements, } from "../../etfi-utilities.js";
 
 import {
   renderFocusDetails,
@@ -29,6 +26,17 @@ const BREATHTAKING_THRESHOLD_COLOR = "rgb(26, 90, 0)";
 const TOURISM_ICON_ID = "CULTURE_VP";
 const MIN_BREATHTAKING_TILES_FOR_TOURISM = 7;
 const TOURISM_PER_BREATHTAKING_TILE = 4;
+
+const GLOBALISM_MASTERY_NODE_TYPES = new Set([
+  "NODE_GLOBALISM_MASTERY",
+  "NODE_CIVIC_GLOBALISM_MASTERY",
+  "CIVIC_GLOBALISM_MASTERY",
+]);
+
+const GLOBALISM_MASTERY_NAME_KEYS = new Set([
+  "LOC_NODE_GLOBALISM_MASTERY_NAME",
+  "LOC_CIVIC_GLOBALISM_MASTERY_NAME",
+]);
 
 export default class ResortDetails {
   render(city) {
@@ -86,17 +94,23 @@ export default class ResortDetails {
 
     const totalApplicableTiles = totalImprovementTiles + totalWonderTiles;
 
-    const bodyHtml = `
-      ${this.renderTourismRow(tourismInfo)}
-
-      ${improvementItems
-        .map((item) => this.renderImprovementRow(item))
-        .join("")}
-
-      ${wonderItems
-        .map((item) => this.renderWonderRow(item))
-        .join("")}
-    `;
+    const improvementRowsHtml = improvementItems
+    .map((item) => this.renderImprovementRow(item))
+    .join("");
+  
+  const wonderRowsHtml = wonderItems
+    .map((item) => this.renderWonderRow(item))
+    .join("");
+  
+  const tourismRowHtml = this.renderTourismRow(tourismInfo);
+  
+  const bodyHtml = `
+    ${improvementRowsHtml}
+  
+    ${wonderRowsHtml}
+  
+    ${tourismRowHtml}
+  `;
 
     return renderFocusDetails({
       headerYields: [
@@ -292,15 +306,77 @@ export default class ResortDetails {
     return ageType === "AGE_MODERN";
   }
 
+  hasGlobalismMastery() {
+    const playerId = GameContext.localPlayerID;
+  
+    if (
+      typeof Game === "undefined" ||
+      !Game?.ProgressionTrees ||
+      !GameInfo?.ProgressionTreeNodes
+    ) {
+      return false;
+    }
+  
+    for (const nodeInfo of GameInfo.ProgressionTreeNodes) {
+      if (!this.isGlobalismMasteryNode(nodeInfo)) continue;
+  
+      const nodeState = Game.ProgressionTrees.getNodeState(
+        playerId,
+        nodeInfo.$hash ?? nodeInfo.NodeType
+      );
+  
+      if (
+        typeof ProgressionTreeNodeState !== "undefined" &&
+        nodeState >= ProgressionTreeNodeState.NODE_STATE_COMPLETE
+      ) {
+        return true;
+      }
+  
+      if (
+        typeof ProgressionTreeNodeState === "undefined" &&
+        nodeState > 0
+      ) {
+        return true;
+      }
+    }
+  
+    return false;
+  }
+  
+  isGlobalismMasteryNode(nodeInfo) {
+    const nodeType = (
+      nodeInfo?.NodeType ||
+      nodeInfo?.ProgressionTreeNodeType ||
+      ""
+    )
+      .toString()
+      .toUpperCase();
+  
+    const nameKey = (nodeInfo?.Name || "")
+      .toString()
+      .toUpperCase();
+  
+    return (
+      GLOBALISM_MASTERY_NODE_TYPES.has(nodeType) ||
+      GLOBALISM_MASTERY_NAME_KEYS.has(nameKey)
+    );
+  }
+
   getModernTourismInfo(breathtakingTileCount) {
     const isModernAge = this.isModernAge();
-
+    const hasGlobalismMastery = this.hasGlobalismMastery();
+    const hasEnoughBreathtakingTiles =
+      breathtakingTileCount >= MIN_BREATHTAKING_TILES_FOR_TOURISM;
+  
     const isActive =
       isModernAge &&
-      breathtakingTileCount >= MIN_BREATHTAKING_TILES_FOR_TOURISM;
-
+      hasGlobalismMastery &&
+      hasEnoughBreathtakingTiles;
+  
     return {
       isModernAge,
+      hasGlobalismMastery,
+      hasEnoughBreathtakingTiles,
       isActive,
       shouldShowProgress: isModernAge,
       breathtakingTileCount,
@@ -315,30 +391,41 @@ export default class ResortDetails {
     if (!tourismInfo?.isModernAge || !tourismInfo.shouldShowProgress) {
       return "";
     }
-
+  
     const tourismValue = tourismInfo.totalTourism || 0;
-
+  
     const leftHtml = `
       <div
         class="${BREATHTAKING_HEX_CLASS} size-5 bg-contain bg-no-repeat shrink-0"
         style="fxs-background-image-tint: ${BREATHTAKING_THRESHOLD_COLOR};"
       ></div>
-
-      <span class="opacity-60">|</span>
+  
+      <span class="opacity-60">| </span>
       <span>Breathtaking</span>
       <span class="opacity-70 ml-1">
         x${tourismInfo.breathtakingTileCount}/${tourismInfo.requiredTileCount}
       </span>
     `;
-
+  
+    const requirementHtml =
+      tourismInfo.hasGlobalismMastery
+        ? ""
+        : `
+          <div class="ml-6 opacity-70" style="font-size: 0.75em;">
+            Requires Globalism's Mastery
+          </div>
+        `;
+  
     return `
+      ${renderFocusDivider()}
+  
       ${renderFocusRow({
         leftHtml,
         yieldIconId: TOURISM_ICON_ID,
         yieldValue: tourismValue,
       })}
-
-      ${renderFocusDivider()}
+  
+      ${requirementHtml}
     `;
   }
 
