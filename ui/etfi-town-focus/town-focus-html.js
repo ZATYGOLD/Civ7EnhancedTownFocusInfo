@@ -14,7 +14,7 @@ const DETAILS_BODY_STYLE = "font-size: 0.8em; line-height: 1.4;";
 const FOCUS_ROW_MARGIN_CLASS = "mt-1";
 const FOCUS_ICON_SIZE_CLASS = "size-4";
 
-const FOCUS_ROW_LEFT_CLASS = "flex items-center gap-1 min-w-0";
+const FOCUS_ROW_LEFT_CLASS = "flex items-center min-w-0";
 const FOCUS_ROW_LEFT_STYLE = `
   flex: 1 1 auto;
   max-width: 72%;
@@ -27,13 +27,11 @@ const FOCUS_ROW_RIGHT_CLASS =
 const FOCUS_ROW_RIGHT_STYLE = `
   flex: 0 0 auto;
   margin-left: 0.35rem;
-  column-gap: 0.25rem;
+  column-gap: 0.35rem;
   row-gap: 0.125rem;
 `;
 
-const HEADER_BAR_STYLE =
-  "background-color: rgba(0, 0, 0, 0); color:#f5f5f5; text-align:center;";
-
+const HEADER_BAR_STYLE = "background-color: rgba(0, 0, 0, 0); color:#f5f5f5; text-align:center;";
 const DEFAULT_HEADER_BG = "rgba(255, 255, 255, 0.25)";
 
 const HEADER_YIELD_COLORS = Object.freeze({
@@ -53,10 +51,7 @@ const HEADER_YIELD_COLORS = Object.freeze({
 
 export function renderHeader(yieldOrder, totals) {
   const order = Array.isArray(yieldOrder)
-    ? yieldOrder.filter(Boolean)
-    : yieldOrder
-      ? [yieldOrder]
-      : [];
+    ? yieldOrder.filter(Boolean) : yieldOrder ? [yieldOrder] : [];
 
   if (!order.length) {
     return renderHeaderBar("");
@@ -114,8 +109,11 @@ function normalizeHeaderTotals(order, totals) {
   if (typeof totals === "number") {
     const values = {};
 
-    for (const yieldType of order) {
-      values[yieldType] = totals;
+    for (const item of order) {
+      const key = getHeaderItemKey(item);
+      if (key) {
+        values[key] = totals;
+      }
     }
 
     return values;
@@ -126,6 +124,41 @@ function normalizeHeaderTotals(order, totals) {
   }
 
   return {};
+}
+
+function getHeaderItemKey(item) {
+  if (typeof item === "string") {
+    return item;
+  }
+
+  return item?.key || item?.yieldType || item?.iconId || "";
+}
+
+function normalizeHeaderItem(item, values) {
+  if (typeof item === "string") {
+    return {
+      iconId: item,
+      value: values[item],
+      label: "",
+      colorKey: item,
+    };
+  }
+
+  const iconId = item?.iconId || item?.yieldType || item?.key;
+  if (!iconId) return null;
+
+  const key = getHeaderItemKey(item);
+  const value =
+    typeof item.value === "number"
+      ? item.value
+      : values[key] ?? values[iconId];
+
+  return {
+    iconId,
+    value,
+    label: item.label || "",
+    colorKey: item.colorKey || key || iconId,
+  };
 }
 
 function renderHeaderBar(contentHtml) {
@@ -201,24 +234,36 @@ function getHeaderValueStyle(formattedValue) {
 // -----------------------------------------------------------------------------
 
 export function renderFocusDetails({
-  headerYields,
-  headerTotals,
-  summaryLabel,
-  summaryValue,
-  bodyHtml = "",
-}) {
-  return `
-    <div class="flex flex-col w-full">
-      ${renderHeader(headerYields, headerTotals)}
-
-      <div class="${DETAILS_BODY_CLASS}" style="${DETAILS_BODY_STYLE}">
-        ${renderFocusSummaryRow(summaryLabel, summaryValue)}
-        ${renderFocusDivider()}
-        ${bodyHtml}
+    headerYields,
+    headerTotals,
+    summaryLabel,
+    summaryValue,
+    bodyHtml = "",
+  }) {
+    const hasSummary =
+      summaryLabel !== null &&
+      summaryLabel !== undefined &&
+      String(summaryLabel).trim().length > 0;
+  
+    return `
+      <div class="flex flex-col w-full">
+        ${renderHeader(headerYields, headerTotals)}
+  
+        <div class="${DETAILS_BODY_CLASS}" style="${DETAILS_BODY_STYLE}">
+          ${
+            hasSummary
+              ? `
+                ${renderFocusSummaryRow(summaryLabel, summaryValue)}
+                ${renderFocusDivider()}
+              `
+              : ""
+          }
+  
+          ${bodyHtml}
+        </div>
       </div>
-    </div>
-  `;
-}
+    `;
+  }
 
 export function renderFocusSummaryRow(label, value) {
   return `
@@ -317,18 +362,13 @@ export function renderFocusYieldGroup(yields, { showZero = true } = {}) {
     .join("");
 }
 
-export function renderFocusYieldValue({
-  iconId,
-  value,
-  showZero = true,
-  fontWeightClass = "font-semibold",
-}) {
+export function renderFocusYieldValue({ iconId, value, showZero = true, fontWeightClass = "font-semibold", }) {
   if (!showZero && !value) return "";
 
   const classAttribute = fontWeightClass ? ` class="${fontWeightClass}"` : "";
 
   return `
-    <span class="inline-flex items-center gap-1 shrink-0">
+    <span class="inline-flex items-center shrink-0">
       <fxs-icon data-icon-id="${iconId}" class="${FOCUS_ICON_SIZE_CLASS} shrink-0"></fxs-icon>
       <span${classAttribute}>+${formatFocusValue(value)}</span>
     </span>
@@ -355,29 +395,14 @@ export function renderDetailsRow({
 // Icon / name rendering
 // -----------------------------------------------------------------------------
 
-export function renderFocusIconName({
-  iconId,
-  name,
-  count = null,
-  iconSizeClass = FOCUS_ICON_SIZE_CLASS,
-} = {}) {
-  const countHtml =
-    typeof count === "number"
-      ? `<span class="opacity-70 ml-1 shrink-0">x${count}</span>`
-      : "";
+export function renderFocusIconName({ iconId, name, count = null, iconSizeClass = FOCUS_ICON_SIZE_CLASS, } = {}) {
+  const countHtml = typeof count === "number" ? `<span class="opacity-70 shrink-0">x${count}</span>` : "";
 
   return `
     <span class="inline-flex items-center gap-1 whitespace-nowrap min-w-0">
       <fxs-icon data-icon-id="${iconId}" class="${iconSizeClass} shrink-0"></fxs-icon>
       <span class="opacity-60 shrink-0">|</span>
-      <span
-        style="
-          min-width: 0;
-          overflow: hidden;
-          text-overflow: ellipsis;
-          white-space: nowrap;
-        "
-      >
+      <span style="min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
         ${name}
       </span>
       ${countHtml}
@@ -385,11 +410,7 @@ export function renderFocusIconName({
   `;
 }
 
-// Compatibility helper.
-// This replaces the old renderIconName from etfi-utilities.js.
-export function renderIconName(options = {}) {
-  return renderFocusIconName(options);
-}
+export function renderIconName(options = {}) { return renderFocusIconName(options); }
 
 export function renderFocusRecordList(records) {
   return (records || [])

@@ -86,6 +86,8 @@ export default class FortTownDetails {
       });
     }
 
+    const hasFortifiedDistricts = fortifiedDistrictTileKeys.size > 0;
+
     return renderFocusDetails({
       headerYields: [
         UNIT_HEALING_ICON_ID,
@@ -97,7 +99,7 @@ export default class FortTownDetails {
         [ETFI_YIELDS.FORTIFY]: totalHealth,
         [ETFI_YIELDS.GOLD]: totalGold,
       },
-      summaryLabel: "Fortified Districts",
+      summaryLabel: hasFortifiedDistricts ? "Fortified Districts" : "",
       summaryValue: fortifiedDistrictTileKeys.size,
       bodyHtml,
     });
