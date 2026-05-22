@@ -22,29 +22,6 @@ export const ETFI_YIELDS = Object.freeze({
   FORTIFY: "ACTION_FORTIFY"
 });
 
-// Base background colors for the "pill" elements in the header.
-// Each key is a YieldType string from ETFI_YIELDS. The RGBA values are
-// derived from the base hex colors with baked-in transparency (alpha = 0.35)
-// so the pill still looks tinted but not too harsh on the dark header bar.
-const HEADER_YIELD_COLORS = Object.freeze({
-  [ETFI_YIELDS.FOOD]:       "rgba(128, 179,  77, 0.35)", // #80b34d
-  [ETFI_YIELDS.PRODUCTION]: "rgba(163,  61,  41, 0.35)", // #a33d29
-  [ETFI_YIELDS.GOLD]:       "rgba(246, 206,  85, 0.35)", // #f6ce55
-  [ETFI_YIELDS.SCIENCE]:    "rgba(108, 166, 224, 0.35)", // #6ca6e0
-  [ETFI_YIELDS.CULTURE]:    "rgba( 92,  92, 214, 0.35)", // #5c5cd6
-  [ETFI_YIELDS.HAPPINESS]:  "rgba(245, 153,  61, 0.35)", // #f5993d
-  [ETFI_YIELDS.INFLUENCE]:  "rgba(175, 183, 207, 0.35)", // #afb7cf
-  [ETFI_YIELDS.FORTIFY]:  "rgba(204, 208, 219, 0.35)", // #afb7cf
-});
-
-// Fallback pill background color if we don't recognize the yield type.
-// Slightly translucent white to keep the UI readable but neutral.
-const DEFAULT_HEADER_BG = "rgba(255, 255, 255, 0.25)";
-
-// Shared inline style string for the entire header bar container.
-// This controls the dark glassy background and foreground text color.
-const HEADER_BAR_STYLE = "background-color: rgba(10, 10, 20, 0.25); color:#f5f5f5; text-align:center;";
-
 // #endregion
 
 // #region Logic Helpers
