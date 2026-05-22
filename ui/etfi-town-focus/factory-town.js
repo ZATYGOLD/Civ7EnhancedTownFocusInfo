@@ -3,7 +3,7 @@
 // Factory Town: 
 // +5 Healing to Units and +25 Health to Fortifications. +1 Gold on Fortified Districts. 
 // Can purchase Military Buildings and Fortifications.    
-import { ETFI_YIELDS, renderHeader, renderDetailsRow } from "../../etfi-utilities.js";
+import { ETFI_YIELDS } from "../../etfi-utilities.js";
 
 export default class FortTownDetails {
 

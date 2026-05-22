@@ -8,20 +8,8 @@
 // Current assumption:
 // A Quarter is a tile with 2 or more completed non-wall buildings.
 
-import {
-  ETFI_YIELDS,
-  getCompletedBuildings,
-  isWallRecord,
-  groupBy,
-} from "../../etfi-utilities.js";
-
-import {
-  renderFocusDetails,
-  renderFocusRow,
-  renderFocusRecordList,
-  getFocusCompactTextStyle,
-  composeFocusLabel,
-} from "./town-focus-html.js";
+import { ETFI_YIELDS, getCompletedBuildings, isWallRecord, groupBy, } from "../../etfi-utilities.js";
+import { renderFocusDetails, renderFocusRow, renderFocusRecordList, getFocusCompactTextStyle, composeFocusLabel, } from "./town-focus-html.js";
 
 const SCIENCE_PER_QUARTER = 1;
 const CULTURE_PER_QUARTER = 1;

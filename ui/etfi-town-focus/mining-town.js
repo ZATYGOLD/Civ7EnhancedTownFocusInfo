@@ -4,11 +4,7 @@
 // +2 Production on Camps, Woodcutters, Clay Pits, Mines, and Quarries.
 // Can purchase additional Production Buildings.
 
-import {
-  ETFI_YIELDS,
-  getImprovementSummaryForSet,
-} from "../../etfi-utilities.js";
-
+import { ETFI_YIELDS, getImprovementSummaryForSet, } from "../../etfi-utilities.js";
 import { renderImprovementDetailsHTML } from "./town-focus-html.js";
 
 const PRODUCTION_PER_IMPROVEMENT = 2;

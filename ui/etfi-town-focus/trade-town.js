@@ -6,12 +6,7 @@
 
 import { ETFI_YIELDS } from "../../etfi-utilities.js";
 
-import {
-  renderFocusDetails,
-  renderFocusRow,
-  renderFocusIconName,
-  composeFocusLabel,
-} from "./town-focus-html.js";
+import { renderFocusDetails, renderFocusRow, renderFocusIconName, composeFocusLabel, } from "./town-focus-html.js";
 
 const TRADE_RANGE = 5;
 const HAPPINESS_PER_RESOURCE_TILE = 1;

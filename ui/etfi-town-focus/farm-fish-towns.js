@@ -4,11 +4,7 @@
 // +1 Food on Farms, Pastures, Plantations, and Fishing Boats.
 // Can purchase additional Food and Water Buildings.
 
-import {
-  ETFI_YIELDS,
-  getImprovementSummaryForSet,
-} from "../../etfi-utilities.js";
-
+import { ETFI_YIELDS, getImprovementSummaryForSet, } from "../../etfi-utilities.js";
 import { renderImprovementDetailsHTML } from "./town-focus-html.js";
 
 const FOOD_PER_IMPROVEMENT = 1;

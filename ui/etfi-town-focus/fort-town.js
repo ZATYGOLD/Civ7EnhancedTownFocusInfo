@@ -12,21 +12,8 @@
 // - Fortifications: non-wall fortifications, such as fortification improvements,
 //   wonders, or temporary fortifications if they appear as city constructibles.
 
-import {
-  ETFI_YIELDS,
-  getConstructibleRecordsByClass,
-  getCompletedBuildings,
-  getCompletedImprovements,
-  isWallRecord,
-  groupBy,
-} from "../../etfi-utilities.js";
-
-import {
-  renderFocusDetails,
-  renderFocusSectionHeader,
-  renderFocusRow,
-  renderFocusIconName,
-} from "./town-focus-html.js";
+import { ETFI_YIELDS, getConstructibleRecordsByClass, getCompletedBuildings, getCompletedImprovements, isWallRecord, groupBy, } from "../../etfi-utilities.js";
+import { renderFocusDetails, renderFocusSectionHeader, renderFocusRow, renderFocusIconName, } from "./town-focus-html.js";
 
 const UNIT_HEALING = 5;
 const HEALTH_PER_FORTIFICATION = 25;

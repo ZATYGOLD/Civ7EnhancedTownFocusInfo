@@ -20,7 +20,8 @@ import TempleDetails from '../etfi-town-focus/temple-town.js';
 import UrbanCenterDetails from '../etfi-town-focus/urban-town.js';
 import FortTownDetails from '../etfi-town-focus/fort-town.js';
 
-import { ETFI_YIELDS, renderHeader } from '../../etfi-utilities.js';
+import { ETFI_YIELDS } from '../../etfi-utilities.js';
+import { renderHeader } from '../etfi-town-focus/town-focus-html.js';
 
 // #region ETFI aliases
 
