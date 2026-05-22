@@ -1,10 +1,10 @@
-// ui/production-chooser/details/fort-town.js
+// File Path: ui/etfi-town-focus/fort-town.js
 
 // Fort Town:
 // - +5 Healing to Units.
 // - +25 Health to Fortifications.
 // - +1 Gold on Fortified Districts.
-// A District is a tile with at least one completed building.
+// A District is a tile with at least one completed non-wall building.
 // A Fortified District is a District tile with at least one Fortification.
 //
 // Display:
@@ -12,15 +12,8 @@
 // - Fortifications: non-wall fortifications, such as fortification improvements,
 //   wonders, or temporary fortifications if they appear as city constructibles.
 
-import {
-  ETFI_YIELDS,
-  renderHeader,
-  getConstructibleRecordsByClass,
-  getCompletedBuildings,
-  getCompletedImprovements,
-  groupBy,
-  renderIconName,
-} from "../../etfi-utilities.js";
+import { ETFI_YIELDS, getConstructibleRecordsByClass, getCompletedBuildings, getCompletedImprovements, isWallRecord, groupBy, } from "../../etfi-utilities.js";
+import { renderFocusDetails, renderFocusSectionHeader, renderFocusRow, renderFocusIconName, } from "./town-focus-html.js";
 
 const UNIT_HEALING = 5;
 const HEALTH_PER_FORTIFICATION = 25;
@@ -33,7 +26,10 @@ export default class FortTownDetails {
   render(city) {
     if (!city) return null;
 
-    const completedBuildings = getCompletedBuildings(city);
+    const completedBuildings = getCompletedBuildings(city).filter(
+      (record) => !isWallRecord(record)
+    );
+
     const allCompletedRecords = this.getCompletedFortTownRecords(city);
 
     const districtTileKeys = new Set(
@@ -60,74 +56,53 @@ export default class FortTownDetails {
     const totalHealth =
       allFortifications.length * HEALTH_PER_FORTIFICATION;
 
-    const allFortifiedDistrictTileKeys = new Set(
+    const fortifiedDistrictTileKeys = new Set(
       allFortifications
         .filter((record) => this.isRecordOnDistrict(record, districtTileKeys))
         .map((record) => record.tileKey)
     );
 
     const totalGold =
-      allFortifiedDistrictTileKeys.size * GOLD_PER_FORTIFIED_DISTRICT;
-
-    const headerOrder = [
-      UNIT_HEALING_ICON_ID,
-      ETFI_YIELDS.FORTIFY,
-      ETFI_YIELDS.GOLD,
-    ];
-
-    const headerTotals = {
-      [UNIT_HEALING_ICON_ID]: UNIT_HEALING,
-      [ETFI_YIELDS.FORTIFY]: totalHealth,
-      [ETFI_YIELDS.GOLD]: totalGold,
-    };
-
-    const labelFortifiedDistricts = "Fortified Districts";
-    const labelFortifications = "Fortifications";
+      fortifiedDistrictTileKeys.size * GOLD_PER_FORTIFIED_DISTRICT;
 
     const assignedGoldTileKeys = new Set();
 
-    let html = `
-      <div class="flex flex-col w-full">
-        ${renderHeader(headerOrder, headerTotals)}
-
-        <div class="mt-1 text-accent-2" style="font-size: 0.8em; line-height: 1.4;">
-          <div class="flex justify-between mb-1">
-            <span>${labelFortifiedDistricts}</span>
-            <span>${this.getUniqueDistrictTileCount(wallFortifications, districtTileKeys)}</span>
-          </div>
-          <div class="mt-1 border-t border-white/10"></div>
-    `;
-
-    html += this.renderFortifiedDistrictRows({
+    let bodyHtml = this.renderFortifiedDistrictRows({
       records: wallFortifications,
       districtTileKeys,
       assignedGoldTileKeys,
     });
 
     if (nonWallFortifications.length > 0) {
-      html += `
-          <div style="height: 0.7rem;"></div>
+      bodyHtml += renderFocusSectionHeader({
+        label: "Fortifications",
+        value: nonWallFortifications.length,
+      });
 
-          <div class="flex justify-between mb-1">
-            <span>${labelFortifications}</span>
-            <span>${nonWallFortifications.length}</span>
-          </div>
-          <div class="mt-1 border-t border-white/10"></div>
-      `;
-
-      html += this.renderFortificationRows({
+      bodyHtml += this.renderFortificationRows({
         records: nonWallFortifications,
         districtTileKeys,
         assignedGoldTileKeys,
       });
     }
 
-    html += `
-        </div>
-      </div>
-    `;
+    const hasFortifiedDistricts = fortifiedDistrictTileKeys.size > 0;
 
-    return html;
+    return renderFocusDetails({
+      headerYields: [
+        UNIT_HEALING_ICON_ID,
+        ETFI_YIELDS.FORTIFY,
+        ETFI_YIELDS.GOLD,
+      ],
+      headerTotals: {
+        [UNIT_HEALING_ICON_ID]: UNIT_HEALING,
+        [ETFI_YIELDS.FORTIFY]: totalHealth,
+        [ETFI_YIELDS.GOLD]: totalGold,
+      },
+      summaryLabel: hasFortifiedDistricts ? "Fortified Districts" : "",
+      summaryValue: fortifiedDistrictTileKeys.size,
+      bodyHtml,
+    });
   }
 
   getCompletedFortTownRecords(city) {
@@ -160,19 +135,9 @@ export default class FortTownDetails {
     return !!record?.tileKey && districtTileKeys.has(record.tileKey);
   }
 
-  getUniqueDistrictTileCount(records, districtTileKeys) {
-    const tileKeys = new Set();
-
-    for (const record of records || []) {
-      if (this.isRecordOnDistrict(record, districtTileKeys)) {
-        tileKeys.add(record.tileKey);
-      }
-    }
-
-    return tileKeys.size;
-  }
-
   isWallFortificationRecord(record) {
+    if (isWallRecord(record)) return true;
+
     const typeName = this.getRecordTypeName(record);
     const nameKey = this.getRecordNameKey(record);
 
@@ -211,6 +176,15 @@ export default class FortTownDetails {
       .toUpperCase();
   }
 
+  getRecordDisplayName(record) {
+    return (
+      record?.displayName ||
+      Locale.compose(record?.nameKey) ||
+      record?.type ||
+      ""
+    );
+  }
+
   renderFortifiedDistrictRows({
     records,
     districtTileKeys,
@@ -220,7 +194,7 @@ export default class FortTownDetails {
       this.isRecordOnDistrict(record, districtTileKeys)
     );
 
-    return this.renderHealthAndGoldRows({
+    return this.renderFortificationRows({
       records: recordsOnDistricts,
       districtTileKeys,
       assignedGoldTileKeys,
@@ -232,42 +206,46 @@ export default class FortTownDetails {
     districtTileKeys,
     assignedGoldTileKeys,
   }) {
-    return this.renderHealthAndGoldRows({
+    const groupedRecords = groupBy(
       records,
-      districtTileKeys,
-      assignedGoldTileKeys,
-    });
-  }
+      (record) => record.nameKey || record.type
+    );
 
-  renderHealthAndGoldRows({
-    records,
-    districtTileKeys,
-    assignedGoldTileKeys,
-  }) {
-    const groupedRecords = groupBy(records, (record) => record.nameKey);
     let html = "";
 
     for (const group of groupedRecords.values()) {
       const first = group[0];
       const count = group.length;
 
-      const leftHtml = renderIconName({
-        iconId: first.iconId,
-        name: first.displayName || Locale.compose(first.nameKey),
-        count,
-      });
-
       const healthValue = count * HEALTH_PER_FORTIFICATION;
+
       const goldValue = this.getAssignableGoldForGroup({
         records: group,
         districtTileKeys,
         assignedGoldTileKeys,
       });
 
-      html += this.renderHealthAndGoldRow({
-        leftHtml,
-        healthValue,
-        goldValue,
+      const yields = [
+        {
+          iconId: ETFI_YIELDS.FORTIFY,
+          value: healthValue,
+        },
+      ];
+
+      if (goldValue > 0) {
+        yields.push({
+          iconId: ETFI_YIELDS.GOLD,
+          value: goldValue,
+        });
+      }
+
+      html += renderFocusRow({
+        leftHtml: renderFocusIconName({
+          iconId: first.iconId,
+          name: this.getRecordDisplayName(first),
+          count,
+        }),
+        yields,
       });
     }
 
@@ -290,34 +268,5 @@ export default class FortTownDetails {
     }
 
     return gold;
-  }
-
-  renderHealthAndGoldRow({ leftHtml, healthValue, goldValue }) {
-    const goldHtml =
-      goldValue > 0
-        ? `
-          <span class="inline-flex items-center gap-1 ml-2">
-            <fxs-icon data-icon-id="${ETFI_YIELDS.GOLD}" class="size-4"></fxs-icon>
-            <span class="font-semibold">+${goldValue}</span>
-          </span>
-        `
-        : "";
-
-    return `
-      <div class="flex justify-between items-center mt-1">
-        <div class="flex items-center gap-2 min-w-0">
-          ${leftHtml}
-        </div>
-
-        <div class="flex flex-wrap justify-end items-center gap-2">
-          <span class="inline-flex items-center gap-1">
-            <fxs-icon data-icon-id="${ETFI_YIELDS.FORTIFY}" class="size-4"></fxs-icon>
-            <span class="font-semibold">+${healthValue}</span>
-          </span>
-
-          ${goldHtml}
-        </div>
-      </div>
-    `;
   }
 }

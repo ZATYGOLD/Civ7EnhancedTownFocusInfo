@@ -1,13 +1,15 @@
+// File Path: ui/etfi-town-focus/trade-town.js
+
 // Trade (resources → Happiness) details renderer.
 // +1 Happiness to each Resource tile and +5 Trade Route range.
 // Can purchase additional Gold Buildings. Must be in Distant Lands.
 
-import {
-  ETFI_YIELDS,
-  renderHeader,
-  renderDetailsRow,
-  renderIconName,
-} from "../../etfi-utilities.js";
+import { ETFI_YIELDS } from "../../etfi-utilities.js";
+
+import { renderFocusDetails, renderFocusRow, renderFocusIconName, composeFocusLabel, } from "./town-focus-html.js";
+
+const TRADE_RANGE = 5;
+const HAPPINESS_PER_RESOURCE_TILE = 1;
 
 export default class TradeDetails {
   render(city) {
@@ -18,57 +20,51 @@ export default class TradeDetails {
 
     const resourceItems = this.getResourceItemsFromPlots(plots);
 
-    const tradeRange = 5;
-    const happinessPerTile = 1;
-
     const totalResourceTiles = resourceItems.reduce(
       (sum, item) => sum + item.count,
       0
     );
 
-    const totalHappiness = totalResourceTiles * happinessPerTile;
+    const totalHappiness =
+      totalResourceTiles * HAPPINESS_PER_RESOURCE_TILE;
 
-    const labelTotalResources = Locale.compose("LOC_MOD_ETFI_TOTAL_RESOURCES");
+    const orderedYields = [
+      ETFI_YIELDS.TRADE,
+      ETFI_YIELDS.HAPPINESS,
+    ];
 
-    const orderedYields = [ETFI_YIELDS.TRADE, ETFI_YIELDS.HAPPINESS];
     const totals = {
-      [ETFI_YIELDS.TRADE]: tradeRange,
+      [ETFI_YIELDS.TRADE]: TRADE_RANGE,
       [ETFI_YIELDS.HAPPINESS]: totalHappiness,
     };
 
-    let html = `
-      <div class="flex flex-col w-full">
-        ${renderHeader(orderedYields, totals)}
-        <div class="mt-1 text-accent-2" style="font-size: 0.8em; line-height: 1.4;">
-          <div class="flex justify-between mb-1">
-            <span>${labelTotalResources}</span>
-            <span>${totalResourceTiles}</span>
-          </div>
-          <div class="mt-1 border-t border-white/10"></div>
-    `;
+    const bodyHtml = resourceItems
+      .map((item) => {
+        const happinessFromThisResource =
+          item.count * HAPPINESS_PER_RESOURCE_TILE;
 
-    for (const item of resourceItems) {
-      const happinessFromThisResource = item.count * happinessPerTile;
+        return renderFocusRow({
+          leftHtml: renderFocusIconName({
+            iconId: item.iconId,
+            name: item.name,
+            count: item.count,
+          }),
+          yieldIconId: ETFI_YIELDS.HAPPINESS,
+          yieldValue: happinessFromThisResource,
+        });
+      })
+      .join("");
 
-      const leftHtml = renderIconName({
-        iconId: item.iconId,
-        name: item.name,
-        count: item.count,
-      });
-
-      html += renderDetailsRow({
-        leftHtml,
-        yieldIconId: ETFI_YIELDS.HAPPINESS,
-        yieldValue: happinessFromThisResource,
-      });
-    }
-
-    html += `
-        </div>
-      </div>
-    `;
-
-    return html;
+    return renderFocusDetails({
+      headerYields: orderedYields,
+      headerTotals: totals,
+      summaryLabel: composeFocusLabel(
+        "LOC_MOD_ETFI_TOTAL_RESOURCES",
+        "Total Resources"
+      ),
+      summaryValue: totalResourceTiles,
+      bodyHtml,
+    });
   }
 
   getCityResourceSearchPlots(city) {

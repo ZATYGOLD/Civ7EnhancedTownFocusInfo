@@ -1,9 +1,11 @@
+// File Path: ui/production-chooser/etfi.js
 
 /**
  * Enhanced Town Focus Info Mod - Makes Town Focus Tooltips more informative
  * Author: Zatygold
  * Version: 2.0.2
  */
+
 import TooltipManager from '/core/ui/tooltips/tooltip-manager.js';
 import { IsElement } from '/core/ui/utilities/utilities-dom.js';
 import { GetTownFocusBlp } from '/base-standard/ui/production-chooser/production-chooser-helpers.js';
@@ -17,8 +19,10 @@ import TradeDetails from '../etfi-town-focus/trade-town.js';
 import TempleDetails from '../etfi-town-focus/temple-town.js';
 import UrbanCenterDetails from '../etfi-town-focus/urban-town.js';
 import FortTownDetails from '../etfi-town-focus/fort-town.js';
+import FactoryTownDetails from "../etfi-town-focus/factory-town.js";
 
-import { ETFI_YIELDS, renderHeader } from '../../etfi-utilities.js';
+import { ETFI_YIELDS } from '../../etfi-utilities.js';
+import { renderHeader } from '../etfi-town-focus/town-focus-html.js';
 
 // #region ETFI aliases
 
@@ -82,6 +86,12 @@ const ETFI_PROJECT_KEY_ALIASES = {
     "TOWN_FORT",
     "LOC_PROJECT_TOWN_FORT_NAME",
   ],
+
+  FACTORY: [
+    "PROJECT_TOWN_FACTORY",
+    "TOWN_FACTORY",
+    "LOC_PROJECT_TOWN_FACTORY_NAME",
+  ],
 };
 
 // #endregion
@@ -97,6 +107,7 @@ const ETFI_FALLBACK_YIELDS = Object.freeze({
   TEMPLE: [ETFI_YIELDS.HAPPINESS],
   URBAN: [ETFI_YIELDS.GOLD, ETFI_YIELDS.HAPPINESS],
   FORT: [ETFI_YIELDS.FORTIFY],
+  FACTORY: [ETFI_YIELDS.TRADE],
 });
 
 // #endregion
@@ -165,6 +176,12 @@ registerTownFocus(ETFI_PROJECT_KEY_ALIASES.FORT, {
   createRenderer: () => new FortTownDetails(),
 });
 
+registerTownFocus(ETFI_PROJECT_KEY_ALIASES.FACTORY, {
+  debugName: "Factory",
+  yields: ETFI_FALLBACK_YIELDS.FACTORY,
+  createRenderer: () => new FactoryTownDetails(),
+});
+
 // #endregion
 
 // #region EtfiToolTipType
@@ -185,21 +202,14 @@ class EtfiToolTipType {
     divider = document.createElement("div");
     glow = document.createElement("div");
     description = document.createElement("p");
-    detailsContainer = document.createElement("div");  // NEW: extra “details” block (ETFI info)
+    etfiContainer = document.createElement("etfi-details"); 
     productionCost = document.createElement("div");
     requirementsContainer = document.createElement("div");
     requirementsText = document.createElement("div");
     gemsContainer = document.createElement("div");
    
     constructor() {
-      this.glow.classList.add(
-        "h-24",
-        "absolute",
-        "inset-x-0",
-        "-top-7",
-        "img-fxs-header-glow",
-        "pointer-events-none"
-      );
+      this.glow.classList.add("h-24", "absolute", "inset-x-0", "-top-7", "img-fxs-header-glow", "pointer-events-none");
       this.tooltip.className = "flex w-96 text-accent-2 font-body text-sm";
       this.header.setAttribute("filigree-style", "none");
       this.header.setAttribute("header-bg-glow", "true");
@@ -210,7 +220,7 @@ class EtfiToolTipType {
       dividerRight.classList.add("filigree-shell-small-right");
       this.divider.className = "flex flex-row items-center self-center";
       this.divider.append(dividerLeft, this.icon, dividerRight);
-      this.detailsContainer.className = "flex mt-2 p-2 production-chooser-tooltip__subtext-bg etfi-details"; // NEW: details block
+      this.etfiContainer.classList.add("mb-1"); // NEW: details block
       this.productionCost.className = "mt-2";
       this.requirementsContainer.className = "flex mt-2 p-2 production-chooser-tooltip__subtext-bg";
       this.requirementsContainer.append(this.requirementsText);
@@ -220,7 +230,7 @@ class EtfiToolTipType {
         this.header,
         this.divider,
         this.description,
-        this.detailsContainer, // NEW: ETFI Container
+        this.etfiContainer, // NEW: ETFI Container
         this.productionCost,
         this.requirementsContainer,
         this.gemsContainer
@@ -307,14 +317,7 @@ class EtfiToolTipType {
         this.productionCost.classList.add("hidden");
       }
 
-      // NEW: apply detailsText
-      if (detailsText) {
-        this.detailsContainer.innerHTML = detailsText;
-        this.detailsContainer.classList.remove("hidden");
-      } else {
-        this.detailsContainer.innerHTML = "";
-        this.detailsContainer.classList.add("hidden");
-      }
+      this.etfiContainer.setAttribute("content-html", detailsText || "");
 
       if (requirementsText) {
         this.requirementsText.innerHTML = requirementsText;
