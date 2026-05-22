@@ -1,12 +1,40 @@
-// File Path: ui/etfi-town-focus/factorytown.js
+// File Path: ui/etfi-town-focus/factory-town.js
 
-// Factory Town: 
-// +100% Gold towards purchasing a Factory, Port, or Rail Station in this town.
-// +1 Resource Slot. +5 Trade Range. 
-// Can Purchase additional Gold buildings in this Town. 
-// Must have an improved Factory Resrouce in this settlement.  
+// Factory Town:
+// +1 Resource Slot.
+// +5 Trade Range.
+// Additional Factory purchase logic can be added later.
+
 import { ETFI_YIELDS } from "../../etfi-utilities.js";
 
-export default class FactoryTownDetails {
+import {
+  renderFocusDetails,
+  renderHeaderTextPill,
+} from "./town-focus-html.js";
 
+const RESOURCE_SLOTS = 1;
+const TRADE_RANGE = 5;
+
+const RESOURCE_SLOT_ICON_ID = "RADIAL_RESOURCES";
+
+export default class FactoryTownDetails {
+  render(city) {
+    if (!city) return null;
+
+    const resourceSlotPillHtml = renderHeaderTextPill({
+      iconId: RESOURCE_SLOT_ICON_ID,
+      label: "Resource Slot",
+      value: RESOURCE_SLOTS,
+      colorKey: ETFI_YIELDS.GOLD,
+    });
+
+    return renderFocusDetails({
+      headerYields: ETFI_YIELDS.TRADE,
+      headerTotals: TRADE_RANGE,
+      headerExtraHtml: resourceSlotPillHtml,
+      summaryLabel: "",
+      summaryValue: "",
+      bodyHtml: "",
+    });
+  }
 }

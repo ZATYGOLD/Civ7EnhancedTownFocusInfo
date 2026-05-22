@@ -19,6 +19,7 @@ import TradeDetails from '../etfi-town-focus/trade-town.js';
 import TempleDetails from '../etfi-town-focus/temple-town.js';
 import UrbanCenterDetails from '../etfi-town-focus/urban-town.js';
 import FortTownDetails from '../etfi-town-focus/fort-town.js';
+import FactoryTownDetails from "../etfi-town-focus/factory-town.js";
 
 import { ETFI_YIELDS } from '../../etfi-utilities.js';
 import { renderHeader } from '../etfi-town-focus/town-focus-html.js';
@@ -85,6 +86,12 @@ const ETFI_PROJECT_KEY_ALIASES = {
     "TOWN_FORT",
     "LOC_PROJECT_TOWN_FORT_NAME",
   ],
+
+  FACTORY: [
+    "PROJECT_TOWN_FACTORY",
+    "TOWN_FACTORY",
+    "LOC_PROJECT_TOWN_FACTORY_NAME",
+  ],
 };
 
 // #endregion
@@ -100,6 +107,7 @@ const ETFI_FALLBACK_YIELDS = Object.freeze({
   TEMPLE: [ETFI_YIELDS.HAPPINESS],
   URBAN: [ETFI_YIELDS.GOLD, ETFI_YIELDS.HAPPINESS],
   FORT: [ETFI_YIELDS.FORTIFY],
+  FACTORY: [ETFI_YIELDS.TRADE],
 });
 
 // #endregion
@@ -166,6 +174,12 @@ registerTownFocus(ETFI_PROJECT_KEY_ALIASES.FORT, {
   debugName: "Fort",
   yields: ETFI_FALLBACK_YIELDS.FORT,
   createRenderer: () => new FortTownDetails(),
+});
+
+registerTownFocus(ETFI_PROJECT_KEY_ALIASES.FACTORY, {
+  debugName: "Factory",
+  yields: ETFI_FALLBACK_YIELDS.FACTORY,
+  createRenderer: () => new FactoryTownDetails(),
 });
 
 // #endregion
