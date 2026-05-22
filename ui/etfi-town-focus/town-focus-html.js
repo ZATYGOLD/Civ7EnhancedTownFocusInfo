@@ -172,6 +172,22 @@ function renderHeaderBar(contentHtml) {
   `;
 }
 
+function renderHeaderExtraPills(headerExtraHtml = "") {
+    const html = Array.isArray(headerExtraHtml)
+      ? headerExtraHtml.filter(Boolean).join("")
+      : headerExtraHtml;
+  
+    if (!html || !html.trim()) {
+      return "";
+    }
+  
+    return `
+      <div class="flex items-center justify-center gap-2 flex-wrap mb-2">
+        ${html}
+      </div>
+    `;
+  }
+
 function renderHeaderYieldChip({ yieldType, value, isColorful }) {
     const baseColor = HEADER_YIELD_COLORS[yieldType] || DEFAULT_HEADER_BG;
   
@@ -201,6 +217,54 @@ function renderHeaderYieldChip({ yieldType, value, isColorful }) {
   
     return pillElement?.outerHTML ?? "";
 }
+
+export function renderHeaderTextPill({
+    iconId,
+    label = "",
+    value = 0,
+    colorKey = iconId,
+    className = "",
+  } = {}) {
+    if (!iconId || typeof value !== "number") {
+      return "";
+    }
+  
+    const isColorful = !!ETFI_Settings?.IsColorful;
+  
+    const baseColor =
+      HEADER_YIELD_COLORS[colorKey] ||
+      HEADER_YIELD_COLORS[iconId] ||
+      DEFAULT_HEADER_BG;
+  
+    const formatted = formatFocusValue(value);
+    const valueStyle = getHeaderValueStyle(formatted);
+  
+    const iconElement = document.createElement("fxs-icon");
+    iconElement.setAttribute("data-icon-id", iconId);
+    iconElement.className = "size-7 shrink-0";
+  
+    const labelElement = document.createElement("span");
+    labelElement.className = "font-semibold whitespace-nowrap";
+    labelElement.textContent = label;
+  
+    const valueElement = document.createElement("span");
+    valueElement.className = "font-semibold";
+    valueElement.setAttribute("style", valueStyle);
+    valueElement.textContent = `+${formatted}`;
+  
+    const pillElement = Pill({
+      class: `mx-1 gap-1 text-sm text-accent-2 ${className}`.trim(),
+      backgroundStyle: getHeaderPillBackgroundStyle({
+        baseColor,
+        isColorful,
+      }),
+      children: label
+        ? [iconElement, labelElement, valueElement]
+        : [iconElement, valueElement],
+    });
+  
+    return pillElement?.outerHTML ?? "";
+  }
 
 function getHeaderPillBackgroundStyle({ baseColor, isColorful }) {
     if (isColorful) {
@@ -239,6 +303,7 @@ export function renderFocusDetails({
     summaryLabel,
     summaryValue,
     bodyHtml = "",
+    headerExtraHtml = "",
   }) {
     const hasSummary =
       summaryLabel !== null &&
@@ -248,6 +313,7 @@ export function renderFocusDetails({
     return `
       <div class="flex flex-col w-full">
         ${renderHeader(headerYields, headerTotals)}
+        ${renderHeaderExtraPills(headerExtraHtml)}
   
         <div class="${DETAILS_BODY_CLASS}" style="${DETAILS_BODY_STYLE}">
           ${

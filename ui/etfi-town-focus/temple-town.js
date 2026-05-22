@@ -16,11 +16,10 @@ import {
 import {
   renderFocusDetails,
   renderFocusRow,
-  renderFocusIconName,
   renderFocusRecordList,
-  renderFocusSectionHeader,
   getFocusCompactTextStyle,
   composeFocusLabel,
+  renderHeaderTextPill,
 } from "./town-focus-html.js";
 
 const HAPPINESS_PER_BUILDING = 2;
@@ -55,7 +54,7 @@ export default class TempleDetails {
       (a, b) => b.length - a.length
     );
 
-    let bodyHtml = buildingStacks
+    const bodyHtml = buildingStacks
       .map((stack) => {
         const bonus = stack.length * HAPPINESS_PER_BUILDING;
 
@@ -68,21 +67,20 @@ export default class TempleDetails {
       })
       .join("");
 
-    if (templeBuildings.length > 0) {
-      bodyHtml += renderFocusSectionHeader({
-        label: "Temple Bonus",
-        value: templeBuildings.length,
-      });
-
-      bodyHtml += this.renderRelicSlotsRow({
-        templeBuildings,
-        totalRelicSlots,
-      });
-    }
+    const relicSlotsPillHtml =
+      totalRelicSlots > 0
+        ? renderHeaderTextPill({
+            iconId: "NAR_REW_GREATWORK",
+            label: "Slots",
+            value: totalRelicSlots,
+            colorKey: ETFI_YIELDS.CULTURE,
+          })
+        : "";
 
     return renderFocusDetails({
       headerYields: ETFI_YIELDS.HAPPINESS,
       headerTotals: totalHappiness,
+      headerExtraHtml: relicSlotsPillHtml,
       summaryLabel: composeFocusLabel(
         "LOC_MOD_ETFI_TOTAL_BUILDINGS",
         "Total Buildings"
@@ -110,20 +108,5 @@ export default class TempleDetails {
       .toUpperCase();
 
     return typeName.includes("TEMPLE") || nameKey.includes("TEMPLE");
-  }
-
-  renderRelicSlotsRow({ templeBuildings, totalRelicSlots }) {
-    const firstTemple = templeBuildings[0];
-
-    return renderFocusRow({
-      leftHtml: renderFocusIconName({
-        iconId: firstTemple?.iconId,
-        name: "Relic Slots",
-        count: templeBuildings.length,
-      }),
-      rightHtml: `
-        <span class="font-semibold">+${totalRelicSlots}</span>
-      `,
-    });
   }
 }
