@@ -36,6 +36,7 @@ export function buildMiningModel(city) {
   if (unimproved.length) {
     sections.push({
       title: composeWithFallback("LOC_MOD_ETFI_UNIMPROVED", "Unimproved"),
+      separatePanel: "bottom",
       rows: unimproved.map((g) => ({ iconId: g.iconId, name: g.name, count: g.count })),
     });
   }

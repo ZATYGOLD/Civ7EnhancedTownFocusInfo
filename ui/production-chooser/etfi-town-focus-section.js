@@ -4,12 +4,13 @@
 //
 // Overrides the base town-focus chooser item to render ETFI info INLINE:
 //   * yield total pills (colored), RIGHT-aligned in the name row,
-//   * separatePanel sections (their own ticket containers) ABOVE a main detail
-//     panel (rows / titled sections / notes).
+//   * separatePanel sections in their own ticket containers, ABOVE
+//     (separatePanel:"top") or BELOW (separatePanel:"bottom") the main panel,
+//   * the main detail panel (rows / titled sections / notes).
 // Growing Town is left untouched. Dividers match the plot tooltip's look.
 //
-// Row = { iconId?|iconClass?+iconStyle?, name?, items?:[{iconId,name}], count?, countText?, yields?, subText? }.
-// Section = { title?, rows, notes?, separatePanel? }.
+// Row = { iconId?|iconClass?+iconStyle?, name?, items?, count?, countText?, yields?, subText?, tooltip? }.
+// Section = { title?, rows, notes?, separatePanel? ("top"|"bottom"|true) }.
 
 import { TownFocusChooserItem } from "/base-standard/ui/production-chooser/town-focus-section.js";
 import { Pill } from "/base-standard/ui-next/components/pills.js";
@@ -54,8 +55,6 @@ function fxsIcon(iconId, sizeClass) {
   return icon;
 }
 
-// Icon element from a spec: a CSS-class icon (e.g. the appeal hex) takes
-// priority, otherwise an fxs-icon by id.
 function iconEl(spec) {
   if (spec && spec.iconClass) {
     const d = document.createElement("div");
@@ -133,6 +132,14 @@ function appendNameItem(left, spec) {
   const nm = document.createElement("span");
   nm.style.cssText = "overflow:hidden; text-overflow:ellipsis; white-space:nowrap;";
   nm.textContent = spec.name ?? "";
+  // Optional hover tooltip on the name itself, with a colored "link" cue.
+  if (spec.tooltip) {
+    nm.setAttribute("data-tooltip-content", spec.tooltip);
+    nm.setAttribute("data-tooltip-style", "none"); // suppress the item's project tooltip here
+    nm.classList.add("pointer-events-auto", "text-secondary");
+    nm.style.textDecoration = "underline dotted";
+    nm.style.textUnderlineOffset = "0.2rem";
+  }
   left.appendChild(nm);
 }
 
@@ -194,6 +201,23 @@ function appendRows(panel, rows) {
     if (i > 0) panel.appendChild(hDivider());
     panel.appendChild(detailRow(row));
   });
+}
+
+// Render separatePanel sections, each into its own ticket container.
+function renderSeparatePanels(container, secs) {
+  while (container.firstChild) container.removeChild(container.firstChild);
+  for (const section of secs) {
+    const srows = (section.rows || []).filter(Boolean);
+    const snotes = (section.notes || []).filter(Boolean);
+    if (!srows.length && !snotes.length && !section.title) continue;
+    const p = document.createElement("div");
+    p.className = "img-base-ticket-bg-container w-full flex flex-col mt-2";
+    if (section.title) p.appendChild(sectionTitle(section.title));
+    appendRows(p, srows);
+    for (const n of snotes) p.appendChild(noteLine(n));
+    container.appendChild(p);
+  }
+  container.classList.toggle("hidden", container.childElementCount === 0);
 }
 
 // --- model dispatch --------------------------------------------------------
@@ -259,13 +283,16 @@ TownFocusChooserItem.prototype.render = function () {
   this.etfiYields.className = "flex flex-row flex-wrap items-center justify-end ml-auto";
   nameRow.appendChild(this.etfiYields);
 
+  this.etfiTop = null;
   this.etfiDetails = null;
-  this.etfiExtra = null;
+  this.etfiBottom = null;
   if (!inSummary) {
-    this.etfiExtra = document.createElement("div");
-    this.etfiExtra.className = "w-full flex flex-col";
+    this.etfiTop = document.createElement("div");
+    this.etfiTop.className = "w-full flex flex-col";
     this.etfiDetails = document.createElement("div");
     this.etfiDetails.className = "img-base-ticket-bg-container w-full flex flex-col mt-2";
+    this.etfiBottom = document.createElement("div");
+    this.etfiBottom.className = "w-full flex flex-col";
     if (container) {
       const topRow = document.createElement("div");
       topRow.className = "flex flex-row w-full";
@@ -274,11 +301,13 @@ TownFocusChooserItem.prototype.render = function () {
       container.classList.remove("flex-row");
       container.classList.add("flex-col", "w-full");
       container.appendChild(topRow);
-      container.appendChild(this.etfiExtra);   // separatePanel sections on top
-      container.appendChild(this.etfiDetails); // main panel below
+      container.appendChild(this.etfiTop);
+      container.appendChild(this.etfiDetails);
+      container.appendChild(this.etfiBottom);
     } else {
-      infoContainer.appendChild(this.etfiExtra);
+      infoContainer.appendChild(this.etfiTop);
       infoContainer.appendChild(this.etfiDetails);
+      infoContainer.appendChild(this.etfiBottom);
     }
   }
 
@@ -303,8 +332,9 @@ TownFocusChooserItem.prototype.etfiUpdate = function () {
   if (isGrowthFocus(this.Root)) {
     this.etfiYields.classList.add("hidden");
     while (this.etfiYields.firstChild) this.etfiYields.removeChild(this.etfiYields.firstChild);
-    if (this.etfiDetails) { this.etfiDetails.classList.add("hidden"); while (this.etfiDetails.firstChild) this.etfiDetails.removeChild(this.etfiDetails.firstChild); }
-    if (this.etfiExtra) { this.etfiExtra.classList.add("hidden"); while (this.etfiExtra.firstChild) this.etfiExtra.removeChild(this.etfiExtra.firstChild); }
+    for (const el of [this.etfiTop, this.etfiDetails, this.etfiBottom]) {
+      if (el) { el.classList.add("hidden"); while (el.firstChild) el.removeChild(el.firstChild); }
+    }
     return;
   }
 
@@ -319,28 +349,14 @@ TownFocusChooserItem.prototype.etfiUpdate = function () {
   if (!this.etfiDetails) return;
 
   const allSections = (model.sections || []).filter(Boolean);
-  const mainSections = allSections.filter((s) => !s.separatePanel);
-  const extraSections = allSections.filter((s) => s.separatePanel);
+  const topSecs = allSections.filter((s) => s.separatePanel === "top" || s.separatePanel === true);
+  const bottomSecs = allSections.filter((s) => s.separatePanel === "bottom");
+  const mainSecs = allSections.filter((s) => !s.separatePanel);
 
-  // Extra panels (rendered above the main panel).
-  const extra = this.etfiExtra;
-  if (extra) {
-    while (extra.firstChild) extra.removeChild(extra.firstChild);
-    for (const section of extraSections) {
-      const srows = (section.rows || []).filter(Boolean);
-      const snotes = (section.notes || []).filter(Boolean);
-      if (!srows.length && !snotes.length) continue;
-      const p = document.createElement("div");
-      p.className = "img-base-ticket-bg-container w-full flex flex-col mt-2";
-      if (section.title) p.appendChild(sectionTitle(section.title));
-      appendRows(p, srows);
-      for (const n of snotes) p.appendChild(noteLine(n));
-      extra.appendChild(p);
-    }
-    extra.classList.toggle("hidden", extra.childElementCount === 0);
-  }
+  if (this.etfiTop) renderSeparatePanels(this.etfiTop, topSecs);
+  if (this.etfiBottom) renderSeparatePanels(this.etfiBottom, bottomSecs);
 
-  // Main panel: flat rows, inline sections, notes.
+  // Main panel: flat rows, inline (non-separate) sections, notes.
   const panel = this.etfiDetails;
   while (panel.firstChild) panel.removeChild(panel.firstChild);
   let any = false;
@@ -348,7 +364,7 @@ TownFocusChooserItem.prototype.etfiUpdate = function () {
   const flat = (model.rows || []).filter(Boolean);
   if (flat.length) { appendRows(panel, flat); any = true; }
 
-  for (const section of mainSections) {
+  for (const section of mainSecs) {
     const srows = (section.rows || []).filter(Boolean);
     const snotes = (section.notes || []).filter(Boolean);
     if (!srows.length && !snotes.length && !section.title) continue;

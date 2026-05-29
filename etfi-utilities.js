@@ -24,6 +24,7 @@ export const FORTIFY_ICON = "ACTION_FORTIFY";
 export const TOURISM_ICON = "CULTURE_VP";
 export const RESOURCE_ICON = "RADIAL_RESOURCES";
 export const RELIC_ICON = "NAR_REW_GREATWORK";
+export const CITY_ICON = "CITY_URBAN";
 
 // --- small helpers ---------------------------------------------------------
 
@@ -340,15 +341,20 @@ export function getFactoryResources(city) {
   };
 }
 
-// --- resort: appealing tiles (improved / unimproved) + breathtaking counts -
+// --- resort: appealing tiles (improved / unimproved) + breathtaking dev -----
 //
-// appealingImproved / appealingUnimproved: tiles with appeal >= Charming, split
-//   by whether they have a completed improvement. Grouped by resource name (if
-//   any) else improvement name (improved) or eligible improvement (unimproved).
-// breathtakingImproved / breathtakingTotal: improved Breathtaking vs all
-//   Breathtaking tiles (for the Tourism rule).
+// appealingImproved / appealingUnimproved: rural tiles with appeal >= Charming,
+//   split by whether they have an improvement (grouped by resource/improvement).
+// breathtakingImprovements / breathtakingDistricts: improved Breathtaking tiles
+//   that are rural Improvements vs Districts (>=1 building). breathtakingTotal:
+//   all Breathtaking tiles. (The game counts a Breathtaking tile as developed
+//   if it has an improvement OR a building/district.)
 export function getResortData(city) {
-  const result = { appealingImproved: [], appealingUnimproved: [], breathtakingImproved: 0, breathtakingTotal: 0, naturalWonders: 0 };
+  const result = {
+    appealingImproved: [], appealingUnimproved: [],
+    breathtakingImprovements: 0, breathtakingDistricts: 0, breathtakingTotal: 0,
+    naturalWonders: 0,
+  };
   const imp = new Map();
   const unimp = new Map();
   let charming = 3;
@@ -359,12 +365,23 @@ export function getResortData(city) {
   } catch {}
   try {
     const impMap = buildImprovementTileMap(city);
+    // District tiles = tiles with at least one completed building.
+    const districtSet = new Set();
+    const bids = city?.Constructibles?.getIdsOfClass?.("BUILDING") || [];
+    for (const id of bids) {
+      const inst = Constructibles.get(id);
+      if (!inst || !inst.complete) continue;
+      const loc = inst.location;
+      if (!loc || loc.x == null || loc.y == null) continue;
+      districtSet.add(`${loc.x},${loc.y}`);
+    }
     const indices = city?.getPurchasedPlots?.() || [];
     for (const idx of indices) {
       let loc;
       try { loc = GameplayMap.getLocationFromIndex(idx); } catch { continue; }
       if (!loc) continue;
       const { x, y } = loc;
+      const key = `${x},${y}`;
       let isNW = false;
       try { isNW = !!GameplayMap.isNaturalWonder(x, y); } catch {}
       if (isNW) { result.naturalWonders++; continue; }
@@ -373,18 +390,23 @@ export function getResortData(city) {
       if (water) continue;
       let appeal = 0;
       try { appeal = GameplayMap.getAppeal(x, y); } catch {}
-      const isBreathtaking = appeal >= breathtaking;
-      if (isBreathtaking) result.breathtakingTotal++;
+      const impAtTile = impMap.get(key);
+      const isDistrict = districtSet.has(key);
+
+      if (appeal >= breathtaking) {
+        result.breathtakingTotal++;
+        if (impAtTile) result.breathtakingImprovements++;
+        else if (isDistrict) result.breathtakingDistricts++;
+      }
+
       if (appeal < charming) continue;
-      const impAtTile = impMap.get(`${x},${y}`);
       const resInfo = resourceAt(x, y);
       if (impAtTile) {
-        if (isBreathtaking) result.breathtakingImproved++;
         const name = resInfo ? (resInfo.Name ? Locale.compose(resInfo.Name) : resInfo.ResourceType) : impAtTile.name;
         const iconId = resInfo ? resInfo.ResourceType : impAtTile.iconId;
         if (!imp.has(name)) imp.set(name, { name, iconId, count: 0 });
         imp.get(name).count++;
-      } else {
+      } else if (!isDistrict) {
         let name = null;
         let iconId = null;
         if (resInfo) {

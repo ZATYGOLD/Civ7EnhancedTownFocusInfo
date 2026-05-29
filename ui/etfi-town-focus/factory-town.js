@@ -25,6 +25,7 @@ export function buildFactoryModel(city) {
   if (unimproved.length) {
     sections.push({
       title: composeWithFallback("LOC_MOD_ETFI_UNIMPROVED", "Unimproved"),
+      separatePanel: "bottom",
       rows: unimproved.map((r) => ({ iconId: r.iconId, name: r.name, count: r.count })),
     });
   }
