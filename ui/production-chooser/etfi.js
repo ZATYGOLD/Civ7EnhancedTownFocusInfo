@@ -284,7 +284,7 @@ class EtfiToolTipType {
       if (!city) { return; }
       const name = this.target.dataset.name ?? "";
       const description = (this.target.dataset.tooltipDescription || this.target.dataset.description) ?? "";
-      const detailsText = IsElement(this.target, "town-focus-chooser-item") ? this.getDetailsText(city) : void 0;   // NEW: project-specific ETFI data
+      const detailsModel = IsElement(this.target, "town-focus-chooser-item") ? this.getDetailsModel(city) : null;   // ETFI details model for this focus
       const growthType = Number(this.target.dataset.growthType);
       const productionCost = projectType ? city.Production?.getProjectProductionCost(projectType) : -1;
       const requirementsText = this.getRequirementsText();
@@ -317,7 +317,7 @@ class EtfiToolTipType {
         this.productionCost.classList.add("hidden");
       }
 
-      this.etfiContainer.setAttribute("content-html", detailsText || "");
+      this.applyDetailsModel(detailsModel);
 
       if (requirementsText) {
         this.requirementsText.innerHTML = requirementsText;
@@ -340,13 +340,45 @@ class EtfiToolTipType {
       }
       this.gemsContainer.classList.toggle("hidden", !recommendations);
     }
+    // Feed a model object to the <etfi-details> panel via the property +
+    // refresh-trigger pattern (the panel re-renders on the data-rev bump).
+    applyDetailsModel(model) {
+      this.etfiContainer.etfiModel = model || null;
+      this._etfiRev = (this._etfiRev || 0) + 1;
+      this.etfiContainer.setAttribute("data-rev", String(this._etfiRev));
+    }
+
+    // PREVIEW model to validate the renderer in-game. Real per-focus models
+    // (built from the etfi-utilities API by each town-focus file) replace this
+    // in the next step.
+    getDetailsModel(city) {
+      return {
+        header: [{ yieldType: "YIELD_FOOD", value: 5 }],
+        summary: {
+          label: Locale.compose("LOC_MOD_ETFI_TOTAL_IMPROVEMENTS"),
+          value: 5,
+        },
+        sections: [
+          {
+            title: null,
+            rows: [
+              { iconId: "IMPROVEMENT_FARM", name: Locale.compose("LOC_MOD_ETFI_IMPROVEMENT_FARM"), count: 3, yields: [{ yieldType: "YIELD_FOOD", value: 3 }] },
+              { iconId: "IMPROVEMENT_PASTURE", name: Locale.compose("LOC_MOD_ETFI_IMPROVEMENT_PASTURE"), count: 1, yields: [{ yieldType: "YIELD_FOOD", value: 1 }] },
+              { iconId: "IMPROVEMENT_FISHING_BOAT_RESOURCE", name: Locale.compose("LOC_MOD_ETFI_IMPROVEMENT_FISHING_BOAT"), count: 1, yields: [{ yieldType: "YIELD_FOOD", value: 1 }] },
+            ],
+          },
+        ],
+        notes: ["[SAMPLE] Renderer preview — real per-focus data is next."],
+      };
+    }
+
     getProjectInfo() {
       const projectType = this.getProjectType();
-    
+
       if (projectType === null || projectType === undefined || Number.isNaN(projectType)) {
         return null;
       }
-    
+
       return GameInfo?.Projects?.lookup?.(projectType) ?? null;
     }
 
