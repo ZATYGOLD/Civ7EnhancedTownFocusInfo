@@ -12,7 +12,7 @@
 //   * APPEALING tiles split into Improved (+1 Happiness / +1 Gold) and
 //     Unimproved (no yield).
 
-import { ETFI_YIELDS, TOURISM_ICON, getResortData, getCurrentAgeType, hasGlobalismMastery, composeWithFallback } from "../../etfi-utilities.js";
+import { ETFI_YIELDS, TOURISM_ICON, getResortData, getCurrentAgeType, hasGlobalismMastery, composeWithFallback, improvedUnimprovedSections } from "../../etfi-utilities.js";
 
 const PER_TILE = 1;
 const TOURISM_PER = 4;
@@ -53,27 +53,16 @@ export function buildResortModel(city) {
     notes: reqsMet ? [] : [composeWithFallback("LOC_MOD_ETFI_REQUIRES_GLOBALISM", "Requires Globalism's Mastery")],
   });
 
-  // Appealing — Improved / Unimproved.
-  if (d.appealingImproved.length) {
-    sections.push({
-      title: composeWithFallback("LOC_MOD_ETFI_IMPROVED", "Improved"),
-      rows: d.appealingImproved.map((g) => ({
-        iconId: g.iconId,
-        name: g.name,
-        count: g.count,
-        yields: [
-          { yieldType: ETFI_YIELDS.HAPPINESS, value: g.count * PER_TILE },
-          { yieldType: ETFI_YIELDS.GOLD, value: g.count * PER_TILE },
-        ],
-      })),
-    });
-  }
-  if (d.appealingUnimproved.length) {
-    sections.push({
-      title: composeWithFallback("LOC_MOD_ETFI_UNIMPROVED", "Unimproved"),
-      separatePanel: "bottom",
-      rows: d.appealingUnimproved.map((g) => ({ iconId: g.iconId, name: g.name, count: g.count })),
-    });
+  // Appealing tiles — shared Improved (+1 Happiness / +1 Gold) / Unimproved.
+  for (const s of improvedUnimprovedSections({
+    improved: d.appealingImproved,
+    unimproved: d.appealingUnimproved,
+    improvedYields: (g) => [
+      { yieldType: ETFI_YIELDS.HAPPINESS, value: g.count * PER_TILE },
+      { yieldType: ETFI_YIELDS.GOLD, value: g.count * PER_TILE },
+    ],
+  })) {
+    sections.push(s);
   }
 
   const appealingTotal = d.appealingImproved.reduce((s, g) => s + g.count, 0);

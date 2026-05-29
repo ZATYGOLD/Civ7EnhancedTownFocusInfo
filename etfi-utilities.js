@@ -38,6 +38,39 @@ export function composeWithFallback(key, fallback) {
   }
 }
 
+// Build the standardized "Improved" / "Unimproved" category sections shared by
+// every focus that classifies tiles this way (Farming/Fishing, Mining, Trade,
+// Factory, Resort). This guarantees identical titles, layout, and behavior:
+//   * improved/unimproved: arrays of { name, iconId, count },
+//   * improvedYields(group) -> yield array for an Improved row (omit for none),
+//   * the Unimproved category never shows yields, lives in its own bottom panel,
+//     and is flagged `hidden` so the "View Hidden" toggle controls it.
+export function improvedUnimprovedSections({ improved, unimproved, improvedYields }) {
+  const sections = [];
+  if (improved && improved.length) {
+    sections.push({
+      title: composeWithFallback("LOC_MOD_ETFI_IMPROVED", "Improved"),
+      rows: improved.map((g) => {
+        const row = { iconId: g.iconId, name: g.name, count: g.count };
+        if (improvedYields) {
+          const y = improvedYields(g);
+          if (y && y.length) row.yields = y;
+        }
+        return row;
+      }),
+    });
+  }
+  if (unimproved && unimproved.length) {
+    sections.push({
+      title: composeWithFallback("LOC_MOD_ETFI_UNIMPROVED", "Unimproved"),
+      separatePanel: "bottom",
+      hidden: true,
+      rows: unimproved.map((g) => ({ iconId: g.iconId, name: g.name, count: g.count })),
+    });
+  }
+  return sections;
+}
+
 export function constructibleName(type) {
   try {
     const info = GameInfo?.Constructibles?.lookup?.(type);

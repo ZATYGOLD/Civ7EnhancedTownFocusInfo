@@ -2,21 +2,23 @@
 //
 // Author: Zatygold
 //
-// Overrides the base town-focus chooser item to render ETFI info INLINE:
+// Overrides the base town-focus chooser to render ETFI info INLINE:
 //   * yield total pills (colored), RIGHT-aligned in the name row,
 //   * EVERY titled section in its own ticket panel, ordered ABOVE
 //     (separatePanel:"top"), in the middle (default), or BELOW
 //     (separatePanel:"bottom") a base panel holding any flat rows,
 //   * top-level notes attached to the last rendered panel.
+// Sections flagged `hidden` (e.g. the Unimproved categories) are shown only when
+// the "View Hidden" checkbox in the town-focus section header is enabled.
 // Growing Town is left untouched. Dividers match the plot tooltip's look.
 //
 // Row = { iconId?|iconClass?+iconStyle?, name?, items?, count?, countText?, yields?, subText?, tooltip? }.
-// Section = { title?, rows, notes?, separatePanel? ("top"|"bottom"|true) }.
+// Section = { title?, rows, notes?, separatePanel? ("top"|"bottom"|true), hidden? }.
 
 import { TownFocusChooserItem } from "/base-standard/ui/production-chooser/town-focus-section.js";
 import { Pill } from "/base-standard/ui-next/components/pills.js";
 import { ETFI_Settings } from "../../core/settings.js";
-import { getTownCity } from "../../etfi-utilities.js";
+import { getTownCity, composeWithFallback } from "../../etfi-utilities.js";
 import { buildFoodModel } from "../etfi-town-focus/farm-fish-towns.js";
 import { buildMiningModel } from "../etfi-town-focus/mining-town.js";
 import { buildTradeModel } from "../etfi-town-focus/trade-town.js";
@@ -47,6 +49,10 @@ function fmt(v) {
 
 function isColorful() {
   try { return !!(ETFI_Settings && ETFI_Settings.IsColorful); } catch { return false; }
+}
+
+function viewHidden() {
+  try { return !!(ETFI_Settings && ETFI_Settings.ViewHidden); } catch { return false; }
 }
 
 function fxsIcon(iconId, sizeClass) {
@@ -239,6 +245,22 @@ function renderSectionPanels(container, secs) {
   return last;
 }
 
+// Fully rebuild the focus list after a toggle. We reuse the base game's own
+// refresh event (the same path used when the panel reopens), which rebuilds
+// every town-focus-chooser-item from scratch — avoiding the partial-DOM update
+// that previously garbled the layout.
+function refreshFocusPanel(fromEl) {
+  try {
+    const panel = (fromEl && (fromEl.closest?.("panel-town-focus") || fromEl.getRootNode?.()?.querySelector?.("panel-town-focus")))
+      || document.querySelector("panel-town-focus");
+    if (panel) {
+      panel.dispatchEvent(new CustomEvent("panel-town-focus-refresh", { bubbles: false, cancelable: true }));
+    }
+  } catch (e) {
+    console.error("[ETFI] refreshFocusPanel failed", e);
+  }
+}
+
 // --- model dispatch --------------------------------------------------------
 
 function projectTypeString(root) {
@@ -276,15 +298,77 @@ function buildModel(item) {
   }
 }
 
+// --- "View Hidden" checkbox in the Town Focus CTA header -------------------
+//
+// The panel's instructions line (LOC_UI_TOWN_FOCUS_CTA, "Choose a Town Focus:
+// Towns without a Growing Town Focus...") sits above the focus list. We wrap it
+// in a row and add a "View Hidden" checkbox to its right. The PanelTownFocus
+// class isn't exported, so we locate the CTA element by walking up from a focus
+// item and inject the checkbox once per panel.
+function ensureViewHiddenToggle(fromEl) {
+  try {
+    const panel = fromEl.closest?.("panel-town-focus") || fromEl.getRootNode?.()?.querySelector?.("panel-town-focus");
+    const scope = panel || document;
+    const cta = scope.querySelector('[data-l10n-id="LOC_UI_TOWN_FOCUS_CTA"]');
+    if (!cta || cta.dataset.etfiToggleAttached === "1") return;
+
+    const host = cta.parentElement;
+    if (!host) return;
+    cta.dataset.etfiToggleAttached = "1";
+
+    // Wrap the CTA in a relative, full-width row so the description stays
+    // centered exactly as before; the toggle is positioned absolutely on the
+    // right so it does NOT shift the centered text.
+    const row = document.createElement("div");
+    row.className = "relative flex flex-row items-center justify-center w-full mb-2";
+    host.replaceChild(row, cta);
+
+    cta.classList.remove("mb-2");
+    row.appendChild(cta);
+
+    const toggle = document.createElement("div");
+    toggle.className = "absolute right-0 top-1\\/2 flex flex-row items-center";
+    toggle.style.transform = "translateY(-50%)";
+
+    const label = document.createElement("div");
+    label.className = "text-xs mr-1 whitespace-nowrap text-accent-2";
+    label.textContent = composeWithFallback("LOC_MOD_ETFI_VIEW_HIDDEN", "View Hidden");
+    toggle.appendChild(label);
+
+    const checkbox = document.createElement("fxs-checkbox");
+    checkbox.setAttribute("selected", viewHidden() ? "true" : "false");
+    checkbox.addEventListener("component-value-changed", (e) => {
+      const v = !!(e && e.detail && e.detail.value);
+      try { ETFI_Settings.ViewHidden = v; } catch {}
+      refreshFocusPanel(checkbox);
+    });
+    toggle.appendChild(checkbox);
+
+    row.appendChild(toggle);
+  } catch (err) {
+    console.error("[ETFI] view-hidden toggle failed", err);
+  }
+}
+
 // --- prototype patch -------------------------------------------------------
 
 const baseRender = TownFocusChooserItem.prototype.render;
 const baseOnAttributeChanged = TownFocusChooserItem.prototype.onAttributeChanged;
+const baseOnAttach = TownFocusChooserItem.prototype.onAttach;
+
+TownFocusChooserItem.prototype.onAttach = function () {
+  if (baseOnAttach) baseOnAttach.call(this);
+  // Now that the item is in the DOM, ensure the panel has the View Hidden toggle.
+  ensureViewHiddenToggle(this.Root);
+};
 
 TownFocusChooserItem.prototype.render = function () {
   baseRender.call(this);
 
   if (isGrowthFocus(this.Root)) return;
+
+  // Back-reference so the View Hidden toggle can re-render every item.
+  this.Root.__etfiItem = this;
 
   const infoContainer = this.nameElement.parentElement;
   if (!infoContainer) return;
@@ -368,7 +452,9 @@ TownFocusChooserItem.prototype.etfiUpdate = function () {
 
   if (!this.etfiDetails) return;
 
-  const sections = (model.sections || []).filter(Boolean);
+  // Drop hidden sections unless "View Hidden" is enabled.
+  const show = viewHidden();
+  const sections = (model.sections || []).filter(Boolean).filter((s) => show || !s.hidden);
   const topSecs = sections.filter((s) => s.separatePanel === "top" || s.separatePanel === true);
   const bottomSecs = sections.filter((s) => s.separatePanel === "bottom");
   const midSecs = sections.filter((s) => !s.separatePanel);
