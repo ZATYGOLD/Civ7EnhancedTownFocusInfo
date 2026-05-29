@@ -49,6 +49,18 @@ function fxsIcon(iconId, sizeClass) {
   return icon;
 }
 
+// The default "Growing Town" focus (GrowthTypes.EXPAND / ProjectTypes.NO_PROJECT)
+// gets its own treatment later — we don't render the standard detail panel for it.
+function isGrowthFocus(root) {
+  const gt = root.getAttribute("data-growth-type");
+  const growthType = gt != null && gt !== "" ? parseInt(gt) : null;
+  if (typeof GrowthTypes !== "undefined" && growthType === GrowthTypes.EXPAND) return true;
+  const pt = root.getAttribute("data-project-type");
+  const projectType = pt != null && pt !== "" ? parseInt(pt) : null;
+  if (typeof ProjectTypes !== "undefined" && projectType === ProjectTypes.NO_PROJECT) return true;
+  return false;
+}
+
 // Compact colored Pill (icon + value) for the name-row yield totals.
 function yieldPill(entry) {
   const body = document.createElement("div");
@@ -123,11 +135,22 @@ const baseOnAttributeChanged = TownFocusChooserItem.prototype.onAttributeChanged
 TownFocusChooserItem.prototype.render = function () {
   baseRender.call(this);
 
+  // Growing Town (default growth) focus gets its own treatment later — no
+  // standard ETFI UI at all (no pills, no detail panel). Leave the base item
+  // untouched. (etfiUpdate re-checks in case the focus type arrives later.)
+  if (isGrowthFocus(this.Root)) return;
+
   const infoContainer = this.nameElement.parentElement;
   if (!infoContainer) return;
   const container = this.container || infoContainer.parentElement;
 
-  // 1) Colored yield pills, RIGHT-aligned in the name row (name left, pills right).
+  // The same item is reused in two places: the production panel's current-focus
+  // SUMMARY (rendered inside a <town-focus-section>) and the focus SELECTION
+  // list (panel-town-focus). Show the full detail panel only in the selection
+  // list; the summary gets only the yield pills next to the name.
+  const inSummary = !!this.Root.closest("town-focus-section");
+
+  // 1) Colored yield pills, RIGHT-aligned in the name row (both contexts).
   const nameRow = document.createElement("div");
   nameRow.className = "flex flex-row items-center w-full";
   infoContainer.replaceChild(nameRow, this.nameElement);
@@ -138,24 +161,27 @@ TownFocusChooserItem.prototype.render = function () {
   this.etfiYields.className = "flex flex-row flex-wrap items-center justify-end ml-auto";
   nameRow.appendChild(this.etfiYields);
 
-  // 2) Details panel: full width, BELOW the icon+info row. Restructure the
-  //    chooser item's container into a column so the panel fills the width
+  // 2) Details panel: SELECTION LIST ONLY. Full width, BELOW the icon+info row;
+  //    restructure the item's container into a column so it fills the width
   //    (including under the focus icon).
-  this.etfiDetails = document.createElement("div");
-  this.etfiDetails.className = "img-base-ticket-bg-container w-full flex flex-col mt-2";
+  this.etfiDetails = null;
+  if (!inSummary) {
+    this.etfiDetails = document.createElement("div");
+    this.etfiDetails.className = "img-base-ticket-bg-container w-full flex flex-col mt-2";
 
-  if (container) {
-    const topRow = document.createElement("div");
-    topRow.className = "flex flex-row w-full";
-    topRow.appendChild(this.projectIconElement);
-    topRow.appendChild(infoContainer);
+    if (container) {
+      const topRow = document.createElement("div");
+      topRow.className = "flex flex-row w-full";
+      topRow.appendChild(this.projectIconElement);
+      topRow.appendChild(infoContainer);
 
-    container.classList.remove("flex-row");
-    container.classList.add("flex-col", "w-full");
-    container.appendChild(topRow);
-    container.appendChild(this.etfiDetails);
-  } else {
-    infoContainer.appendChild(this.etfiDetails);
+      container.classList.remove("flex-row");
+      container.classList.add("flex-col", "w-full");
+      container.appendChild(topRow);
+      container.appendChild(this.etfiDetails);
+    } else {
+      infoContainer.appendChild(this.etfiDetails);
+    }
   }
 
   this.etfiUpdate();
@@ -174,7 +200,20 @@ TownFocusChooserItem.prototype.onAttributeChanged = function (name, oldValue, ne
 };
 
 TownFocusChooserItem.prototype.etfiUpdate = function () {
-  if (!this.etfiYields || !this.etfiDetails) return;
+  if (!this.etfiYields) return;
+
+  // If this turned out to be the Growing Town focus (its attributes can arrive
+  // after the initial render), blank the ETFI UI — it gets its own treatment.
+  if (isGrowthFocus(this.Root)) {
+    this.etfiYields.classList.add("hidden");
+    while (this.etfiYields.firstChild) this.etfiYields.removeChild(this.etfiYields.firstChild);
+    if (this.etfiDetails) {
+      this.etfiDetails.classList.add("hidden");
+      while (this.etfiDetails.firstChild) this.etfiDetails.removeChild(this.etfiDetails.firstChild);
+    }
+    return;
+  }
+
   const model = buildModel(this);
 
   while (this.etfiYields.firstChild) this.etfiYields.removeChild(this.etfiYields.firstChild);
@@ -182,9 +221,12 @@ TownFocusChooserItem.prototype.etfiUpdate = function () {
     if (y && typeof y.value === "number") this.etfiYields.appendChild(yieldPill(y));
   }
 
-  while (this.etfiDetails.firstChild) this.etfiDetails.removeChild(this.etfiDetails.firstChild);
-  for (const row of model.rows || []) {
-    if (row) this.etfiDetails.appendChild(detailRow(row));
+  // Detail rows only exist in the selection list (see render()).
+  if (this.etfiDetails) {
+    while (this.etfiDetails.firstChild) this.etfiDetails.removeChild(this.etfiDetails.firstChild);
+    for (const row of model.rows || []) {
+      if (row) this.etfiDetails.appendChild(detailRow(row));
+    }
   }
 };
 
