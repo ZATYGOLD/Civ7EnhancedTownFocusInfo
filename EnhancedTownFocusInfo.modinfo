@@ -47,19 +47,12 @@
 				<UIScripts>
 					<Item>core/settings.js</Item>
 					<Item>ui/settings-init.js</Item>
-					<Item>ui/production-chooser/etfi.js</Item>
-					<Item>ui/production-chooser/etfi-town-focus-section.js</Item>
-					<Item>ui/etfi-details/etfi-details.js</Item>
-					<Item>ui/etfi-town-focus/town-focus-html.js</Item>
-					<Item>ui/etfi-town-focus/farm-fish-towns.js</Item>
-					<Item>ui/etfi-town-focus/hub-town.js</Item>
-					<Item>ui/etfi-town-focus/mining-town.js</Item>
-					<Item>ui/etfi-town-focus/resort-town.js</Item>
-					<Item>ui/etfi-town-focus/temple-town.js</Item>
-					<Item>ui/etfi-town-focus/trade-town.js</Item>
-					<Item>ui/etfi-town-focus/urban-town.js</Item>
-					<Item>ui/etfi-town-focus/fort-town.js</Item>
 					<Item>etfi-utilities.js</Item>
+					<Item>ui/etfi-town-focus/farm-fish-towns.js</Item>
+					<Item>ui/etfi-town-focus/mining-town.js</Item>
+					<Item>ui/etfi-town-focus/trade-town.js</Item>
+					<Item>ui/etfi-town-focus/hub-town.js</Item>
+					<Item>ui/production-chooser/etfi-town-focus-section.js</Item>
 				</UIScripts>
 				<UpdateText>
 					<Item>text/en_us/InGameText.xml</Item>

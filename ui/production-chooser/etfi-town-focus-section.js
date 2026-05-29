@@ -2,26 +2,24 @@
 //
 // Author: Zatygold
 //
-// Overrides the base town-focus chooser item
-//   Base/modules/base-standard/ui/production-chooser/town-focus-section.js
-// to render ETFI info INLINE in the focus list item:
+// Overrides the base town-focus chooser item to render ETFI info INLINE:
 //   * yield total pills (colored), RIGHT-aligned in the name row,
-//   * the detail rows in their own full-width panel BELOW the icon+info row.
+//   * the detail rows in their own full-width panel BELOW the icon+info row
+//     (selection list only; the production summary shows pills only).
+// The default "Growing Town" focus is left untouched (custom treatment TBD).
 //
-// A custom element can only be customElements.define'd once, so we cannot
-// re-register "town-focus-chooser-item". Instead we import the exported class
-// and patch its prototype (render + onAttributeChanged). The base layout and
-// the tooltip hook stay intact; we restructure the container to a column so the
-// details panel can span the full width under the focus icon.
-//
-// Rendering uses only safe pieces: the real Pill component, fxs-icon,
-// Locale.stylize, and the game's ticket panel CSS. NOTE: the model is SAMPLE
-// data for now — this chunk validates placement/layout. Real per-focus data
-// comes from the API next.
+// A custom element can't be re-defined, so we patch the exported class's
+// prototype. Per-focus data comes from the model builders (which use the
+// etfi-utilities API); this file just dispatches by project type and renders.
 
 import { TownFocusChooserItem } from "/base-standard/ui/production-chooser/town-focus-section.js";
 import { Pill } from "/base-standard/ui-next/components/pills.js";
 import { ETFI_Settings } from "../../core/settings.js";
+import { getTownCity } from "../../etfi-utilities.js";
+import { buildFoodModel } from "../etfi-town-focus/farm-fish-towns.js";
+import { buildMiningModel } from "../etfi-town-focus/mining-town.js";
+import { buildTradeModel } from "../etfi-town-focus/trade-town.js";
+import { buildHubModel } from "../etfi-town-focus/hub-town.js";
 
 const YIELD_COLORS = {
   YIELD_FOOD: "rgba(128,179,77,0.35)",
@@ -49,8 +47,8 @@ function fxsIcon(iconId, sizeClass) {
   return icon;
 }
 
-// The default "Growing Town" focus (GrowthTypes.EXPAND / ProjectTypes.NO_PROJECT)
-// gets its own treatment later — we don't render the standard detail panel for it.
+// The default "Growing Town" focus gets its own treatment later — no standard
+// ETFI UI for it.
 function isGrowthFocus(root) {
   const gt = root.getAttribute("data-growth-type");
   const growthType = gt != null && gt !== "" ? parseInt(gt) : null;
@@ -76,7 +74,6 @@ function yieldPill(entry) {
       ? { "background-color": YIELD_COLORS[entry.yieldType] }
       : undefined;
 
-  // Pill(...) returns a DOM element.
   return Pill({ class: "ml-1", small: true, backgroundStyle, children: body });
 }
 
@@ -108,23 +105,46 @@ function detailRow(row) {
   }
 
   line.append(left, right);
+
+  if (row.subText) {
+    const wrap = document.createElement("div");
+    wrap.className = "flex flex-col w-full";
+    wrap.appendChild(line);
+    const sub = document.createElement("div");
+    sub.className = "ml-6 opacity-70";
+    sub.style.fontSize = "0.85em";
+    sub.textContent = row.subText;
+    wrap.appendChild(sub);
+    return wrap;
+  }
   return line;
 }
 
-// SAMPLE model — placeholder to validate inline placement. Real per-focus data
-// (from the API) replaces buildModel() next. (Second yield is preview-only.)
+// --- model dispatch --------------------------------------------------------
+
+function projectTypeString(root) {
+  const pt = root.getAttribute("data-project-type");
+  const projectType = pt != null && pt !== "" ? parseInt(pt) : null;
+  if (projectType == null || Number.isNaN(projectType)) return null;
+  try { return GameInfo?.Projects?.lookup?.(projectType)?.ProjectType ?? null; } catch { return null; }
+}
+
 function buildModel(item) {
-  return {
-    header: [
-      { yieldType: "YIELD_FOOD", value: 5 },
-      { yieldType: "YIELD_GOLD", value: 2 },
-    ],
-    rows: [
-      { iconId: "IMPROVEMENT_FARM", name: Locale.compose("LOC_MOD_ETFI_IMPROVEMENT_FARM"), count: 3, yields: [{ yieldType: "YIELD_FOOD", value: 3 }, { yieldType: "YIELD_GOLD", value: 1 }] },
-      { iconId: "IMPROVEMENT_PASTURE", name: Locale.compose("LOC_MOD_ETFI_IMPROVEMENT_PASTURE"), count: 1, yields: [{ yieldType: "YIELD_FOOD", value: 1 }] },
-      { iconId: "IMPROVEMENT_FISHING_BOAT_RESOURCE", name: Locale.compose("LOC_MOD_ETFI_IMPROVEMENT_FISHING_BOAT"), count: 1, yields: [{ yieldType: "YIELD_FOOD", value: 1 }, { yieldType: "YIELD_GOLD", value: 1 }] },
-    ],
-  };
+  const city = getTownCity();
+  if (!city) return null;
+  switch (projectTypeString(item.Root)) {
+    case "PROJECT_TOWN_GRANARY":
+    case "PROJECT_TOWN_FISHING":
+      return buildFoodModel(city);
+    case "PROJECT_TOWN_PRODUCTION":
+      return buildMiningModel(city);
+    case "PROJECT_TOWN_TRADE":
+      return buildTradeModel(city);
+    case "PROJECT_TOWN_INN":
+      return buildHubModel(city);
+    default:
+      return null; // focuses not yet implemented (next batch)
+  }
 }
 
 // --- prototype patch -------------------------------------------------------
@@ -136,21 +156,20 @@ TownFocusChooserItem.prototype.render = function () {
   baseRender.call(this);
 
   // Growing Town (default growth) focus gets its own treatment later — no
-  // standard ETFI UI at all (no pills, no detail panel). Leave the base item
-  // untouched. (etfiUpdate re-checks in case the focus type arrives later.)
+  // standard ETFI UI at all. Leave the base item untouched. (etfiUpdate
+  // re-checks in case the focus type is only known after the first render.)
   if (isGrowthFocus(this.Root)) return;
 
   const infoContainer = this.nameElement.parentElement;
   if (!infoContainer) return;
   const container = this.container || infoContainer.parentElement;
 
-  // The same item is reused in two places: the production panel's current-focus
-  // SUMMARY (rendered inside a <town-focus-section>) and the focus SELECTION
-  // list (panel-town-focus). Show the full detail panel only in the selection
-  // list; the summary gets only the yield pills next to the name.
+  // The item is reused in the production-panel SUMMARY (inside a
+  // <town-focus-section>) and the focus SELECTION list. The detail panel only
+  // shows in the selection list; the summary gets just the pills.
   const inSummary = !!this.Root.closest("town-focus-section");
 
-  // 1) Colored yield pills, RIGHT-aligned in the name row (both contexts).
+  // Colored yield pills, RIGHT-aligned in the name row (both contexts).
   const nameRow = document.createElement("div");
   nameRow.className = "flex flex-row items-center w-full";
   infoContainer.replaceChild(nameRow, this.nameElement);
@@ -161,20 +180,16 @@ TownFocusChooserItem.prototype.render = function () {
   this.etfiYields.className = "flex flex-row flex-wrap items-center justify-end ml-auto";
   nameRow.appendChild(this.etfiYields);
 
-  // 2) Details panel: SELECTION LIST ONLY. Full width, BELOW the icon+info row;
-  //    restructure the item's container into a column so it fills the width
-  //    (including under the focus icon).
+  // Details panel: selection list only; full width below the icon+info row.
   this.etfiDetails = null;
   if (!inSummary) {
     this.etfiDetails = document.createElement("div");
     this.etfiDetails.className = "img-base-ticket-bg-container w-full flex flex-col mt-2";
-
     if (container) {
       const topRow = document.createElement("div");
       topRow.className = "flex flex-row w-full";
       topRow.appendChild(this.projectIconElement);
       topRow.appendChild(infoContainer);
-
       container.classList.remove("flex-row");
       container.classList.add("flex-col", "w-full");
       container.appendChild(topRow);
@@ -202,8 +217,7 @@ TownFocusChooserItem.prototype.onAttributeChanged = function (name, oldValue, ne
 TownFocusChooserItem.prototype.etfiUpdate = function () {
   if (!this.etfiYields) return;
 
-  // If this turned out to be the Growing Town focus (its attributes can arrive
-  // after the initial render), blank the ETFI UI — it gets its own treatment.
+  // Growing Town focus: blank the ETFI UI (its attributes may arrive late).
   if (isGrowthFocus(this.Root)) {
     this.etfiYields.classList.add("hidden");
     while (this.etfiYields.firstChild) this.etfiYields.removeChild(this.etfiYields.firstChild);
@@ -214,19 +228,20 @@ TownFocusChooserItem.prototype.etfiUpdate = function () {
     return;
   }
 
-  const model = buildModel(this);
+  const model = buildModel(this) || { header: [], rows: [] };
 
   while (this.etfiYields.firstChild) this.etfiYields.removeChild(this.etfiYields.firstChild);
   for (const y of model.header || []) {
     if (y && typeof y.value === "number") this.etfiYields.appendChild(yieldPill(y));
   }
+  this.etfiYields.classList.toggle("hidden", this.etfiYields.childElementCount === 0);
 
-  // Detail rows only exist in the selection list (see render()).
   if (this.etfiDetails) {
     while (this.etfiDetails.firstChild) this.etfiDetails.removeChild(this.etfiDetails.firstChild);
     for (const row of model.rows || []) {
       if (row) this.etfiDetails.appendChild(detailRow(row));
     }
+    this.etfiDetails.classList.toggle("hidden", this.etfiDetails.childElementCount === 0);
   }
 };
 

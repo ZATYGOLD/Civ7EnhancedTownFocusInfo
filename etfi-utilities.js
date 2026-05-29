@@ -1,15 +1,13 @@
-//Author: Zatygold
-//etfi-utilities.js
+// File Path: etfi-utilities.js
+//
+// Author: Zatygold
+//
+// ETFI API. Live, read-only queries against the current town, used by the
+// per-focus model builders. No rendering here. Uses only confirmed engine APIs.
 
-import { ETFI_Settings } from "./core/settings.js";
+import { ConstructibleHasTagType } from "/base-standard/ui/utilities/utilities-tags.js";
 
-
-// #region Constants
-
-// Canonical yield IDs for this mod.
-// These match the game's internal YieldType strings and are used everywhere
-// in the town focus UI and logic. The object is frozen so nothing can modify
-// it at runtime by mistake.
+// Canonical yield ids + the trade-route icon used for the Trade focus range pill.
 export const ETFI_YIELDS = Object.freeze({
   FOOD: "YIELD_FOOD",
   PRODUCTION: "YIELD_PRODUCTION",
@@ -18,261 +16,161 @@ export const ETFI_YIELDS = Object.freeze({
   SCIENCE: "YIELD_SCIENCE",
   CULTURE: "YIELD_CULTURE",
   INFLUENCE: "YIELD_DIPLOMACY",
-  TRADE: "YIELD_TRADES",
-  FORTIFY: "ACTION_FORTIFY"
 });
+export const TRADE_ROUTE_ICON = "TRADE_ROUTE";
 
-// #endregion
+// --- small helpers ---------------------------------------------------------
 
-// #region Logic Helpers
-
-/**
- * Format a number with at most 1 decimal place.
- *
- * Rules:
- * - 0 stays "0"
- * - Integers render without a decimal: 1 → "1"
- * - Non-integers render with one decimal: 1.34 → "1.3", 1.36 → "1.4"
- *
- * This avoids ugly floating-point artifacts (like 1.999999) and keeps
- * the pill text compact for small header elements.
- *
- * @param {number} x - numeric value to format
- * @returns {string} formatted number string
- */
-export function fmt1(x) {
-  if (x === 0) return "0";
-  const v = Math.round(x * 10) / 10; 
-  return Math.abs(v - Math.round(v)) < 1e-9 ? String(Math.round(v)) : v.toFixed(1);
+export function composeWithFallback(key, fallback) {
+  if (!key) return fallback || "";
+  try {
+    const v = Locale.compose(key);
+    return v && v !== key ? v : fallback || v || key;
+  } catch {
+    return fallback || key;
+  }
 }
 
-/**
- * Compute the yield multiplier based on the current game Age.
- *
- * - Starts from a base multiplier (usually 1 or 2, provided by the town rule).
- * - If the player is in the Exploration Age, add +1.
- * - If the player is in the Modern Age, add +2.
- * - Otherwise, leave the base multiplier unchanged.
- *
- * This centralizes the "per-age" scaling so each town script doesn't need to
- * duplicate the Age logic.
- *
- * @param {number} [base=1] - base multiplier before age bonuses
- * @returns {number} effective multiplier after age adjustments
- */
-export function getEraMultiplier(base = 1) {
-  let multiplier = base;
-  const ageData = GameInfo?.Ages?.lookup?.(Game.age);
-  if (!ageData) return multiplier;
-  const ageType = (ageData.AgeType || "").trim();
-  if (ageType === "AGE_EXPLORATION") multiplier += 1;
-  else if (ageType === "AGE_MODERN") multiplier += 2;
-  return multiplier;
+export function constructibleName(type) {
+  try {
+    const info = GameInfo?.Constructibles?.lookup?.(type);
+    return info?.Name ? Locale.compose(info.Name) : type;
+  } catch {
+    return type;
+  }
 }
 
-/**
- * Scan the city's improvements and build a summary object for a given "logical set"
- * of improvement types (e.g., farms + pastures + plantations for Food Town).
- *
- * This function:
- * - Filters improvement instances to those whose logical free-constructible type
- *   is in `targetSet`.
- * - Groups them by a display key (with optional overrides from `displayNameMap`).
- * - Counts how many of each display key exists.
- * - Applies an era multiplier to compute the total yield effect.
- *
- * Return structure:
- * {
- *   items: [
- *     {
- *       key,        // display key used for grouping
- *       ctype,      // ConstructibleType used as icon ID
- *       iconId,     // same as ctype; used by <fxs-icon>
- *       displayName,// localized display string
- *       count       // number of instances for this group
- *     },
- *     ...
- *   ],
- *   total,         // baseTotal * eraMultiplier
- *   multiplier,    // era multiplier actually used
- *   baseCount      // total number of qualifying improvements
- * }
- *
- * @param {Object} options
- * @param {Object} options.city - city object containing Constructibles
- * @param {Set<string>} options.targetSet - logical improvement types we care about
- * @param {Object} [options.displayNameMap] - optional mapping ConstructibleType -> LOC key override
- * @param {number} [options.baseMultiplier=1] - per-improvement yield before era scaling
- * @returns {Object|null} summary object or null if nothing matched
- */
-export function getImprovementSummaryForSet({ city, targetSet, displayNameMap, baseMultiplier = 1 } = {}) {
-  if (!city || !city.Constructibles) return null;
-  if (!(targetSet instanceof Set) || targetSet.size === 0) return null;
-  if (!GameInfo?.Constructibles || !Districts || !Constructibles) return null;
+export function getCurrentAgeType() {
+  try {
+    return (GameInfo?.Ages?.lookup?.(Game.age)?.AgeType || "").trim();
+  } catch {
+    return "";
+  }
+}
 
-  const resultByDisplayKey = Object.create(null);
-  const improvements = city.Constructibles.getIdsOfClass("IMPROVEMENT") || [];
+/** The town being configured (the head-selected city). */
+export function getTownCity() {
+  try {
+    const id = UI.Player?.getHeadSelectedCity?.();
+    return id ? Cities.get(id) : null;
+  } catch {
+    return null;
+  }
+}
 
-  for (const instanceId of improvements) {
-    const instance = Constructibles.get(instanceId);
-    if (!instance) continue;
-
-    const location = instance.location;
-    if (!location || location.x == null || location.y == null) continue;
-
-    // Use the "free constructible" to determine the logical improvement type at this tile.
-    // This respects warehouses or other mechanics that alter the tile's effective improvement.
-    const fcID = Districts.getFreeConstructible(location, GameContext.localPlayerID);
-    const fcInfo = GameInfo.Constructibles.lookup(fcID);
-    if (!fcInfo) continue;
-
-    const logicalType = fcInfo.ConstructibleType;
-    if (!targetSet.has(logicalType)) continue;
-
-    // Use the actual instance's ConstructibleType and name for display and icon.
-    const info = GameInfo.Constructibles.lookup(instance.type);
-    const ctype = info?.ConstructibleType || logicalType;
-
-    // Optionally override the display key from displayNameMap; otherwise use the LOC name or type.
-    const displayKey = (displayNameMap && displayNameMap[ctype]) || info?.Name || ctype;
-
-    if (!resultByDisplayKey[displayKey]) {
-      resultByDisplayKey[displayKey] = {
-        key: displayKey,
-        ctype,
-        iconId: ctype,                 
-        displayName: Locale.compose(displayKey),
-        count: 0,
-      };
+// --- improvement counting (Farming / Fishing / Mining) ---------------------
+//
+// Counts COMPLETED improvements whose ConstructibleType is in `typeSet`,
+// grouped by localized name. Returns { groups: [{name, iconId, count}], total }.
+export function countImprovements(city, typeSet) {
+  const byName = new Map();
+  let total = 0;
+  try {
+    const ids = city?.Constructibles?.getIdsOfClass?.("IMPROVEMENT") || [];
+    for (const id of ids) {
+      const inst = Constructibles.get(id);
+      if (!inst || !inst.complete) continue;
+      const info = GameInfo.Constructibles.lookup(inst.type);
+      if (!info || !typeSet.has(info.ConstructibleType)) continue;
+      const name = info.Name ? Locale.compose(info.Name) : info.ConstructibleType;
+      if (!byName.has(name)) byName.set(name, { name, iconId: info.ConstructibleType, count: 0 });
+      byName.get(name).count += 1;
+      total += 1;
     }
-    resultByDisplayKey[displayKey].count += 1;
+  } catch (e) {
+    console.error("[ETFI] countImprovements failed", e);
   }
-
-  const items = Object.values(resultByDisplayKey);
-  if (!items.length) return null;
-
-  const baseTotal = items.reduce((sum, it) => sum + it.count, 0);
-  const multiplier = baseMultiplier;
-  const total = baseTotal * multiplier;
-
-  return { items, total, multiplier, baseCount: baseTotal };
+  const groups = Array.from(byName.values()).sort((a, b) => b.count - a.count);
+  return { groups, total };
 }
 
-/**
- * Get normalized constructible records from a city by class.
- *
- * This avoids repeating:
- * - city.Constructibles.getIdsOfClass(...)
- * - Constructibles.get(...)
- * - GameInfo.Constructibles.lookup(...)
- * - instance.complete checks
- * - tile key creation
- *
- * @param {Object} city
- * @param {string} constructibleClass - "BUILDING", "IMPROVEMENT", etc.
- * @param {Object} options
- * @param {boolean} [options.completedOnly=false]
- * @returns {Array}
- */
-export function getConstructibleRecordsByClass(city, constructibleClass, { completedOnly = false } = {}) {
-  if (!city?.Constructibles || !Constructibles || !GameInfo?.Constructibles) {
-    return [];
+// --- resource tile counting (Trade) ----------------------------------------
+//
+// Counts the town's resource tiles, grouped by resource type.
+export function countResourceTiles(city) {
+  const byName = new Map();
+  let total = 0;
+  let indices = [];
+  try {
+    indices = city?.getPurchasedPlots?.() || [];
+  } catch {
+    indices = [];
   }
-
-  const ids = city.Constructibles.getIdsOfClass(constructibleClass) || [];
-  const records = [];
-
-  for (const id of ids) {
-    const instance = Constructibles.get(id);
-    if (!instance) continue;
-
-    if (completedOnly && !instance.complete) continue;
-
-    const info = GameInfo.Constructibles.lookup(instance.type);
+  for (const idx of indices) {
+    let loc;
+    try {
+      loc = GameplayMap.getLocationFromIndex(idx);
+    } catch {
+      continue;
+    }
+    if (!loc) continue;
+    let info;
+    try {
+      info = GameInfo?.Resources?.lookup?.(GameplayMap.getResourceType(loc.x, loc.y));
+    } catch {
+      info = null;
+    }
     if (!info) continue;
-
-    const location = instance.location ?? null;
-    const hasLocation =
-      location &&
-      location.x !== null &&
-      location.x !== undefined &&
-      location.y !== null &&
-      location.y !== undefined;
-
-    records.push({
-      id,
-      instance,
-      info,
-      type: info.ConstructibleType,
-      iconId: info.ConstructibleType,
-      nameKey: info.Name,
-      displayName: Locale.compose(info.Name),
-      location,
-      tileKey: hasLocation ? `${location.x},${location.y}` : null,
-      complete: !!instance.complete,
-    });
+    const name = info.Name ? Locale.compose(info.Name) : info.ResourceType;
+    if (!byName.has(name)) byName.set(name, { name, iconId: info.ResourceType, count: 0 });
+    byName.get(name).count += 1;
+    total += 1;
   }
-
-  return records;
+  const groups = Array.from(byName.values()).sort((a, b) => b.count - a.count);
+  return { groups, total };
 }
 
-export function getCompletedBuildings(city) {
-  return getConstructibleRecordsByClass(city, "BUILDING", {
-    completedOnly: true,
-  });
+// --- connected settlements (Hub) -------------------------------------------
+
+export function getConnectedSettlements(city) {
+  const result = { cities: [], towns: [] };
+  let ids = [];
+  try {
+    ids = city?.getConnectedCities?.() || [];
+  } catch (e) {
+    console.error("[ETFI] getConnectedCities failed", e);
+    return result;
+  }
+  for (const id of ids) {
+    const s = Cities.get(id);
+    if (!s) continue;
+    const name = Locale.compose(s.name);
+    if (s.isTown) result.towns.push(name);
+    else result.cities.push(name);
+  }
+  return result;
 }
 
-export function getCompletedImprovements(city) {
-  return getConstructibleRecordsByClass(city, "IMPROVEMENT", {
-    completedOnly: true,
-  });
+// --- building helpers (for later building-based focuses) -------------------
+
+/** True if a constructible should be counted now: ageless OR current age. */
+export function isCurrentOrAgeless(type) {
+  try {
+    if (ConstructibleHasTagType(type, "AGELESS")) return true;
+    const def = GameInfo?.Constructibles?.lookup?.(type);
+    if (!def) return false;
+    const age = GameInfo?.Ages?.lookup?.(Game.age);
+    return !!age && def.Age === age.AgeType;
+  } catch {
+    return false;
+  }
 }
 
-export function isWallConstructibleInfo(info) {
-  const typeName = info?.ConstructibleType || "";
-  return typeName.includes("WALLS") || typeName.includes("FORTIFICATION");
-}
-
-export function isWallRecord(record) {
-  return isWallConstructibleInfo(record?.info);
-}
-
-export function groupBy(items, getKey) {
-  const groups = new Map();
-
-  for (const item of items || []) {
-    const key = getKey(item);
-    if (key === null || key === undefined || key === "") continue;
-
-    if (!groups.has(key)) {
-      groups.set(key, []);
+/** Completed BUILDING records (ageless + current age only). */
+export function getCountableBuildings(city) {
+  const out = [];
+  try {
+    const ids = city?.Constructibles?.getIdsOfClass?.("BUILDING") || [];
+    for (const id of ids) {
+      const inst = Constructibles.get(id);
+      if (!inst || !inst.complete) continue;
+      const def = GameInfo.Constructibles.lookup(inst.type);
+      if (!def || def.ConstructibleClass !== "BUILDING") continue;
+      if (!isCurrentOrAgeless(def.ConstructibleType)) continue;
+      out.push({ type: def.ConstructibleType, name: def.Name ? Locale.compose(def.Name) : def.ConstructibleType, iconId: def.ConstructibleType });
     }
-
-    groups.get(key).push(item);
+  } catch (e) {
+    console.error("[ETFI] getCountableBuildings failed", e);
   }
-
-  return groups;
+  return out;
 }
-
-export function renderIconName({
-  iconId,
-  name,
-  count = null,
-  iconSizeClass = "size-5",
-} = {}) {
-  const countHtml =
-    typeof count === "number"
-      ? `<span class="opacity-70 ml-1">x${count}</span>`
-      : "";
-
-  return `
-    <span class="inline-flex items-center gap-2 whitespace-nowrap">
-      <fxs-icon data-icon-id="${iconId}" class="${iconSizeClass}"></fxs-icon>
-      <span class="opacity-60">| </span>
-      <span>${name}</span>
-      ${countHtml}
-    </span>
-  `;
-}
-
-// #endregion Logic Helpers

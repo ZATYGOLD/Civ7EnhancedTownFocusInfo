@@ -1,114 +1,39 @@
 // File Path: ui/etfi-town-focus/hub-town.js
+//
+// Author: Zatygold
+//
+// Hub Town (PROJECT_TOWN_INN): +1 Influence per Settlement connected to this
+// Town. Split into connected Cities and Towns, with the names as sub-text.
 
-// Hub (Inn) details renderer.
-// +1 Influence per Settlement connected to this Town.
-// Can purchase Diplomacy Buildings.
-// Limited to 1 Hub Town per Continent.
-// Only available in Exploration and Modern.
+import { ETFI_YIELDS, getConnectedSettlements, composeWithFallback } from "../../etfi-utilities.js";
 
-import { ETFI_YIELDS } from "../../etfi-utilities.js";
+const INFLUENCE_PER = 1;
+const HUB_ICONS = { CITY: "CITY_URBAN", TOWN: "CITY_RURAL" };
 
-import {
-  renderFocusDetails,
-  renderFocusRow,
-  renderFocusIconName,
-  composeFocusLabel,
-} from "./town-focus-html.js";
-
-const HUB_ICONS = Object.freeze({
-  CITY: "CITY_URBAN",
-  TOWN: "CITY_RURAL",
-});
-
-export default class HubDetails {
-  render(city) {
-    if (
-      !city ||
-      typeof Cities === "undefined" ||
-      typeof city.getConnectedCities !== "function"
-    ) {
-      return null;
-    }
-
-    const connectedSettlements = this.getConnectedSettlements(city);
-
-    const totalSettlements =
-      connectedSettlements.cities.length + connectedSettlements.towns.length;
-
-    if (totalSettlements === 0) return null;
-
-    const bodyHtml = `
-      ${this.renderSettlementRow({
-        iconId: HUB_ICONS.CITY,
-        label: composeFocusLabel("LOC_MOD_ETFI_CONNECTED_CITIES", "Cities"),
-        names: connectedSettlements.cities,
-      })}
-
-      ${this.renderSettlementRow({
-        iconId: HUB_ICONS.TOWN,
-        label: composeFocusLabel("LOC_MOD_ETFI_CONNECTED_TOWNS", "Towns"),
-        names: connectedSettlements.towns,
-      })}
-    `;
-
-    return renderFocusDetails({
-      headerYields: ETFI_YIELDS.INFLUENCE,
-      headerTotals: totalSettlements,
-      summaryLabel: composeFocusLabel(
-        "LOC_MOD_ETFI_TOTAL_SETTLEMENTS",
-        "Total Settlements"
-      ),
-      summaryValue: totalSettlements,
-      bodyHtml,
+export function buildHubModel(city) {
+  const { cities, towns } = getConnectedSettlements(city);
+  const total = (cities.length + towns.length) * INFLUENCE_PER;
+  const rows = [];
+  if (cities.length) {
+    rows.push({
+      iconId: HUB_ICONS.CITY,
+      name: composeWithFallback("LOC_MOD_ETFI_CONNECTED_CITIES", "Cities"),
+      count: cities.length,
+      yields: [{ yieldType: ETFI_YIELDS.INFLUENCE, value: cities.length * INFLUENCE_PER }],
+      subText: cities.join(" • "),
     });
   }
-
-  getConnectedSettlements(city) {
-    const result = {
-      cities: [],
-      towns: [],
-    };
-
-    const connectedIds = city.getConnectedCities() || [];
-
-    for (const id of connectedIds) {
-      const settlement = Cities.get(id);
-      if (!settlement) continue;
-
-      const name = Locale.compose(settlement.name);
-
-      if (settlement.isTown) {
-        result.towns.push(name);
-      } else {
-        result.cities.push(name);
-      }
-    }
-
-    return result;
-  }
-
-  renderSettlementRow({ iconId, label, names }) {
-    const count = names.length;
-
-    if (count <= 0) return "";
-
-    const rowHtml = renderFocusRow({
-      leftHtml: renderFocusIconName({
-        iconId,
-        name: label,
-        count,
-        iconSizeClass: "size-4",
-      }),
-      yieldIconId: ETFI_YIELDS.INFLUENCE,
-      yieldValue: count,
+  if (towns.length) {
+    rows.push({
+      iconId: HUB_ICONS.TOWN,
+      name: composeWithFallback("LOC_MOD_ETFI_CONNECTED_TOWNS", "Towns"),
+      count: towns.length,
+      yields: [{ yieldType: ETFI_YIELDS.INFLUENCE, value: towns.length * INFLUENCE_PER }],
+      subText: towns.join(" • "),
     });
-
-    return `
-      ${rowHtml}
-
-      <div class="ml-6 opacity-80" style="font-size: 0.8em;">
-        ${names.join(" • ")}
-      </div>
-    `;
   }
+  return {
+    header: [{ yieldType: ETFI_YIELDS.INFLUENCE, value: total }],
+    rows,
+  };
 }
