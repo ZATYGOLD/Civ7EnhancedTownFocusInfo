@@ -1,40 +1,40 @@
 // File Path: ui/etfi-town-focus/factory-town.js
+//
+// Author: Zatygold
+//
+// Factory Town (PROJECT_TOWN_FACTORY, Modern): +1 Resource Slot and +5 Trade
+// Route range (pills by the name), +100% Gold toward Factory/Port/Rail Station.
+// Lists the town's Factory Resources, split by improved vs unimproved.
 
-// Factory Town:
-// +1 Resource Slot.
-// +5 Trade Range.
-// Additional Factory purchase logic can be added later.
+import { ETFI_YIELDS, TRADE_ROUTE_ICON, RESOURCE_ICON, getFactoryResources, composeWithFallback } from "../../etfi-utilities.js";
 
-import { ETFI_YIELDS } from "../../etfi-utilities.js";
-
-import {
-  renderFocusDetails,
-  renderHeaderTextPill,
-} from "./town-focus-html.js";
-
-const RESOURCE_SLOTS = 1;
 const TRADE_RANGE = 5;
+const RESOURCE_SLOT = 1;
 
-const RESOURCE_SLOT_ICON_ID = "RADIAL_RESOURCES";
+export function buildFactoryModel(city) {
+  const { improved, unimproved } = getFactoryResources(city);
 
-export default class FactoryTownDetails {
-  render(city) {
-    if (!city) return null;
-
-    const resourceSlotPillHtml = renderHeaderTextPill({
-      iconId: RESOURCE_SLOT_ICON_ID,
-      label: "Resource Slot",
-      value: RESOURCE_SLOTS,
-      colorKey: ETFI_YIELDS.GOLD,
-    });
-
-    return renderFocusDetails({
-      headerYields: ETFI_YIELDS.TRADE,
-      headerTotals: TRADE_RANGE,
-      headerExtraHtml: resourceSlotPillHtml,
-      summaryLabel: "",
-      summaryValue: "",
-      bodyHtml: "",
+  const sections = [];
+  if (improved.length) {
+    sections.push({
+      title: composeWithFallback("LOC_MOD_ETFI_IMPROVED", "Improved"),
+      rows: improved.map((r) => ({ iconId: r.iconId, name: r.name, count: r.count })),
     });
   }
+  if (unimproved.length) {
+    sections.push({
+      title: composeWithFallback("LOC_MOD_ETFI_UNIMPROVED", "Unimproved"),
+      rows: unimproved.map((r) => ({ iconId: r.iconId, name: r.name, count: r.count })),
+    });
+  }
+
+  return {
+    header: [
+      { yieldType: RESOURCE_ICON, value: RESOURCE_SLOT },
+      { yieldType: TRADE_ROUTE_ICON, value: TRADE_RANGE },
+    ],
+    rows: [],
+    sections,
+    notes: ["+100% [icon:YIELD_GOLD] Gold towards purchasing a Factory, Port, or Rail Station"],
+  };
 }
