@@ -4,11 +4,11 @@
 //
 // Overrides the base town-focus chooser item to render ETFI info INLINE:
 //   * yield total pills (colored), RIGHT-aligned in the name row,
-//   * a main detail panel (rows / titled sections / notes), and optional extra
-//     panels for sections marked separatePanel (their own ticket container).
+//   * separatePanel sections (their own ticket containers) ABOVE a main detail
+//     panel (rows / titled sections / notes).
 // Growing Town is left untouched. Dividers match the plot tooltip's look.
 //
-// Row = { iconId?, name?, items?:[{iconId,name}], count?, countText?, yields?, subText? }.
+// Row = { iconId?|iconClass?+iconStyle?, name?, items?:[{iconId,name}], count?, countText?, yields?, subText? }.
 // Section = { title?, rows, notes?, separatePanel? }.
 
 import { TownFocusChooserItem } from "/base-standard/ui/production-chooser/town-focus-section.js";
@@ -35,6 +35,7 @@ const YIELD_COLORS = {
   YIELD_CULTURE: "rgba(92,92,214,0.35)",
   YIELD_HAPPINESS: "rgba(245,153,61,0.35)",
   YIELD_DIPLOMACY: "rgba(175,183,207,0.35)",
+  CULTURE_VP: "rgba(168,85,200,0.35)", // Tourism
 };
 
 function fmt(v) {
@@ -51,6 +52,19 @@ function fxsIcon(iconId, sizeClass) {
   icon.setAttribute("data-icon-id", iconId);
   icon.className = `${sizeClass} shrink-0`;
   return icon;
+}
+
+// Icon element from a spec: a CSS-class icon (e.g. the appeal hex) takes
+// priority, otherwise an fxs-icon by id.
+function iconEl(spec) {
+  if (spec && spec.iconClass) {
+    const d = document.createElement("div");
+    d.className = `${spec.iconClass} shrink-0`;
+    if (spec.iconStyle) d.style.cssText = spec.iconStyle;
+    return d;
+  }
+  if (spec && spec.iconId) return fxsIcon(spec.iconId, "size-5");
+  return null;
 }
 
 function vDivider() {
@@ -101,22 +115,24 @@ function yieldPill(entry) {
   span.textContent = `+${fmt(entry.value)}`;
   body.appendChild(span);
 
+  const colored = entry.colored !== false;
   const backgroundStyle =
-    isColorful() && YIELD_COLORS[entry.yieldType]
+    colored && isColorful() && YIELD_COLORS[entry.yieldType]
       ? { "background-color": YIELD_COLORS[entry.yieldType] }
       : undefined;
 
   return Pill({ class: "ml-1", small: true, backgroundStyle, children: body });
 }
 
-function appendNameItem(left, iconId, name) {
-  if (iconId) {
-    left.appendChild(fxsIcon(iconId, "size-5"));
+function appendNameItem(left, spec) {
+  const ic = iconEl(spec);
+  if (ic) {
+    left.appendChild(ic);
     left.appendChild(vDivider());
   }
   const nm = document.createElement("span");
   nm.style.cssText = "overflow:hidden; text-overflow:ellipsis; white-space:nowrap;";
-  nm.textContent = name ?? "";
+  nm.textContent = spec.name ?? "";
   left.appendChild(nm);
 }
 
@@ -136,10 +152,10 @@ function detailRow(row) {
         sep.textContent = "•";
         left.appendChild(sep);
       }
-      appendNameItem(left, it.iconId, it.name);
+      appendNameItem(left, it);
     });
   } else {
-    appendNameItem(left, row.iconId, row.name);
+    appendNameItem(left, row);
   }
 
   const countDisplay = row.countText != null ? row.countText : (typeof row.count === "number" ? String(row.count) : null);
@@ -173,7 +189,6 @@ function detailRow(row) {
   return line;
 }
 
-// Append rows (with hDividers between) into a panel.
 function appendRows(panel, rows) {
   rows.forEach((row, i) => {
     if (i > 0) panel.appendChild(hDivider());
@@ -247,10 +262,10 @@ TownFocusChooserItem.prototype.render = function () {
   this.etfiDetails = null;
   this.etfiExtra = null;
   if (!inSummary) {
-    this.etfiDetails = document.createElement("div");
-    this.etfiDetails.className = "img-base-ticket-bg-container w-full flex flex-col mt-2";
     this.etfiExtra = document.createElement("div");
     this.etfiExtra.className = "w-full flex flex-col";
+    this.etfiDetails = document.createElement("div");
+    this.etfiDetails.className = "img-base-ticket-bg-container w-full flex flex-col mt-2";
     if (container) {
       const topRow = document.createElement("div");
       topRow.className = "flex flex-row w-full";
@@ -259,11 +274,11 @@ TownFocusChooserItem.prototype.render = function () {
       container.classList.remove("flex-row");
       container.classList.add("flex-col", "w-full");
       container.appendChild(topRow);
-      container.appendChild(this.etfiDetails);
-      container.appendChild(this.etfiExtra);
+      container.appendChild(this.etfiExtra);   // separatePanel sections on top
+      container.appendChild(this.etfiDetails); // main panel below
     } else {
-      infoContainer.appendChild(this.etfiDetails);
       infoContainer.appendChild(this.etfiExtra);
+      infoContainer.appendChild(this.etfiDetails);
     }
   }
 
@@ -295,7 +310,6 @@ TownFocusChooserItem.prototype.etfiUpdate = function () {
 
   const model = buildModel(this) || { header: [], rows: [], sections: [], notes: [] };
 
-  // Header pills.
   while (this.etfiYields.firstChild) this.etfiYields.removeChild(this.etfiYields.firstChild);
   for (const y of model.header || []) {
     if (y && typeof y.value === "number") this.etfiYields.appendChild(yieldPill(y));
@@ -308,7 +322,25 @@ TownFocusChooserItem.prototype.etfiUpdate = function () {
   const mainSections = allSections.filter((s) => !s.separatePanel);
   const extraSections = allSections.filter((s) => s.separatePanel);
 
-  // --- main panel: flat rows, inline sections, notes -----------------------
+  // Extra panels (rendered above the main panel).
+  const extra = this.etfiExtra;
+  if (extra) {
+    while (extra.firstChild) extra.removeChild(extra.firstChild);
+    for (const section of extraSections) {
+      const srows = (section.rows || []).filter(Boolean);
+      const snotes = (section.notes || []).filter(Boolean);
+      if (!srows.length && !snotes.length) continue;
+      const p = document.createElement("div");
+      p.className = "img-base-ticket-bg-container w-full flex flex-col mt-2";
+      if (section.title) p.appendChild(sectionTitle(section.title));
+      appendRows(p, srows);
+      for (const n of snotes) p.appendChild(noteLine(n));
+      extra.appendChild(p);
+    }
+    extra.classList.toggle("hidden", extra.childElementCount === 0);
+  }
+
+  // Main panel: flat rows, inline sections, notes.
   const panel = this.etfiDetails;
   while (panel.firstChild) panel.removeChild(panel.firstChild);
   let any = false;
@@ -334,24 +366,6 @@ TownFocusChooserItem.prototype.etfiUpdate = function () {
     any = true;
   }
   panel.classList.toggle("hidden", panel.childElementCount === 0);
-
-  // --- extra panels: each separatePanel section in its own ticket panel ----
-  const extra = this.etfiExtra;
-  if (extra) {
-    while (extra.firstChild) extra.removeChild(extra.firstChild);
-    for (const section of extraSections) {
-      const srows = (section.rows || []).filter(Boolean);
-      const snotes = (section.notes || []).filter(Boolean);
-      if (!srows.length && !snotes.length) continue;
-      const p = document.createElement("div");
-      p.className = "img-base-ticket-bg-container w-full flex flex-col mt-2";
-      if (section.title) p.appendChild(sectionTitle(section.title));
-      appendRows(p, srows);
-      for (const n of snotes) p.appendChild(noteLine(n));
-      extra.appendChild(p);
-    }
-    extra.classList.toggle("hidden", extra.childElementCount === 0);
-  }
 };
 
 export {};

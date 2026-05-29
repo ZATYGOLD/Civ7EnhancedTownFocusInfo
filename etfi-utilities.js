@@ -340,16 +340,17 @@ export function getFactoryResources(city) {
   };
 }
 
-// --- resort: appealing (improved) + breathtaking counts --------------------
+// --- resort: appealing tiles (improved / unimproved) + breathtaking counts -
 //
-// appealingImproved: improved tiles with appeal >= Charming, grouped by
-//   resource name (if any) else improvement name -> each gets the Resort
-//   +1 Happiness / +1 Gold.
-// breathtakingImproved / breathtakingTotal: improved Breathtaking tiles vs all
+// appealingImproved / appealingUnimproved: tiles with appeal >= Charming, split
+//   by whether they have a completed improvement. Grouped by resource name (if
+//   any) else improvement name (improved) or eligible improvement (unimproved).
+// breathtakingImproved / breathtakingTotal: improved Breathtaking vs all
 //   Breathtaking tiles (for the Tourism rule).
 export function getResortData(city) {
-  const result = { appealingImproved: [], breathtakingImproved: 0, breathtakingTotal: 0, naturalWonders: 0 };
-  const byName = new Map();
+  const result = { appealingImproved: [], appealingUnimproved: [], breathtakingImproved: 0, breathtakingTotal: 0, naturalWonders: 0 };
+  const imp = new Map();
+  const unimp = new Map();
   let charming = 3;
   let breathtaking = 5;
   try {
@@ -374,21 +375,38 @@ export function getResortData(city) {
       try { appeal = GameplayMap.getAppeal(x, y); } catch {}
       const isBreathtaking = appeal >= breathtaking;
       if (isBreathtaking) result.breathtakingTotal++;
-      const imp = impMap.get(`${x},${y}`);
-      if (!imp) continue; // improved tiles only for listings/improved counts
-      if (isBreathtaking) result.breathtakingImproved++;
-      if (appeal >= charming) {
-        const resInfo = resourceAt(x, y);
-        const name = resInfo ? (resInfo.Name ? Locale.compose(resInfo.Name) : resInfo.ResourceType) : imp.name;
-        const iconId = resInfo ? resInfo.ResourceType : imp.iconId;
-        if (!byName.has(name)) byName.set(name, { name, iconId, count: 0 });
-        byName.get(name).count++;
+      if (appeal < charming) continue;
+      const impAtTile = impMap.get(`${x},${y}`);
+      const resInfo = resourceAt(x, y);
+      if (impAtTile) {
+        if (isBreathtaking) result.breathtakingImproved++;
+        const name = resInfo ? (resInfo.Name ? Locale.compose(resInfo.Name) : resInfo.ResourceType) : impAtTile.name;
+        const iconId = resInfo ? resInfo.ResourceType : impAtTile.iconId;
+        if (!imp.has(name)) imp.set(name, { name, iconId, count: 0 });
+        imp.get(name).count++;
+      } else {
+        let name = null;
+        let iconId = null;
+        if (resInfo) {
+          name = resInfo.Name ? Locale.compose(resInfo.Name) : resInfo.ResourceType;
+          iconId = resInfo.ResourceType;
+        } else {
+          let logicalType = null;
+          try { logicalType = GameInfo.Constructibles.lookup(Districts.getFreeConstructible(loc, GameContext.localPlayerID))?.ConstructibleType ?? null; } catch {}
+          if (!logicalType) continue;
+          const def = GameInfo.Constructibles.lookup(logicalType);
+          name = def?.Name ? Locale.compose(def.Name) : logicalType;
+          iconId = logicalType;
+        }
+        if (!unimp.has(name)) unimp.set(name, { name, iconId, count: 0 });
+        unimp.get(name).count++;
       }
     }
   } catch (e) {
     console.error("[ETFI] getResortData failed", e);
   }
-  result.appealingImproved = Array.from(byName.values()).sort((a, b) => b.count - a.count);
+  result.appealingImproved = Array.from(imp.values()).sort((a, b) => b.count - a.count);
+  result.appealingUnimproved = Array.from(unimp.values()).sort((a, b) => b.count - a.count);
   return result;
 }
 
