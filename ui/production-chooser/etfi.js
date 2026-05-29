@@ -348,28 +348,11 @@ class EtfiToolTipType {
       this.etfiContainer.setAttribute("data-rev", String(this._etfiRev));
     }
 
-    // PREVIEW model to validate the renderer in-game. Real per-focus models
-    // (built from the etfi-utilities API by each town-focus file) replace this
-    // in the next step.
+    // Details now render INLINE in the focus list item (see
+    // etfi-town-focus-section.js). The tooltip no longer shows the ETFI block —
+    // it will be repurposed for something else later.
     getDetailsModel(city) {
-      return {
-        header: [{ yieldType: "YIELD_FOOD", value: 5 }],
-        summary: {
-          label: Locale.compose("LOC_MOD_ETFI_TOTAL_IMPROVEMENTS"),
-          value: 5,
-        },
-        sections: [
-          {
-            title: null,
-            rows: [
-              { iconId: "IMPROVEMENT_FARM", name: Locale.compose("LOC_MOD_ETFI_IMPROVEMENT_FARM"), count: 3, yields: [{ yieldType: "YIELD_FOOD", value: 3 }] },
-              { iconId: "IMPROVEMENT_PASTURE", name: Locale.compose("LOC_MOD_ETFI_IMPROVEMENT_PASTURE"), count: 1, yields: [{ yieldType: "YIELD_FOOD", value: 1 }] },
-              { iconId: "IMPROVEMENT_FISHING_BOAT_RESOURCE", name: Locale.compose("LOC_MOD_ETFI_IMPROVEMENT_FISHING_BOAT"), count: 1, yields: [{ yieldType: "YIELD_FOOD", value: 1 }] },
-            ],
-          },
-        ],
-        notes: ["[SAMPLE] Renderer preview — real per-focus data is next."],
-      };
+      return null;
     }
 
     getProjectInfo() {
