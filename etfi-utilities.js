@@ -8,7 +8,6 @@
 import { ConstructibleHasTagType } from "/base-standard/ui/utilities/utilities-tags.js";
 import { getGlobalParamNumber } from "/core/ui/utilities/utilities-data.js";
 
-// Canonical yield ids.
 export const ETFI_YIELDS = Object.freeze({
   FOOD: "YIELD_FOOD",
   PRODUCTION: "YIELD_PRODUCTION",
@@ -19,13 +18,13 @@ export const ETFI_YIELDS = Object.freeze({
   INFLUENCE: "YIELD_DIPLOMACY",
 });
 
-// Non-yield icon ids (verified against base-standard icon data / original mod).
-export const TRADE_ROUTE_ICON = "TRADE_ROUTE"; // trade-route range
-export const HEAL_ICON = "ACTION_HEAL";        // unit healing (Fort)
-export const FORTIFY_ICON = "ACTION_FORTIFY";  // fortification health (Fort)
-export const TOURISM_ICON = "CULTURE_VP";      // tourism stand-in (Resort)
-export const RESOURCE_ICON = "RADIAL_RESOURCES"; // resource slot (Factory)
-export const RELIC_ICON = "NAR_REW_GREATWORK"; // relic slot (Temple)
+// Non-yield icon ids.
+export const TRADE_ROUTE_ICON = "TRADE_ROUTE";
+export const HEAL_ICON = "ACTION_HEAL";
+export const FORTIFY_ICON = "ACTION_FORTIFY";
+export const TOURISM_ICON = "CULTURE_VP";
+export const RESOURCE_ICON = "RADIAL_RESOURCES";
+export const RELIC_ICON = "NAR_REW_GREATWORK";
 
 // --- small helpers ---------------------------------------------------------
 
@@ -56,7 +55,6 @@ export function getCurrentAgeType() {
   }
 }
 
-/** The town being configured (the head-selected city). */
 export function getTownCity() {
   try {
     const id = UI.Player?.getHeadSelectedCity?.();
@@ -82,7 +80,6 @@ function isFullTileType(type) {
   }
 }
 
-/** Map of "x,y" -> { type, name, iconId } for completed improvements in the town. */
 function buildImprovementTileMap(city) {
   const map = new Map();
   try {
@@ -116,7 +113,6 @@ export function countImprovements(city, typeSet) {
     for (const id of ids) {
       const inst = Constructibles.get(id);
       if (!inst || !inst.complete) continue;
-
       const location = inst.location;
       if (!location || location.x == null || location.y == null) continue;
 
@@ -238,9 +234,7 @@ export function getCountableBuildings(city) {
 }
 
 // --- fortifications (Fort) -------------------------------------------------
-//
-// Each completed fortification (BUILDING or IMPROVEMENT tagged FORTIFICATION),
-// returned individually so the Fort focus can list each one.
+
 export function getFortifications(city) {
   const out = [];
   try {
@@ -264,13 +258,11 @@ export function getFortifications(city) {
 
 // --- quarters (Urban Center) -----------------------------------------------
 //
-// A Quarter = an urban tile with two NON-WALL buildings that are ageless and/or
-// from the current Age, OR a single FULL_TILE building (Rail Station, Launch
-// Pad, Airfield). Returns { count, buildings: [{name, iconId, count}] } where
-// buildings are the qualifying buildings that make up the quarters.
+// A Quarter = an urban tile with two non-Wall ageless/current-age buildings, OR
+// a single FULL_TILE building. Returns { count, quarters: [{ buildings:
+// [{name, iconId}] }] } so each quarter can be listed on its own line.
 export function getQuarters(city) {
-  const byName = new Map();
-  let count = 0;
+  const quarters = [];
   try {
     const centerKey = city?.location ? `${city.location.x},${city.location.y}` : null;
     const perTile = new Map();
@@ -291,23 +283,17 @@ export function getQuarters(city) {
       const hasFullTile = blds.some((b) => isFullTileType(b.type));
       const qualifying = blds.filter((b) => !isWallType(b.type) && isCurrentOrAgeless(b.type));
       if (!(hasFullTile || qualifying.length >= 2)) continue;
-      count++;
       const display = blds.filter((b) => !isWallType(b.type) && (isFullTileType(b.type) || isCurrentOrAgeless(b.type)));
-      for (const b of display) {
-        if (!byName.has(b.name)) byName.set(b.name, { name: b.name, iconId: b.iconId, count: 0 });
-        byName.get(b.name).count++;
-      }
+      quarters.push({ buildings: display.map((b) => ({ name: b.name, iconId: b.iconId })) });
     }
   } catch (e) {
     console.error("[ETFI] getQuarters failed", e);
   }
-  return { count, buildings: Array.from(byName.values()).sort((a, b) => b.count - a.count) };
+  return { count: quarters.length, quarters };
 }
 
 // --- factory resources (Factory) -------------------------------------------
-//
-// Resources classified RESOURCECLASS_FACTORY in the town, split by whether the
-// tile has a completed improvement.
+
 export function getFactoryResources(city) {
   const improved = new Map();
   const unimproved = new Map();
@@ -337,10 +323,17 @@ export function getFactoryResources(city) {
 
 // --- resort tiles (Resort) -------------------------------------------------
 //
-// Appealing tiles (appeal >= charming threshold, non-water, non-wonder),
-// natural wonders, and IMPROVED breathtaking tiles (listed by improvement).
+// Appealing tiles (appeal >= charming, non-water, non-wonder) grouped by their
+// improvement (+ an unimproved count), natural wonders, and the count of
+// IMPROVED breathtaking tiles (for the tourism rule).
 export function getResortData(city) {
-  const result = { appealing: 0, naturalWonders: 0, breathtakingImprovedCount: 0, breathtakingImproved: [] };
+  const result = {
+    appealingImproved: [],
+    appealingUnimprovedCount: 0,
+    appealingTotal: 0,
+    naturalWonders: 0,
+    breathtakingImprovedCount: 0,
+  };
   const byName = new Map();
   let charming = 1;
   let breathtaking = 2;
@@ -364,19 +357,20 @@ export function getResortData(city) {
       if (water) continue;
       let appeal = 0;
       try { appeal = GameplayMap.getAppeal(x, y); } catch {}
-      if (appeal >= charming) result.appealing++;
-      if (appeal >= breathtaking) {
-        const imp = impMap.get(`${x},${y}`);
-        if (imp) {
-          result.breathtakingImprovedCount++;
-          if (!byName.has(imp.name)) byName.set(imp.name, { name: imp.name, iconId: imp.iconId, count: 0 });
-          byName.get(imp.name).count++;
-        }
+      if (appeal < charming) continue;
+      result.appealingTotal++;
+      const imp = impMap.get(`${x},${y}`);
+      if (imp) {
+        if (!byName.has(imp.name)) byName.set(imp.name, { name: imp.name, iconId: imp.iconId, count: 0 });
+        byName.get(imp.name).count++;
+        if (appeal >= breathtaking) result.breathtakingImprovedCount++;
+      } else {
+        result.appealingUnimprovedCount++;
       }
     }
   } catch (e) {
     console.error("[ETFI] getResortData failed", e);
   }
-  result.breathtakingImproved = Array.from(byName.values()).sort((a, b) => b.count - a.count);
+  result.appealingImproved = Array.from(byName.values()).sort((a, b) => b.count - a.count);
   return result;
 }

@@ -3,8 +3,9 @@
 // Author: Zatygold
 //
 // Factory Town (PROJECT_TOWN_FACTORY, Modern): +1 Resource Slot and +5 Trade
-// Route range (pills by the name), +100% Gold toward Factory/Port/Rail Station.
-// Lists the town's Factory Resources, split by improved vs unimproved.
+// Route range (pills by the name). Lists the town's Factory Resources, split by
+// improved vs unimproved. (The +100% purchase discount is already in the
+// project description, so it's not repeated here.)
 
 import { ETFI_YIELDS, TRADE_ROUTE_ICON, RESOURCE_ICON, getFactoryResources, composeWithFallback } from "../../etfi-utilities.js";
 
@@ -35,6 +36,6 @@ export function buildFactoryModel(city) {
     ],
     rows: [],
     sections,
-    notes: ["+100% [icon:YIELD_GOLD] Gold towards purchasing a Factory, Port, or Rail Station"],
+    notes: [],
   };
 }

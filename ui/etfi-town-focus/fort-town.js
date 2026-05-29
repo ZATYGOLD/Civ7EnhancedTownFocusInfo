@@ -2,8 +2,9 @@
 //
 // Author: Zatygold
 //
-// Fort Town (PROJECT_TOWN_FORT): +5 Healing to Units (pill by the name), and on
-// each fortification +1 Gold (on its fortified district) and +25 Health.
+// Fort Town (PROJECT_TOWN_FORT): +5 Healing to Units, +1 Gold per fortified
+// district, +25 Health per fortification. Header shows the totals (Gold,
+// Health, Healing); each fortification is listed with its +1 Gold / +25 Health.
 
 import { ETFI_YIELDS, HEAL_ICON, FORTIFY_ICON, getFortifications } from "../../etfi-utilities.js";
 
@@ -13,6 +14,7 @@ const UNIT_HEALING = 5;
 
 export function buildFortModel(city) {
   const walls = getFortifications(city);
+  const n = walls.length;
   const rows = walls.map((w) => ({
     iconId: w.iconId,
     name: w.name,
@@ -22,7 +24,11 @@ export function buildFortModel(city) {
     ],
   }));
   return {
-    header: [{ yieldType: HEAL_ICON, value: UNIT_HEALING }],
+    header: [
+      { yieldType: ETFI_YIELDS.GOLD, value: n * GOLD_PER },
+      { yieldType: FORTIFY_ICON, value: n * HEALTH_PER },
+      { yieldType: HEAL_ICON, value: UNIT_HEALING },
+    ],
     rows,
     notes: [],
   };

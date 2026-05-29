@@ -8,8 +8,7 @@
 //     the icon+info row (selection list only; the summary shows pills only).
 // Growing Town is left untouched. Dividers match the plot tooltip's look.
 //
-// Model: { header:[{yieldType,value}], rows:[row], sections:[{title,rows}],
-//          notes:[stylized] }  where row = { iconId?, name, count?, yields?, subText? }.
+// Row = { iconId?, name?, items?:[{iconId,name}], count?, countText?, yields?, subText? }.
 
 import { TownFocusChooserItem } from "/base-standard/ui/production-chooser/town-focus-section.js";
 import { Pill } from "/base-standard/ui-next/components/pills.js";
@@ -69,7 +68,7 @@ function hDivider() {
 
 function sectionTitle(label) {
   const d = document.createElement("div");
-  d.className = "font-title uppercase text-2xs text-secondary mt-1 mb-0\\.5";
+  d.className = "font-title uppercase text-2xs text-secondary mt-1";
   d.textContent = label;
   return d;
 }
@@ -109,6 +108,17 @@ function yieldPill(entry) {
   return Pill({ class: "ml-1", small: true, backgroundStyle, children: body });
 }
 
+function appendNameItem(left, iconId, name) {
+  if (iconId) {
+    left.appendChild(fxsIcon(iconId, "size-5"));
+    left.appendChild(vDivider());
+  }
+  const nm = document.createElement("span");
+  nm.style.cssText = "overflow:hidden; text-overflow:ellipsis; white-space:nowrap;";
+  nm.textContent = name ?? "";
+  left.appendChild(nm);
+}
+
 function detailRow(row) {
   const line = document.createElement("div");
   line.className = "flex justify-between items-center w-full mt-1";
@@ -116,18 +126,26 @@ function detailRow(row) {
   const left = document.createElement("div");
   left.className = "flex items-center min-w-0";
   left.style.cssText = "flex:1 1 auto; overflow:hidden;";
-  if (row.iconId) {
-    left.appendChild(fxsIcon(row.iconId, "size-5"));
-    left.appendChild(vDivider());
+
+  if (Array.isArray(row.items) && row.items.length) {
+    row.items.forEach((it, i) => {
+      if (i > 0) {
+        const sep = document.createElement("span");
+        sep.className = "opacity-50 mx-1 shrink-0";
+        sep.textContent = "•";
+        left.appendChild(sep);
+      }
+      appendNameItem(left, it.iconId, it.name);
+    });
+  } else {
+    appendNameItem(left, row.iconId, row.name);
   }
-  const name = document.createElement("span");
-  name.style.cssText = "overflow:hidden; text-overflow:ellipsis; white-space:nowrap;";
-  name.textContent = row.name ?? "";
-  left.appendChild(name);
-  if (typeof row.count === "number") {
+
+  const countDisplay = row.countText != null ? row.countText : (typeof row.count === "number" ? String(row.count) : null);
+  if (countDisplay != null) {
     const c = document.createElement("span");
     c.className = "opacity-70 ml-1 shrink-0";
-    c.textContent = `x${row.count}`;
+    c.textContent = `x${countDisplay}`;
     left.appendChild(c);
   }
 
@@ -265,7 +283,6 @@ TownFocusChooserItem.prototype.etfiUpdate = function () {
 
   const model = buildModel(this) || { header: [], rows: [], sections: [], notes: [] };
 
-  // Header pills.
   while (this.etfiYields.firstChild) this.etfiYields.removeChild(this.etfiYields.firstChild);
   for (const y of model.header || []) {
     if (y && typeof y.value === "number") this.etfiYields.appendChild(yieldPill(y));
@@ -274,7 +291,6 @@ TownFocusChooserItem.prototype.etfiUpdate = function () {
 
   if (!this.etfiDetails) return;
 
-  // Body: flat rows, then titled sections, then notes — divided between blocks.
   const panel = this.etfiDetails;
   while (panel.firstChild) panel.removeChild(panel.firstChild);
   let any = false;
