@@ -177,7 +177,9 @@ export function getFocusImprovements(city, typeSet) {
 // --- resource tile counting (Trade) ----------------------------------------
 
 export function countResourceTiles(city) {
-  const byName = new Map();
+  const impMap = buildImprovementTileMap(city);
+  const imp = new Map();
+  const unimp = new Map();
   let total = 0;
   let indices = [];
   try { indices = city?.getPurchasedPlots?.() || []; } catch { indices = []; }
@@ -188,12 +190,16 @@ export function countResourceTiles(city) {
     const info = resourceAt(loc.x, loc.y);
     if (!info) continue;
     const name = info.Name ? Locale.compose(info.Name) : info.ResourceType;
-    if (!byName.has(name)) byName.set(name, { name, iconId: info.ResourceType, count: 0 });
-    byName.get(name).count += 1;
+    const target = impMap.has(`${loc.x},${loc.y}`) ? imp : unimp;
+    if (!target.has(name)) target.set(name, { name, iconId: info.ResourceType, count: 0 });
+    target.get(name).count += 1;
     total += 1;
   }
-  const groups = Array.from(byName.values()).sort((a, b) => b.count - a.count);
-  return { groups, total };
+  const sort = (m) => Array.from(m.values()).sort((a, b) => b.count - a.count);
+  const improved = sort(imp);
+  const unimproved = sort(unimp);
+  // `groups` kept for backwards compatibility (all resource tiles together).
+  return { improved, unimproved, groups: [...improved, ...unimproved], total };
 }
 
 // --- connected settlements (Hub) -------------------------------------------
@@ -270,10 +276,28 @@ export function getFortifications(city) {
 
 // --- quarters (Urban Center) -----------------------------------------------
 //
-// Building Quarters = urban tiles with two non-Wall ageless/current-age
-// buildings. Special Quarters = tiles with a single FULL_TILE building (Rail
-// Station, Launch Pad, Airfield). Each is listed by its building(s).
+// Unique Quarters = civ-specific quarters (the engine flags the District's
+//   uniqueQuarterType, e.g. Acropolis). Special Quarters = tiles with a single
+//   FULL_TILE building (Rail Station, Launch Pad, Airfield). Building Quarters =
+//   any other urban tile with two non-Wall ageless/current-age buildings.
+// Each tile is classified into exactly one bucket (unique > special > building).
+function getUniqueQuarterName(loc) {
+  try {
+    const district = Districts.getAtLocation(loc);
+    if (!district) return null;
+    const uqt = district.uniqueQuarterType;
+    if (typeof UniqueQuarterTypes !== "undefined" && uqt === UniqueQuarterTypes.NO_QUARTER) return null;
+    if (uqt == null) return null;
+    const def = GameInfo.UniqueQuarters.lookup(uqt);
+    if (!def) return null;
+    return def.Name ? Locale.compose(def.Name) : null;
+  } catch {
+    return null;
+  }
+}
+
 export function getQuarters(city) {
+  const uniqueQuarters = [];
   const buildingQuarters = [];
   const specialQuarters = [];
   try {
@@ -288,28 +312,39 @@ export function getQuarters(city) {
       const def = GameInfo.Constructibles.lookup(inst.type);
       if (!def) continue;
       const key = `${loc.x},${loc.y}`;
-      if (!perTile.has(key)) perTile.set(key, []);
-      perTile.get(key).push({ type: def.ConstructibleType, name: def.Name ? Locale.compose(def.Name) : def.ConstructibleType, iconId: def.ConstructibleType });
+      if (!perTile.has(key)) perTile.set(key, { loc, blds: [] });
+      perTile.get(key).blds.push({ type: def.ConstructibleType, name: def.Name ? Locale.compose(def.Name) : def.ConstructibleType, iconId: def.ConstructibleType });
     }
-    for (const [key, blds] of perTile) {
+    for (const [key, { loc, blds }] of perTile) {
       if (key === centerKey) continue;
-      const fullTiles = blds.filter((b) => isFullTileType(b.type));
-      if (fullTiles.length) {
-        specialQuarters.push({ buildings: fullTiles.map((b) => ({ name: b.name, iconId: b.iconId })) });
+      const mapped = (list) => list.map((b) => ({ name: b.name, iconId: b.iconId }));
+
+      const uniqueName = getUniqueQuarterName(loc);
+      if (uniqueName) {
+        const qualifying = blds.filter((b) => !isWallType(b.type));
+        uniqueQuarters.push({ name: uniqueName, buildings: mapped(qualifying.length ? qualifying : blds) });
         continue;
       }
+
+      const fullTiles = blds.filter((b) => isFullTileType(b.type));
+      if (fullTiles.length) {
+        specialQuarters.push({ buildings: mapped(fullTiles) });
+        continue;
+      }
+
       const qualifying = blds.filter((b) => !isWallType(b.type) && isCurrentOrAgeless(b.type));
       if (qualifying.length >= 2) {
-        buildingQuarters.push({ buildings: qualifying.map((b) => ({ name: b.name, iconId: b.iconId })) });
+        buildingQuarters.push({ buildings: mapped(qualifying) });
       }
     }
   } catch (e) {
     console.error("[ETFI] getQuarters failed", e);
   }
   return {
+    uniqueQuarters,
     buildingQuarters,
     specialQuarters,
-    count: buildingQuarters.length + specialQuarters.length,
+    count: uniqueQuarters.length + buildingQuarters.length + specialQuarters.length,
   };
 }
 

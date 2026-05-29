@@ -4,9 +4,10 @@
 //
 // Overrides the base town-focus chooser item to render ETFI info INLINE:
 //   * yield total pills (colored), RIGHT-aligned in the name row,
-//   * separatePanel sections in their own ticket containers, ABOVE
-//     (separatePanel:"top") or BELOW (separatePanel:"bottom") the main panel,
-//   * the main detail panel (rows / titled sections / notes).
+//   * EVERY titled section in its own ticket panel, ordered ABOVE
+//     (separatePanel:"top"), in the middle (default), or BELOW
+//     (separatePanel:"bottom") a base panel holding any flat rows,
+//   * top-level notes attached to the last rendered panel.
 // Growing Town is left untouched. Dividers match the plot tooltip's look.
 //
 // Row = { iconId?|iconClass?+iconStyle?, name?, items?, count?, countText?, yields?, subText?, tooltip? }.
@@ -81,10 +82,17 @@ function hDivider() {
 }
 
 function sectionTitle(label) {
+  // Left-aligned category title with the constructible-details horizontal divider.
+  const wrap = document.createElement("div");
+  wrap.className = "w-full flex flex-col mt-1";
   const d = document.createElement("div");
-  d.className = "font-title uppercase text-2xs text-secondary mt-1";
+  d.className = "font-title uppercase text-2xs text-secondary";
   d.textContent = label;
-  return d;
+  wrap.appendChild(d);
+  const div = document.createElement("div");
+  div.className = "img-shell-line-divider h-1 w-full self-center my-1";
+  wrap.appendChild(div);
+  return wrap;
 }
 
 function noteLine(text) {
@@ -136,7 +144,9 @@ function appendNameItem(left, spec) {
   if (spec.tooltip) {
     nm.setAttribute("data-tooltip-content", spec.tooltip);
     nm.setAttribute("data-tooltip-style", "none"); // suppress the item's project tooltip here
-    nm.classList.add("pointer-events-auto", "text-secondary");
+    nm.classList.add("pointer-events-auto");
+    // Darker than the (secondary/gold) category title, so the two read distinctly.
+    nm.style.color = "rgb(168, 133, 78)";
     nm.style.textDecoration = "underline dotted";
     nm.style.textUnderlineOffset = "0.2rem";
   }
@@ -203,21 +213,30 @@ function appendRows(panel, rows) {
   });
 }
 
-// Render separatePanel sections, each into its own ticket container.
-function renderSeparatePanels(container, secs) {
+function newPanel() {
+  const p = document.createElement("div");
+  p.className = "img-base-ticket-bg-container w-full flex flex-col mt-2";
+  return p;
+}
+
+// Render each section into its own ticket panel inside `container`.
+// Returns the last panel element created (or null).
+function renderSectionPanels(container, secs) {
   while (container.firstChild) container.removeChild(container.firstChild);
+  let last = null;
   for (const section of secs) {
     const srows = (section.rows || []).filter(Boolean);
     const snotes = (section.notes || []).filter(Boolean);
     if (!srows.length && !snotes.length && !section.title) continue;
-    const p = document.createElement("div");
-    p.className = "img-base-ticket-bg-container w-full flex flex-col mt-2";
+    const p = newPanel();
     if (section.title) p.appendChild(sectionTitle(section.title));
     appendRows(p, srows);
     for (const n of snotes) p.appendChild(noteLine(n));
     container.appendChild(p);
+    last = p;
   }
   container.classList.toggle("hidden", container.childElementCount === 0);
+  return last;
 }
 
 // --- model dispatch --------------------------------------------------------
@@ -340,6 +359,7 @@ TownFocusChooserItem.prototype.etfiUpdate = function () {
 
   const model = buildModel(this) || { header: [], rows: [], sections: [], notes: [] };
 
+  // Header pills next to the focus name.
   while (this.etfiYields.firstChild) this.etfiYields.removeChild(this.etfiYields.firstChild);
   for (const y of model.header || []) {
     if (y && typeof y.value === "number") this.etfiYields.appendChild(yieldPill(y));
@@ -348,40 +368,32 @@ TownFocusChooserItem.prototype.etfiUpdate = function () {
 
   if (!this.etfiDetails) return;
 
-  const allSections = (model.sections || []).filter(Boolean);
-  const topSecs = allSections.filter((s) => s.separatePanel === "top" || s.separatePanel === true);
-  const bottomSecs = allSections.filter((s) => s.separatePanel === "bottom");
-  const mainSecs = allSections.filter((s) => !s.separatePanel);
-
-  if (this.etfiTop) renderSeparatePanels(this.etfiTop, topSecs);
-  if (this.etfiBottom) renderSeparatePanels(this.etfiBottom, bottomSecs);
-
-  // Main panel: flat rows, inline (non-separate) sections, notes.
-  const panel = this.etfiDetails;
-  while (panel.firstChild) panel.removeChild(panel.firstChild);
-  let any = false;
-
+  const sections = (model.sections || []).filter(Boolean);
+  const topSecs = sections.filter((s) => s.separatePanel === "top" || s.separatePanel === true);
+  const bottomSecs = sections.filter((s) => s.separatePanel === "bottom");
+  const midSecs = sections.filter((s) => !s.separatePanel);
   const flat = (model.rows || []).filter(Boolean);
-  if (flat.length) { appendRows(panel, flat); any = true; }
-
-  for (const section of mainSecs) {
-    const srows = (section.rows || []).filter(Boolean);
-    const snotes = (section.notes || []).filter(Boolean);
-    if (!srows.length && !snotes.length && !section.title) continue;
-    if (any) panel.appendChild(hDivider());
-    if (section.title) panel.appendChild(sectionTitle(section.title));
-    appendRows(panel, srows);
-    for (const n of snotes) panel.appendChild(noteLine(n));
-    any = true;
-  }
-
   const notes = (model.notes || []).filter(Boolean);
+
+  // Top zone: top sections, each its own panel.
+  const lastTop = renderSectionPanels(this.etfiTop, topSecs);
+
+  // Base panel: any flat (untitled) rows.
+  const base = this.etfiDetails;
+  while (base.firstChild) base.removeChild(base.firstChild);
+  if (flat.length) appendRows(base, flat);
+  base.classList.toggle("hidden", base.childElementCount === 0);
+
+  // Bottom zone: middle (default) sections then bottom sections, each its own panel.
+  const lastBottom = renderSectionPanels(this.etfiBottom, [...midSecs, ...bottomSecs]);
+
+  // Top-level notes attach to the last rendered panel (falling back to base).
   if (notes.length) {
-    if (any) panel.appendChild(hDivider());
-    for (const n of notes) panel.appendChild(noteLine(n));
-    any = true;
+    let host = lastBottom || (base.childElementCount ? base : null) || lastTop;
+    if (!host) host = base;
+    for (const n of notes) host.appendChild(noteLine(n));
+    host.classList.remove("hidden");
   }
-  panel.classList.toggle("hidden", panel.childElementCount === 0);
 };
 
 export {};
