@@ -2,59 +2,66 @@
 //
 // Author: Zatygold
 //
-// Resort Town (PROJECT_TOWN_RESORT): +1 Happiness and +1 Gold on Appealing
-// tiles (listed by improvement), +50% Natural Wonder tile yields, and +4
-// Tourism on improved Breathtaking tiles when 7+ (Modern, Globalism's Mastery).
+// Resort Town (PROJECT_TOWN_RESORT):
+//   * APPEALING category: improved Appealing tiles, each with +1 Happiness /
+//     +1 Gold pills (header shows the totals).
+//   * TOURISM category (separate panel): improved Breathtaking tiles out of all
+//     Breathtaking tiles in the town, with the calculated Tourism (+4 each).
+//     When all requirements are met (Modern, 7+ improved Breathtaking, and
+//     Globalism's Mastery), the Tourism pill is also shown next to the name.
 
-import { ETFI_YIELDS, TOURISM_ICON, getResortData, getCurrentAgeType, composeWithFallback } from "../../etfi-utilities.js";
+import { ETFI_YIELDS, TOURISM_ICON, getResortData, getCurrentAgeType, hasGlobalismMastery, composeWithFallback } from "../../etfi-utilities.js";
 
-const PER_APPEALING = 1;
+const PER_TILE = 1;
 const TOURISM_PER = 4;
 const BREATHTAKING_MIN = 7;
 
 export function buildResortModel(city) {
   const d = getResortData(city);
-  const tourismActive =
-    getCurrentAgeType() === "AGE_MODERN" && d.breathtakingImprovedCount >= BREATHTAKING_MIN;
 
-  // Appealing tiles, grouped by improvement, with +1 Happiness / +1 Gold each.
-  const rows = d.appealingImproved.map((g) => ({
-    iconId: g.iconId,
-    name: g.name,
-    count: g.count,
-    yields: [
-      { yieldType: ETFI_YIELDS.HAPPINESS, value: g.count * PER_APPEALING },
-      { yieldType: ETFI_YIELDS.GOLD, value: g.count * PER_APPEALING },
-    ],
-  }));
-  if (d.appealingUnimprovedCount) {
-    rows.push({
-      name: composeWithFallback("LOC_MOD_ETFI_UNIMPROVED", "Unimproved"),
-      count: d.appealingUnimprovedCount,
-      yields: [
-        { yieldType: ETFI_YIELDS.HAPPINESS, value: d.appealingUnimprovedCount * PER_APPEALING },
-        { yieldType: ETFI_YIELDS.GOLD, value: d.appealingUnimprovedCount * PER_APPEALING },
-      ],
+  const reqsMet =
+    getCurrentAgeType() === "AGE_MODERN" &&
+    d.breathtakingImproved >= BREATHTAKING_MIN &&
+    hasGlobalismMastery();
+  const tourism = reqsMet ? TOURISM_PER * d.breathtakingImproved : 0;
+
+  const sections = [];
+
+  // Appealing category (main panel).
+  if (d.appealingImproved.length) {
+    sections.push({
+      title: composeWithFallback("LOC_MOD_ETFI_APPEALING", "Appealing"),
+      rows: d.appealingImproved.map((g) => ({
+        iconId: g.iconId,
+        name: g.name,
+        count: g.count,
+        yields: [
+          { yieldType: ETFI_YIELDS.HAPPINESS, value: g.count * PER_TILE },
+          { yieldType: ETFI_YIELDS.GOLD, value: g.count * PER_TILE },
+        ],
+      })),
     });
   }
 
-  // Breathtaking tourism progress (n / 7), with the tourism pill.
-  const sections = [{
-    title: null,
+  // Tourism category (separate panel).
+  sections.push({
+    title: composeWithFallback("LOC_MOD_ETFI_TOURISM", "Tourism"),
+    separatePanel: true,
     rows: [{
       name: composeWithFallback("LOC_MOD_ETFI_BREATHTAKING", "Breathtaking"),
-      countText: `${d.breathtakingImprovedCount}/${BREATHTAKING_MIN}`,
-      yields: [{ yieldType: TOURISM_ICON, value: tourismActive ? TOURISM_PER * d.breathtakingImprovedCount : 0 }],
-      subText: composeWithFallback("LOC_MOD_ETFI_REQUIRES_GLOBALISM", "Requires Globalism's Mastery"),
+      countText: `${d.breathtakingImproved}/${d.breathtakingTotal}`,
+      yields: [{ yieldType: TOURISM_ICON, value: tourism }],
     }],
-  }];
+    notes: reqsMet ? [] : [composeWithFallback("LOC_MOD_ETFI_REQUIRES_GLOBALISM", "Requires Globalism's Mastery")],
+  });
 
+  const appealingTotal = d.appealingImproved.reduce((s, g) => s + g.count, 0);
   const header = [
-    { yieldType: ETFI_YIELDS.HAPPINESS, value: d.appealingTotal * PER_APPEALING },
-    { yieldType: ETFI_YIELDS.GOLD, value: d.appealingTotal * PER_APPEALING },
+    { yieldType: ETFI_YIELDS.HAPPINESS, value: appealingTotal * PER_TILE },
+    { yieldType: ETFI_YIELDS.GOLD, value: appealingTotal * PER_TILE },
   ];
-  if (tourismActive) {
-    header.push({ yieldType: TOURISM_ICON, value: TOURISM_PER * d.breathtakingImprovedCount });
+  if (reqsMet) {
+    header.push({ yieldType: TOURISM_ICON, value: tourism });
   }
 
   const notes = [];
@@ -62,5 +69,5 @@ export function buildResortModel(city) {
     notes.push(`+50% tile yields from Natural Wonders (${d.naturalWonders})`);
   }
 
-  return { header, rows, sections, notes };
+  return { header, rows: [], sections, notes };
 }

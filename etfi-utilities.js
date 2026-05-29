@@ -18,7 +18,6 @@ export const ETFI_YIELDS = Object.freeze({
   INFLUENCE: "YIELD_DIPLOMACY",
 });
 
-// Non-yield icon ids.
 export const TRADE_ROUTE_ICON = "TRADE_ROUTE";
 export const HEAL_ICON = "ACTION_HEAL";
 export const FORTIFY_ICON = "ACTION_FORTIFY";
@@ -103,46 +102,75 @@ function buildImprovementTileMap(city) {
   return map;
 }
 
-// --- improvement counting (Farming / Fishing / Mining) ---------------------
-
-export function countImprovements(city, typeSet) {
-  const byName = new Map();
-  let total = 0;
+function resourceAt(x, y) {
   try {
-    const ids = city?.Constructibles?.getIdsOfClass?.("IMPROVEMENT") || [];
-    for (const id of ids) {
-      const inst = Constructibles.get(id);
-      if (!inst || !inst.complete) continue;
-      const location = inst.location;
-      if (!location || location.x == null || location.y == null) continue;
-
-      let logicalType = null;
-      try {
-        const fcID = Districts.getFreeConstructible(location, GameContext.localPlayerID);
-        logicalType = GameInfo.Constructibles.lookup(fcID)?.ConstructibleType ?? null;
-      } catch {
-        logicalType = null;
-      }
-
-      const info = GameInfo.Constructibles.lookup(inst.type);
-      const actualType = info?.ConstructibleType ?? null;
-
-      const matches =
-        (logicalType && typeSet.has(logicalType)) ||
-        (actualType && typeSet.has(actualType));
-      if (!matches) continue;
-
-      const name = info?.Name ? Locale.compose(info.Name) : (actualType || logicalType);
-      const iconId = actualType || logicalType;
-      if (!byName.has(name)) byName.set(name, { name, iconId, count: 0 });
-      byName.get(name).count += 1;
-      total += 1;
-    }
-  } catch (e) {
-    console.error("[ETFI] countImprovements failed", e);
+    return GameInfo?.Resources?.lookup?.(GameplayMap.getResourceType(x, y)) ?? null;
+  } catch {
+    return null;
   }
-  const groups = Array.from(byName.values()).sort((a, b) => b.count - a.count);
-  return { groups, total };
+}
+
+// --- improvement focuses (Farming / Fishing / Mining) ----------------------
+//
+// For the town's tiles whose (logical) improvement is in `typeSet`, split into
+// IMPROVED (a completed improvement -> earns the yield) and UNIMPROVED (an
+// eligible tile not yet improved -> no yield). Display uses the RESOURCE
+// name/icon when the tile has one (e.g. "Tea"), otherwise the improvement
+// name/icon (e.g. "Woodcutter"). Unimproved includes eligible NON-resource
+// tiles (e.g. a forest eligible for a Woodcutter), not just resources.
+export function getFocusImprovements(city, typeSet) {
+  const impMap = buildImprovementTileMap(city);
+  const improved = new Map();
+  const unimproved = new Map();
+  let indices = [];
+  try { indices = city?.getPurchasedPlots?.() || []; } catch { indices = []; }
+
+  for (const idx of indices) {
+    let loc;
+    try { loc = GameplayMap.getLocationFromIndex(idx); } catch { continue; }
+    if (!loc) continue;
+    const { x, y } = loc;
+    const key = `${x},${y}`;
+
+    let logicalType = null;
+    try {
+      logicalType = GameInfo.Constructibles.lookup(Districts.getFreeConstructible(loc, GameContext.localPlayerID))?.ConstructibleType ?? null;
+    } catch {
+      logicalType = null;
+    }
+
+    const impAtTile = impMap.get(key);
+    const eligible =
+      (logicalType && typeSet.has(logicalType)) ||
+      (impAtTile && typeSet.has(impAtTile.type));
+    if (!eligible) continue;
+
+    const isImproved = !!impAtTile;
+    const resInfo = resourceAt(x, y);
+
+    let name;
+    let iconId;
+    if (resInfo) {
+      name = resInfo.Name ? Locale.compose(resInfo.Name) : resInfo.ResourceType;
+      iconId = resInfo.ResourceType;
+    } else if (impAtTile) {
+      name = impAtTile.name;
+      iconId = impAtTile.iconId;
+    } else {
+      const def = GameInfo.Constructibles.lookup(logicalType);
+      name = def?.Name ? Locale.compose(def.Name) : logicalType;
+      iconId = logicalType;
+    }
+
+    const target = isImproved ? improved : unimproved;
+    if (!target.has(name)) target.set(name, { name, iconId, count: 0 });
+    target.get(name).count += 1;
+  }
+
+  return {
+    improved: Array.from(improved.values()).sort((a, b) => b.count - a.count),
+    unimproved: Array.from(unimproved.values()).sort((a, b) => b.count - a.count),
+  };
 }
 
 // --- resource tile counting (Trade) ----------------------------------------
@@ -151,25 +179,12 @@ export function countResourceTiles(city) {
   const byName = new Map();
   let total = 0;
   let indices = [];
-  try {
-    indices = city?.getPurchasedPlots?.() || [];
-  } catch {
-    indices = [];
-  }
+  try { indices = city?.getPurchasedPlots?.() || []; } catch { indices = []; }
   for (const idx of indices) {
     let loc;
-    try {
-      loc = GameplayMap.getLocationFromIndex(idx);
-    } catch {
-      continue;
-    }
+    try { loc = GameplayMap.getLocationFromIndex(idx); } catch { continue; }
     if (!loc) continue;
-    let info;
-    try {
-      info = GameInfo?.Resources?.lookup?.(GameplayMap.getResourceType(loc.x, loc.y));
-    } catch {
-      info = null;
-    }
+    const info = resourceAt(loc.x, loc.y);
     if (!info) continue;
     const name = info.Name ? Locale.compose(info.Name) : info.ResourceType;
     if (!byName.has(name)) byName.set(name, { name, iconId: info.ResourceType, count: 0 });
@@ -185,12 +200,8 @@ export function countResourceTiles(city) {
 export function getConnectedSettlements(city) {
   const result = { cities: [], towns: [] };
   let ids = [];
-  try {
-    ids = city?.getConnectedCities?.() || [];
-  } catch (e) {
-    console.error("[ETFI] getConnectedCities failed", e);
-    return result;
-  }
+  try { ids = city?.getConnectedCities?.() || []; }
+  catch (e) { console.error("[ETFI] getConnectedCities failed", e); return result; }
   for (const id of ids) {
     const s = Cities.get(id);
     if (!s) continue;
@@ -258,11 +269,12 @@ export function getFortifications(city) {
 
 // --- quarters (Urban Center) -----------------------------------------------
 //
-// A Quarter = an urban tile with two non-Wall ageless/current-age buildings, OR
-// a single FULL_TILE building. Returns { count, quarters: [{ buildings:
-// [{name, iconId}] }] } so each quarter can be listed on its own line.
+// Building Quarters = urban tiles with two non-Wall ageless/current-age
+// buildings. Special Quarters = tiles with a single FULL_TILE building (Rail
+// Station, Launch Pad, Airfield). Each is listed by its building(s).
 export function getQuarters(city) {
-  const quarters = [];
+  const buildingQuarters = [];
+  const specialQuarters = [];
   try {
     const centerKey = city?.location ? `${city.location.x},${city.location.y}` : null;
     const perTile = new Map();
@@ -280,16 +292,24 @@ export function getQuarters(city) {
     }
     for (const [key, blds] of perTile) {
       if (key === centerKey) continue;
-      const hasFullTile = blds.some((b) => isFullTileType(b.type));
+      const fullTiles = blds.filter((b) => isFullTileType(b.type));
+      if (fullTiles.length) {
+        specialQuarters.push({ buildings: fullTiles.map((b) => ({ name: b.name, iconId: b.iconId })) });
+        continue;
+      }
       const qualifying = blds.filter((b) => !isWallType(b.type) && isCurrentOrAgeless(b.type));
-      if (!(hasFullTile || qualifying.length >= 2)) continue;
-      const display = blds.filter((b) => !isWallType(b.type) && (isFullTileType(b.type) || isCurrentOrAgeless(b.type)));
-      quarters.push({ buildings: display.map((b) => ({ name: b.name, iconId: b.iconId })) });
+      if (qualifying.length >= 2) {
+        buildingQuarters.push({ buildings: qualifying.map((b) => ({ name: b.name, iconId: b.iconId })) });
+      }
     }
   } catch (e) {
     console.error("[ETFI] getQuarters failed", e);
   }
-  return { count: quarters.length, quarters };
+  return {
+    buildingQuarters,
+    specialQuarters,
+    count: buildingQuarters.length + specialQuarters.length,
+  };
 }
 
 // --- factory resources (Factory) -------------------------------------------
@@ -304,8 +324,7 @@ export function getFactoryResources(city) {
       let loc;
       try { loc = GameplayMap.getLocationFromIndex(idx); } catch { continue; }
       if (!loc) continue;
-      let rInfo;
-      try { rInfo = GameInfo?.Resources?.lookup?.(GameplayMap.getResourceType(loc.x, loc.y)); } catch { rInfo = null; }
+      const rInfo = resourceAt(loc.x, loc.y);
       if (!rInfo || rInfo.ResourceClassType !== "RESOURCECLASS_FACTORY") continue;
       const name = rInfo.Name ? Locale.compose(rInfo.Name) : rInfo.ResourceType;
       const target = impMap.has(`${loc.x},${loc.y}`) ? improved : unimproved;
@@ -321,22 +340,18 @@ export function getFactoryResources(city) {
   };
 }
 
-// --- resort tiles (Resort) -------------------------------------------------
+// --- resort: appealing (improved) + breathtaking counts --------------------
 //
-// Appealing tiles (appeal >= charming, non-water, non-wonder) grouped by their
-// improvement (+ an unimproved count), natural wonders, and the count of
-// IMPROVED breathtaking tiles (for the tourism rule).
+// appealingImproved: improved tiles with appeal >= Charming, grouped by
+//   resource name (if any) else improvement name -> each gets the Resort
+//   +1 Happiness / +1 Gold.
+// breathtakingImproved / breathtakingTotal: improved Breathtaking tiles vs all
+//   Breathtaking tiles (for the Tourism rule).
 export function getResortData(city) {
-  const result = {
-    appealingImproved: [],
-    appealingUnimprovedCount: 0,
-    appealingTotal: 0,
-    naturalWonders: 0,
-    breathtakingImprovedCount: 0,
-  };
+  const result = { appealingImproved: [], breathtakingImproved: 0, breathtakingTotal: 0, naturalWonders: 0 };
   const byName = new Map();
-  let charming = 1;
-  let breathtaking = 2;
+  let charming = 3;
+  let breathtaking = 5;
   try {
     charming = getGlobalParamNumber("APPEAL_FOR_HAPPINESS_TILE_YIELD");
     breathtaking = getGlobalParamNumber("APPEAL_FOR_DOUBLE_HAPPINESS_TILE_YIELD");
@@ -357,15 +372,17 @@ export function getResortData(city) {
       if (water) continue;
       let appeal = 0;
       try { appeal = GameplayMap.getAppeal(x, y); } catch {}
-      if (appeal < charming) continue;
-      result.appealingTotal++;
+      const isBreathtaking = appeal >= breathtaking;
+      if (isBreathtaking) result.breathtakingTotal++;
       const imp = impMap.get(`${x},${y}`);
-      if (imp) {
-        if (!byName.has(imp.name)) byName.set(imp.name, { name: imp.name, iconId: imp.iconId, count: 0 });
-        byName.get(imp.name).count++;
-        if (appeal >= breathtaking) result.breathtakingImprovedCount++;
-      } else {
-        result.appealingUnimprovedCount++;
+      if (!imp) continue; // improved tiles only for listings/improved counts
+      if (isBreathtaking) result.breathtakingImproved++;
+      if (appeal >= charming) {
+        const resInfo = resourceAt(x, y);
+        const name = resInfo ? (resInfo.Name ? Locale.compose(resInfo.Name) : resInfo.ResourceType) : imp.name;
+        const iconId = resInfo ? resInfo.ResourceType : imp.iconId;
+        if (!byName.has(name)) byName.set(name, { name, iconId, count: 0 });
+        byName.get(name).count++;
       }
     }
   } catch (e) {
@@ -373,4 +390,26 @@ export function getResortData(city) {
   }
   result.appealingImproved = Array.from(byName.values()).sort((a, b) => b.count - a.count);
   return result;
+}
+
+// True if the local player has fully unlocked (mastered) the Globalism civic,
+// which enables Resort-town Tourism on improved Breathtaking tiles.
+export function hasGlobalismMastery() {
+  try {
+    const playerId = GameContext.localPlayerID;
+    let node = null;
+    for (const n of GameInfo.ProgressionTreeNodes || []) {
+      if (n.ProgressionTreeNodeType === "NODE_CIVIC_MO_MAIN_GLOBALISM") { node = n; break; }
+    }
+    if (!node) return false;
+    const handle = node.$hash ?? node.ProgressionTreeNodeType;
+    const state = Game.ProgressionTrees.getNodeState(playerId, handle);
+    if (typeof ProgressionTreeNodeState !== "undefined") {
+      return state === ProgressionTreeNodeState.NODE_STATE_FULLY_UNLOCKED;
+    }
+    return false;
+  } catch (e) {
+    console.error("[ETFI] hasGlobalismMastery failed", e);
+    return false;
+  }
 }

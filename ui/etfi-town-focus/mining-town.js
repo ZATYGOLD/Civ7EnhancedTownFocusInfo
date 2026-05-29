@@ -3,10 +3,11 @@
 // Author: Zatygold
 //
 // Mining Town (PROJECT_TOWN_PRODUCTION): +2 Production on Camps, Woodcutters,
-// Clay Pits, Mines, and Quarries (Modern also counts Oil Rigs). Builds an ETFI
-// model from live town data.
+// Clay Pits, Mines, Quarries (Modern: Oil Rigs). Split into Improved (earn the
+// Production) and Unimproved (eligible resources). Resource tiles show the
+// resource name/icon.
 
-import { ETFI_YIELDS, countImprovements } from "../../etfi-utilities.js";
+import { ETFI_YIELDS, getFocusImprovements, composeWithFallback } from "../../etfi-utilities.js";
 
 const PRODUCTION_PER = 2;
 const PRODUCTION_IMPROVEMENTS = new Set([
@@ -22,15 +23,27 @@ const PRODUCTION_IMPROVEMENTS = new Set([
 ]);
 
 export function buildMiningModel(city) {
-  const { groups, total } = countImprovements(city, PRODUCTION_IMPROVEMENTS);
-  const rows = groups.map((g) => ({
-    iconId: g.iconId,
-    name: g.name,
-    count: g.count,
-    yields: [{ yieldType: ETFI_YIELDS.PRODUCTION, value: g.count * PRODUCTION_PER }],
-  }));
+  const { improved, unimproved } = getFocusImprovements(city, PRODUCTION_IMPROVEMENTS);
+  const improvedTotal = improved.reduce((s, g) => s + g.count, 0);
+
+  const sections = [];
+  if (improved.length) {
+    sections.push({
+      title: composeWithFallback("LOC_MOD_ETFI_IMPROVED", "Improved"),
+      rows: improved.map((g) => ({ iconId: g.iconId, name: g.name, count: g.count, yields: [{ yieldType: ETFI_YIELDS.PRODUCTION, value: g.count * PRODUCTION_PER }] })),
+    });
+  }
+  if (unimproved.length) {
+    sections.push({
+      title: composeWithFallback("LOC_MOD_ETFI_UNIMPROVED", "Unimproved"),
+      rows: unimproved.map((g) => ({ iconId: g.iconId, name: g.name, count: g.count })),
+    });
+  }
+
   return {
-    header: [{ yieldType: ETFI_YIELDS.PRODUCTION, value: total * PRODUCTION_PER }],
-    rows,
+    header: [{ yieldType: ETFI_YIELDS.PRODUCTION, value: improvedTotal * PRODUCTION_PER }],
+    rows: [],
+    sections,
+    notes: [],
   };
 }
