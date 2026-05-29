@@ -60,8 +60,12 @@ export function getTownCity() {
 
 // --- improvement counting (Farming / Fishing / Mining) ---------------------
 //
-// Counts COMPLETED improvements whose ConstructibleType is in `typeSet`,
-// grouped by localized name. Returns { groups: [{name, iconId, count}], total }.
+// Counts COMPLETED improvements that match `typeSet`, grouped for display.
+// MATCHING uses the tile's free constructible (the logical improvement type),
+// so warehouse substitutions and unique improvements still match their base
+// rule. DISPLAY uses the actual instance type, so unique improvements show
+// their own unique name and icon.
+// Returns { groups: [{name, iconId, count}], total }.
 export function countImprovements(city, typeSet) {
   const byName = new Map();
   let total = 0;
@@ -70,10 +74,32 @@ export function countImprovements(city, typeSet) {
     for (const id of ids) {
       const inst = Constructibles.get(id);
       if (!inst || !inst.complete) continue;
+
+      const location = inst.location;
+      if (!location || location.x == null || location.y == null) continue;
+
+      // Logical type via the tile's free constructible (respects warehouses /
+      // unique-improvement substitutions) — used for MATCHING.
+      let logicalType = null;
+      try {
+        const fcID = Districts.getFreeConstructible(location, GameContext.localPlayerID);
+        logicalType = GameInfo.Constructibles.lookup(fcID)?.ConstructibleType ?? null;
+      } catch {
+        logicalType = null;
+      }
+
+      // Actual instance type — used for DISPLAY (unique improvement names).
       const info = GameInfo.Constructibles.lookup(inst.type);
-      if (!info || !typeSet.has(info.ConstructibleType)) continue;
-      const name = info.Name ? Locale.compose(info.Name) : info.ConstructibleType;
-      if (!byName.has(name)) byName.set(name, { name, iconId: info.ConstructibleType, count: 0 });
+      const actualType = info?.ConstructibleType ?? null;
+
+      const matches =
+        (logicalType && typeSet.has(logicalType)) ||
+        (actualType && typeSet.has(actualType));
+      if (!matches) continue;
+
+      const name = info?.Name ? Locale.compose(info.Name) : (actualType || logicalType);
+      const iconId = actualType || logicalType;
+      if (!byName.has(name)) byName.set(name, { name, iconId, count: 0 });
       byName.get(name).count += 1;
       total += 1;
     }
