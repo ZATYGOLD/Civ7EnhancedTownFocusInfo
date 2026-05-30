@@ -2,6 +2,19 @@
 
 A mod for Civilization VII that enhances the display of town focus yield bonuses, showing detailed breakdowns of improvements, buildings, and trade routes that contribute to specialization bonuses.
 
+## Version 2.4.0
+
+### What's New
+
+- **Resort Town accuracy:** Natural Wonder tiles are now listed in their own category with the correct +50% bonus, grouped per wonder with a tile count, reading the live (effective) tile yields so the numbers match the game whether or not the Resort focus is already active. Improved appealing tiles — including **Districts** — correctly receive the +1 Happiness / +1 Gold, and Districts now appear first in the Improved category with a hover list of their building(s).
+- **Auto-refresh on focus change:** committing a Town Focus now updates the panel's yield previews and the city yield bar in place — no need to close and reopen the panel.
+- **Bulleted hover tooltips:** all hover panels (connected settlements, the Breathtaking breakdown, and the new Districts list) now use bullet points; two buildings sharing a tile (a Quarter) are shown together with a `|` divider.
+- **Display polish:** yield values round to the nearest 0.5, the "View Hidden" checkbox sits more comfortably in the header, and several yield/count display fixes.
+
+### Maintenance
+
+- Reset the legacy tooltip files to clean scaffolds for future work (renamed the old `etfi.js` to `town-focus-tooltip.js`) and removed dead code.
+
 ## Version 2.3.0
 
 ### What's New

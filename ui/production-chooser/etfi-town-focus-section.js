@@ -19,6 +19,7 @@ import { TownFocusChooserItem } from "/base-standard/ui/production-chooser/town-
 import { Pill } from "/base-standard/ui-next/components/pills.js";
 import { ETFI_Settings } from "../../core/settings.js";
 import { getTownCity, composeWithFallback } from "../../etfi-utilities.js";
+import { ETFI_TOWN_FOCUS_TOOLTIP_STYLE } from "./town-focus-tooltip.js";
 import { buildFoodModel } from "../etfi-town-focus/farm-fish-towns.js";
 import { buildMiningModel } from "../etfi-town-focus/mining-town.js";
 import { buildTradeModel } from "../etfi-town-focus/trade-town.js";
@@ -413,6 +414,11 @@ TownFocusChooserItem.prototype.onAttach = function () {
 
 TownFocusChooserItem.prototype.render = function () {
   baseRender.call(this);
+
+  // Point the item at our own copy of the project tooltip (registered under a
+  // unique style) instead of the base "production-project-tooltip", so the Town
+  // Focus tooltip can be customized without affecting the shared base type.
+  try { this.Root.dataset.tooltipStyle = ETFI_TOWN_FOCUS_TOOLTIP_STYLE; } catch {}
 
   if (isGrowthFocus(this.Root)) return;
 
