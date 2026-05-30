@@ -2,7 +2,7 @@
 
 A mod for Civilization VII that enhances the display of town focus yield bonuses, showing detailed breakdowns of improvements, buildings, and trade routes that contribute to specialization bonuses.
 
-## Version 2.4.0
+## Version 2.3.1
 
 ### What's New
 
