@@ -7,6 +7,7 @@
 
 import { ConstructibleHasTagType } from "/base-standard/ui/utilities/utilities-tags.js";
 import { getGlobalParamNumber } from "/core/ui/utilities/utilities-data.js";
+import { ComponentID } from "/core/ui/utilities/utilities-component-id.js";
 
 export const ETFI_YIELDS = Object.freeze({
   FOOD: "YIELD_FOOD",
@@ -252,6 +253,40 @@ export function getConnectedSettlements(city) {
   return result;
 }
 
+// Connected vs. disconnected settlements for the Hub focus. "Disconnected" =
+// the player's OTHER settlements that this town is not connected to (excluding
+// the town itself). Returns connected + disconnected, each split City/Town.
+export function getSettlementsByConnection(city) {
+  const result = {
+    connected: { cities: [], towns: [] },
+    disconnected: { cities: [], towns: [] },
+  };
+  try {
+    const connected = getConnectedSettlements(city);
+    result.connected = connected;
+
+    // Exclude the connected settlements and the town itself from disconnected.
+    const exclude = [];
+    try { if (city?.id) exclude.push(city.id); } catch {}
+    let connIds = [];
+    try { connIds = city?.getConnectedCities?.() || []; } catch {}
+    for (const id of connIds) exclude.push(id);
+
+    const owner = city?.owner;
+    const all = (owner != null ? Players.get(owner)?.Cities?.getCities?.() : null) || [];
+    for (const s of all) {
+      if (!s || !s.id) continue;
+      if (ComponentID.isMatchInArray(exclude, s.id)) continue;
+      const name = Locale.compose(s.name);
+      if (s.isTown) result.disconnected.towns.push(name);
+      else result.disconnected.cities.push(name);
+    }
+  } catch (e) {
+    console.error("[ETFI] getSettlementsByConnection failed", e);
+  }
+  return result;
+}
+
 // --- building helpers (Religious Site) -------------------------------------
 
 export function isCurrentOrAgeless(type) {
@@ -329,10 +364,34 @@ function getUniqueQuarterName(loc) {
   }
 }
 
-export function getQuarters(city) {
+// A building "counts" for a Quarter / Religious Site if it is not a Wall and is
+// ageless, current-age, a Warehouse, a Unique building, or a FULL_TILE (special)
+// building. Shared by Urban Center and Religious Site so they use identical rules.
+function isQuarterBuilding(type) {
+  if (isWallType(type)) return false;
+  try {
+    if (isCurrentOrAgeless(type)) return true;
+    if (ConstructibleHasTagType(type, "WAREHOUSE")) return true;
+    if (ConstructibleHasTagType(type, "UNIQUE")) return true;
+    if (isFullTileType(type)) return true;
+  } catch {}
+  return false;
+}
+
+// Classify the town's qualifying buildings (see isQuarterBuilding) by tile into
+// four buckets, shared by Urban Center and Religious Site:
+//   * uniqueQuarters  - tiles flagged as a civ-unique quarter { name, buildings[] },
+//   * specialQuarters - tiles with FULL_TILE building(s)        { buildings[] },
+//   * quarters        - other tiles with 2+ qualifying buildings { buildings[] },
+//   * buildings       - tiles with a single qualifying building (lone)  { name, iconId, type }.
+// Each `buildings[]` entry is { name, iconId }. The town center tile is skipped.
+//   quarterCount  = uniqueQuarters + specialQuarters + quarters (Urban Center bonus unit),
+//   buildingCount = every qualifying building across all buckets (Religious Site bonus unit).
+export function getTownBuildings(city) {
+  const quarters = [];
   const uniqueQuarters = [];
-  const buildingQuarters = [];
   const specialQuarters = [];
+  const buildings = [];
   try {
     const centerKey = city?.location ? `${city.location.x},${city.location.y}` : null;
     const perTile = new Map();
@@ -343,42 +402,44 @@ export function getQuarters(city) {
       const loc = inst.location;
       if (!loc || loc.x == null || loc.y == null) continue;
       const def = GameInfo.Constructibles.lookup(inst.type);
-      if (!def) continue;
+      if (!def || def.ConstructibleClass !== "BUILDING") continue;
       const key = `${loc.x},${loc.y}`;
       if (!perTile.has(key)) perTile.set(key, { loc, blds: [] });
-      perTile.get(key).blds.push({ type: def.ConstructibleType, name: def.Name ? Locale.compose(def.Name) : def.ConstructibleType, iconId: def.ConstructibleType });
+      perTile.get(key).blds.push({
+        type: def.ConstructibleType,
+        name: def.Name ? Locale.compose(def.Name) : def.ConstructibleType,
+        iconId: def.ConstructibleType,
+      });
     }
     for (const [key, { loc, blds }] of perTile) {
       if (key === centerKey) continue;
+      const qualifying = blds.filter((b) => isQuarterBuilding(b.type));
+      if (!qualifying.length) continue;
       const mapped = (list) => list.map((b) => ({ name: b.name, iconId: b.iconId }));
 
       const uniqueName = getUniqueQuarterName(loc);
       if (uniqueName) {
-        const qualifying = blds.filter((b) => !isWallType(b.type));
-        uniqueQuarters.push({ name: uniqueName, buildings: mapped(qualifying.length ? qualifying : blds) });
+        uniqueQuarters.push({ name: uniqueName, buildings: mapped(qualifying) });
         continue;
       }
-
-      const fullTiles = blds.filter((b) => isFullTileType(b.type));
+      const fullTiles = qualifying.filter((b) => isFullTileType(b.type));
       if (fullTiles.length) {
         specialQuarters.push({ buildings: mapped(fullTiles) });
         continue;
       }
-
-      const qualifying = blds.filter((b) => !isWallType(b.type) && isCurrentOrAgeless(b.type));
       if (qualifying.length >= 2) {
-        buildingQuarters.push({ buildings: mapped(qualifying) });
+        quarters.push({ buildings: mapped(qualifying) });
+      } else {
+        buildings.push({ name: qualifying[0].name, iconId: qualifying[0].iconId, type: qualifying[0].type });
       }
     }
   } catch (e) {
-    console.error("[ETFI] getQuarters failed", e);
+    console.error("[ETFI] getTownBuildings failed", e);
   }
-  return {
-    uniqueQuarters,
-    buildingQuarters,
-    specialQuarters,
-    count: uniqueQuarters.length + buildingQuarters.length + specialQuarters.length,
-  };
+  const sumB = (arr) => arr.reduce((s, q) => s + q.buildings.length, 0);
+  const quarterCount = uniqueQuarters.length + specialQuarters.length + quarters.length;
+  const buildingCount = sumB(uniqueQuarters) + sumB(specialQuarters) + sumB(quarters) + buildings.length;
+  return { quarters, uniqueQuarters, specialQuarters, buildings, quarterCount, buildingCount };
 }
 
 // --- factory resources (Factory) -------------------------------------------

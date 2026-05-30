@@ -2,39 +2,94 @@
 //
 // Author: Zatygold
 //
-// Religious Site (PROJECT_TOWN_TEMPLE, Exploration only): +2 Happiness on all
-// Buildings in the town, +2 Relic Slots on Temples, +25% Gold to purchase
-// Temples.
+// Religious Site (PROJECT_TOWN_TEMPLE, Exploration Age only):
+//   * +2 Happiness on all qualifying Buildings in this Town,
+//   * +2 Relic Slots on Temples in this Town.
+// Eligibility matches Urban Center (ageless / current-age / warehouse / unique /
+// full-tile, never Walls). Buildings are listed in the same categories as Urban
+// Center — Quarters, Unique Quarters, Special Quarters, and Buildings (lone) —
+// each building shown with its +2 Happiness pill. Unlike Urban Center, lone
+// Buildings still earn the bonus here, so that category is NOT hidden. Header
+// pills: total Happiness and a +2 Relic Slots pill (relic icon).
 
-import { ETFI_YIELDS, getCountableBuildings, composeWithFallback } from "../../etfi-utilities.js";
+import { ETFI_YIELDS, RELIC_ICON, getTownBuildings, getCountableBuildings, composeWithFallback } from "../../etfi-utilities.js";
 
 const HAPPINESS_PER_BUILDING = 2;
 const RELIC_SLOTS_PER_TEMPLE = 2;
 
+// One row per lone building, each earning +2 Happiness.
+function loneBuildingRows(buildingList) {
+  return buildingList.map((b) => ({
+    iconId: b.iconId,
+    name: b.name,
+    yields: [{ yieldType: ETFI_YIELDS.HAPPINESS, value: HAPPINESS_PER_BUILDING }],
+  }));
+}
+
+// One row per quarter: all its buildings on the same line, with a single
+// Happiness pill summing +2 per building in that quarter.
+function quarterRows(quarterList) {
+  return quarterList.map((q) => {
+    const row = {
+      items: q.buildings.map((b) => ({ iconId: b.iconId, name: b.name })),
+      yields: [{ yieldType: ETFI_YIELDS.HAPPINESS, value: q.buildings.length * HAPPINESS_PER_BUILDING }],
+    };
+    if (q.name) row.subText = q.name;
+    return row;
+  });
+}
+
 export function buildTempleModel(city) {
-  const buildings = getCountableBuildings(city);
-  const buildingCount = buildings.length;
-  const templeCount = buildings.filter((b) => b.type === "BUILDING_TEMPLE").length;
+  const { quarters, uniqueQuarters, specialQuarters, buildings, buildingCount } = getTownBuildings(city);
   const happiness = buildingCount * HAPPINESS_PER_BUILDING;
 
-  const rows = [];
-  if (buildingCount) {
-    rows.push({
-      name: composeWithFallback("LOC_MOD_ETFI_TOTAL_BUILDINGS", "Buildings"),
-      count: buildingCount,
-      yields: [{ yieldType: ETFI_YIELDS.HAPPINESS, value: happiness }],
+  const templeCount = getCountableBuildings(city).filter((b) => b.type === "BUILDING_TEMPLE").length;
+
+  const sections = [];
+  if (quarters.length) {
+    sections.push({
+      title: composeWithFallback("LOC_MOD_ETFI_QUARTERS", "Quarters"),
+      separatePanel: true,
+      rows: quarterRows(quarters),
     });
   }
+  if (uniqueQuarters.length) {
+    sections.push({
+      title: composeWithFallback("LOC_MOD_ETFI_UNIQUE_QUARTERS", "Unique Quarters"),
+      separatePanel: true,
+      rows: quarterRows(uniqueQuarters),
+    });
+  }
+  if (specialQuarters.length) {
+    sections.push({
+      title: composeWithFallback("LOC_MOD_ETFI_SPECIAL_QUARTERS", "Special Quarters"),
+      separatePanel: true,
+      rows: quarterRows(specialQuarters),
+    });
+  }
+  if (buildings.length) {
+    sections.push({
+      title: composeWithFallback("LOC_MOD_ETFI_BUILDINGS", "Buildings"),
+      separatePanel: "bottom",
+      rows: loneBuildingRows(buildings),
+    });
+  }
+
+  // Header pills next to the focus name: total Happiness + the +2 Relic Slots.
+  const header = [
+    { yieldType: ETFI_YIELDS.HAPPINESS, value: happiness },
+    { yieldType: RELIC_ICON, value: RELIC_SLOTS_PER_TEMPLE, colored: false },
+  ];
 
   const notes = [];
   if (templeCount) {
     notes.push(`+${RELIC_SLOTS_PER_TEMPLE * templeCount} Relic Slots (${templeCount} Temple${templeCount === 1 ? "" : "s"})`);
   }
-  notes.push("+25% [icon:YIELD_GOLD] Gold towards purchasing Temples");
 
   return {
-    header: [{ yieldType: ETFI_YIELDS.HAPPINESS, value: happiness }],
-    rows,
+    header,
+    rows: [],
+    sections,
     notes,
   };
 }

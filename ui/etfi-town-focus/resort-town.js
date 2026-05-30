@@ -25,33 +25,37 @@ export function buildResortModel(city) {
   const d = getResortData(city);
   const developed = d.breathtakingImprovements + d.breathtakingDistricts;
 
+  const isModern = getCurrentAgeType() === "AGE_MODERN";
   const reqsMet =
-    getCurrentAgeType() === "AGE_MODERN" &&
+    isModern &&
     developed >= BREATHTAKING_MIN &&
     hasGlobalismMastery();
 
-  // Hover breakdown for the Breathtaking text (rendered via Locale.stylize).
-  const breakdownTip = [
-    `${composeWithFallback("LOC_MOD_ETFI_IMPROVEMENTS", "Improvements")}: ${d.breathtakingImprovements} (+${TOURISM_PER * d.breathtakingImprovements} [icon:${TOURISM_ICON}])`,
-    `${composeWithFallback("LOC_MOD_ETFI_DISTRICTS", "Districts")}: ${d.breathtakingDistricts} (+${TOURISM_PER * d.breathtakingDistricts} [icon:${TOURISM_ICON}])`,
-  ].join("[N]");
-
   const sections = [];
 
-  // Tourism category — top, separate panel.
-  sections.push({
-    title: composeWithFallback("LOC_MOD_ETFI_TOURISM", "Tourism"),
-    separatePanel: "top",
-    rows: [{
-      iconClass: HEX_ICON_CLASS,
-      iconStyle: HEX_ICON_STYLE,
-      name: composeWithFallback("LOC_MOD_ETFI_BREATHTAKING", "Breathtaking"),
-      tooltip: breakdownTip,
-      countText: `${developed}/${BREATHTAKING_MIN}`,
-      yields: [{ yieldType: TOURISM_ICON, value: TOURISM_PER * developed, colored: reqsMet }],
-    }],
-    notes: reqsMet ? [] : [composeWithFallback("LOC_MOD_ETFI_REQUIRES_GLOBALISM", "Requires Globalism's Mastery")],
-  });
+  // Tourism category — top, separate panel. Tourism is a Modern-Age-only bonus,
+  // so the whole category is disabled (omitted) outside the Modern Age.
+  if (isModern) {
+    // Hover breakdown for the Breathtaking text (rendered via Locale.stylize).
+    const breakdownTip = [
+      `${composeWithFallback("LOC_MOD_ETFI_IMPROVEMENTS", "Improvements")}: ${d.breathtakingImprovements} (+${TOURISM_PER * d.breathtakingImprovements} [icon:${TOURISM_ICON}])`,
+      `${composeWithFallback("LOC_MOD_ETFI_DISTRICTS", "Districts")}: ${d.breathtakingDistricts} (+${TOURISM_PER * d.breathtakingDistricts} [icon:${TOURISM_ICON}])`,
+    ].join("[N]");
+
+    sections.push({
+      title: composeWithFallback("LOC_MOD_ETFI_TOURISM", "Tourism"),
+      separatePanel: "top",
+      rows: [{
+        iconClass: HEX_ICON_CLASS,
+        iconStyle: HEX_ICON_STYLE,
+        name: composeWithFallback("LOC_MOD_ETFI_BREATHTAKING", "Breathtaking"),
+        tooltip: breakdownTip,
+        countText: `${developed}/${BREATHTAKING_MIN}`,
+        yields: [{ yieldType: TOURISM_ICON, value: TOURISM_PER * developed, colored: reqsMet }],
+      }],
+      notes: reqsMet ? [] : [composeWithFallback("LOC_MOD_ETFI_REQUIRES_GLOBALISM", "Requires Globalism's Mastery")],
+    });
+  }
 
   // Appealing tiles — shared Improved (+1 Happiness / +1 Gold) / Unimproved.
   for (const s of improvedUnimprovedSections({

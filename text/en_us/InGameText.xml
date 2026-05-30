@@ -4,6 +4,8 @@
     <!-- Buildings & Quarters -->
     <Row Tag="LOC_MOD_ETFI_SPECIAL_QUARTERS"><Text>Special Quarters</Text></Row>
     <Row Tag="LOC_MOD_ETFI_BUILDING_QUARTERS"><Text>Building Quarters</Text></Row>
+    <Row Tag="LOC_MOD_ETFI_QUARTERS"><Text>Quarters</Text></Row>
+    <Row Tag="LOC_MOD_ETFI_BUILDINGS"><Text>Buildings</Text></Row>
     <Row Tag="LOC_MOD_ETFI_UNIQUE_QUARTERS"><Text>Unique Civilization Quarters</Text></Row>
     <Row Tag="LOC_MOD_ETFI_FULL_TILE_QUARTERS"><Text>Full-Tile Quarters</Text></Row>
     <Row Tag="LOC_MOD_ETFI_ERA_BONUS"><Text>Era Bonus</Text></Row>
@@ -23,6 +25,8 @@
     <Row Tag="LOC_MOD_ETFI_TRADE_CONNECTIONS"><Text>Connections</Text></Row>
     <Row Tag="LOC_MOD_ETFI_CONNECTED_CITIES"><Text>Cities</Text></Row>
     <Row Tag="LOC_MOD_ETFI_CONNECTED_TOWNS"><Text>Towns</Text></Row>
+    <Row Tag="LOC_MOD_ETFI_CONNECTED"><Text>Connected</Text></Row>
+    <Row Tag="LOC_MOD_ETFI_DISCONNECTED"><Text>Disconnected</Text></Row>
     <Row Tag="LOC_MOD_ETFI_BONUS_PER_CONNECTION"><Text>Bonus per connection</Text></Row>
     <Row Tag="LOC_MOD_ETFI_HAPPINESS_PER_RESOURCE"><Text>Happiness per resource</Text></Row>
 
@@ -31,6 +35,7 @@
     <Row Tag="LOC_MOD_ETFI_TOTAL_IMPROVEMENTS"><Text>Total Improvements</Text></Row>
     <Row Tag="LOC_MOD_ETFI_TOTAL_CONNECTIONS"><Text>Total Connections</Text></Row>
     <Row Tag="LOC_MOD_ETFI_TOTAL_BUILDINGS"><Text>Total Buildings</Text></Row>
+    <Row Tag="LOC_MOD_ETFI_TEMPLES"><Text>Temples</Text></Row>
     <Row Tag="LOC_MOD_ETFI_TOTAL_SETTLEMENTS"><Text>Total Settlements</Text></Row>
 
     <!-- Label Titles -->
