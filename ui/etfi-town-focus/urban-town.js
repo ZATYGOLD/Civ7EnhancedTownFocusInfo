@@ -1,162 +1,39 @@
-// Author: Zatygold
 // File Path: ui/etfi-town-focus/urban-town.js
-
-// Urban Center:
-// +1 Science and +1 Culture on Quarters.
-// Can purchase Science and Culture Buildings.
 //
-// A normal Quarter is a tile with 2 or more completed non-wall buildings.
-// Some special single-building districts/quarters, like Rail Station, count as
-// a Quarter by themselves. Those should be added to the special set below.
+// Author: Zatygold
+//
+// Urban Center (PROJECT_TOWN_URBAN_CENTER): +1 Science and +1 Culture on
+// Quarters. Categories (via the shared quarterSections helper), each in its own
+// panel:
+//   * Quarters         - tiles with 2+ qualifying buildings (the bonus unit),
+//   * Unique Quarters  - civ-specific quarters (e.g. Acropolis),
+//   * Special Quarters - full-tile buildings (Rail Station, Launch Pad, ...),
+//   * Buildings (hidden) - lone qualifying buildings that are NOT a Quarter yet
+//     (no bonus, hidden by default since Urban Center only rewards Quarters).
+// Each quarter row lists its building(s) with the +1 Science / +1 Culture pills.
 
-import {
-  ETFI_YIELDS,
-  getCompletedBuildings,
-  isWallRecord,
-  groupBy,
-} from "../../etfi-utilities.js";
+import { ETFI_YIELDS, getTownBuildings, quarterSections } from "../../etfi-utilities.js";
 
-import {
-  renderFocusDetails,
-  renderFocusRow,
-  renderFocusRecordList,
-  getFocusCompactTextStyle,
-  composeFocusLabel,
-} from "./town-focus-html.js";
+const PER_QUARTER = 1;
 
-const SCIENCE_PER_QUARTER = 1;
-const CULTURE_PER_QUARTER = 1;
+export function buildUrbanModel(city) {
+  const data = getTownBuildings(city);
 
-const SPECIAL_QUARTER_BUILDING_TYPES = new Set([
-  "BUILDING_RAIL_STATION",
-  "BUILDING_RAILYARD",
-  "BUILDING_LAUNCH_PAD",
-  "BUILDING_AIRFIELD"
-
-  // Add confirmed special single-building Quarter constructible types here.
-  // Example:
-  // "BUILDING_SOME_SPECIAL_QUARTER",
-]);
-
-const SPECIAL_QUARTER_BUILDING_NAME_KEYS = new Set([
-  "LOC_BUILDING_RAIL_STATION_NAME",
-
-  // Add confirmed special single-building Quarter name keys here if needed.
-  // Example:
-  // "LOC_BUILDING_SOME_SPECIAL_QUARTER_NAME",
-]);
-
-export default class UrbanCenterDetails {
-  render(city) {
-    if (!city) return null;
-
-    const completedBuildings = getCompletedBuildings(city).filter(
-      (building) => !isWallRecord(building)
-    );
-
-    if (!completedBuildings.length) return null;
-
-    const buildingsByTile = groupBy(
-      completedBuildings.filter((building) => building.tileKey),
-      (building) => building.tileKey
-    );
-
-    const quarterStacks = [...buildingsByTile.values()]
-      .filter((stack) => this.isQuarterStack(stack))
-      .sort((a, b) => b.length - a.length);
-
-    if (!quarterStacks.length) return null;
-
-    const totalQuarters = quarterStacks.length;
-
-    const orderedYields = [
-      ETFI_YIELDS.SCIENCE,
-      ETFI_YIELDS.CULTURE,
-    ];
-
-    const totals = {
-      [ETFI_YIELDS.SCIENCE]: totalQuarters * SCIENCE_PER_QUARTER,
-      [ETFI_YIELDS.CULTURE]: totalQuarters * CULTURE_PER_QUARTER,
-    };
-
-    const bodyHtml = quarterStacks
-      .map((stack) => {
-        const compactTextStyle = getFocusCompactTextStyle(stack);
-
-        return renderFocusRow({
-          leftHtml: renderFocusRecordList(stack),
-          yields: [
-            {
-              iconId: ETFI_YIELDS.SCIENCE,
-              value: SCIENCE_PER_QUARTER,
-            },
-            {
-              iconId: ETFI_YIELDS.CULTURE,
-              value: CULTURE_PER_QUARTER,
-            },
-          ],
-          rowTextStyle: compactTextStyle,
-          leftStyle: `
-            max-width: 74%;
-            white-space: nowrap;
-            column-gap: 0.125rem;
-          `,
-          leftClass: "flex items-center min-w-0",
-        });
-      })
-      .join("");
-
-    return renderFocusDetails({
-      headerYields: orderedYields,
-      headerTotals: totals,
-      summaryLabel: composeFocusLabel(
-        "LOC_MOD_ETFI_BUILDING_QUARTERS",
-        "Quarters"
-      ),
-      summaryValue: totalQuarters,
-      bodyHtml,
-    });
-  }
-
-  isQuarterStack(stack) {
-    if (!Array.isArray(stack) || stack.length === 0) {
-      return false;
-    }
-
-    if (stack.length >= 2) {
-      return true;
-    }
-
-    return this.isSpecialQuarterBuilding(stack[0]);
-  }
-
-  isSpecialQuarterBuilding(record) {
-    const typeName = this.getRecordTypeName(record);
-    const nameKey = this.getRecordNameKey(record);
-
-    return (
-      SPECIAL_QUARTER_BUILDING_TYPES.has(typeName) ||
-      SPECIAL_QUARTER_BUILDING_NAME_KEYS.has(nameKey)
-    );
-  }
-
-  getRecordTypeName(record) {
-    return (
-      record?.type ||
-      record?.info?.ConstructibleType ||
-      ""
-    )
-      .toString()
-      .toUpperCase();
-  }
-
-  getRecordNameKey(record) {
-    return (
-      record?.nameKey ||
-      record?.info?.Name ||
-      ""
-    )
-      .toString()
-      .toUpperCase();
-  }
+  return {
+    header: [
+      { yieldType: ETFI_YIELDS.SCIENCE, value: data.quarterCount * PER_QUARTER },
+      { yieldType: ETFI_YIELDS.CULTURE, value: data.quarterCount * PER_QUARTER },
+    ],
+    rows: [],
+    sections: quarterSections(data, {
+      // Each Quarter earns +1 Science / +1 Culture (fixed per quarter).
+      quarterYields: () => [
+        { yieldType: ETFI_YIELDS.SCIENCE, value: PER_QUARTER },
+        { yieldType: ETFI_YIELDS.CULTURE, value: PER_QUARTER },
+      ],
+      // Lone Buildings aren't Quarters yet, so they earn nothing and are hidden.
+      hideBuildings: true,
+    }),
+    notes: [],
+  };
 }

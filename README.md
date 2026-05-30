@@ -2,6 +2,27 @@
 
 A mod for Civilization VII that enhances the display of town focus yield bonuses, showing detailed breakdowns of improvements, buildings, and trade routes that contribute to specialization bonuses.
 
+## Version 2.3.0
+
+### What's New
+
+- Town focus details now render **inline** in the focus chooser list (no longer a hover tooltip), so every focus' breakdown is visible at a glance with yield pills next to each focus name.
+- New **View Hidden** toggle at the top of the Town Focus panel. "Unimproved" and other supplementary categories are hidden by default and revealed when checked.
+- **Hub Town** now lists both **Connected** and **Disconnected** settlements (Disconnected is hidden by default), each split into Cities and Towns with hover-to-reveal names.
+- **Urban Center** and **Religious Site** now share consistent categories: **Quarters**, **Unique Quarters**, **Special Quarters**, and **Buildings** (lone), each in its own panel.
+- **Religious Site** lists every qualifying building (matching Urban Center's eligibility rules), counts **all** temple types — including unique civilization temples — for Relic Slots, and includes Palace / City Hall (ageless buildings).
+- **Resort Town** Tourism category is correctly limited to the Modern Age, with a hover breakdown of Breathtaking Improvements vs. Districts.
+- Tighter, narrower yield pills for a cleaner read.
+
+### Maintenance
+
+- Significant code cleanup: removed dead code, unified shared rendering helpers, and standardized how every town focus builds its display.
+
+### Languages
+
+- Refreshed and re-synced all supported language strings to match the current UI:
+  English, French, Italian, Japanese, Korean, Polish, Russian, Simplified Chinese, Traditional Chinese.
+
 ## Version 2.2.2
 
 ## What's New
@@ -174,12 +195,14 @@ To contribute a new translation:
 Current language support:
 
 - English (en_US)
-- Japanese (ja_JP)
+- French (fr_FR)
 - Italian (it_IT)
-- Russian (ru_RU)
-- Polish (pl_PL)
-- Simplified Chinese (zh_Hans_CN)
+- Japanese (ja_JP)
 - Korean (ko_KR)
+- Polish (pl_PL)
+- Russian (ru_RU)
+- Simplified Chinese (zh_Hans_CN)
+- Traditional Chinese (zh_Hant_HK)
 
 ## Credits
 

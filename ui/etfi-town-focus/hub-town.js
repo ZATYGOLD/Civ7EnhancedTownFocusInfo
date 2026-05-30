@@ -1,114 +1,56 @@
 // File Path: ui/etfi-town-focus/hub-town.js
+//
+// Author: Zatygold
+//
+// Hub Town (PROJECT_TOWN_INN): +1 Influence per Settlement connected to this
+// Town. Two categories, each in its own panel:
+//   * Connected     - settlements this Town is connected to (earn the Influence),
+//   * Disconnected  - the player's other settlements (hidden by default).
+// Each lists Cities and Towns with their totals; hovering "Cities" / "Towns"
+// reveals the settlement names.
 
-// Hub (Inn) details renderer.
-// +1 Influence per Settlement connected to this Town.
-// Can purchase Diplomacy Buildings.
-// Limited to 1 Hub Town per Continent.
-// Only available in Exploration and Modern.
+import { ETFI_YIELDS, getSettlementsByConnection, composeWithFallback } from "../../etfi-utilities.js";
 
-import { ETFI_YIELDS } from "../../etfi-utilities.js";
+const INFLUENCE_PER = 1;
+const HUB_ICONS = { CITY: "CITY_URBAN", TOWN: "CITY_RURAL" };
 
-import {
-  renderFocusDetails,
-  renderFocusRow,
-  renderFocusIconName,
-  composeFocusLabel,
-} from "./town-focus-html.js";
-
-const HUB_ICONS = Object.freeze({
-  CITY: "CITY_URBAN",
-  TOWN: "CITY_RURAL",
-});
-
-export default class HubDetails {
-  render(city) {
-    if (
-      !city ||
-      typeof Cities === "undefined" ||
-      typeof city.getConnectedCities !== "function"
-    ) {
-      return null;
+function settlementRows(group, withYields) {
+  const mkRow = (iconId, label, names) => {
+    const row = { iconId, name: label, count: names.length };
+    if (withYields) {
+      row.yields = [{ yieldType: ETFI_YIELDS.INFLUENCE, value: names.length * INFLUENCE_PER }];
     }
+    if (names.length) row.tooltip = names.join("[N]");
+    return row;
+  };
+  return [
+    mkRow(HUB_ICONS.CITY, composeWithFallback("LOC_MOD_ETFI_CONNECTED_CITIES", "Cities"), group.cities),
+    mkRow(HUB_ICONS.TOWN, composeWithFallback("LOC_MOD_ETFI_CONNECTED_TOWNS", "Towns"), group.towns),
+  ];
+}
 
-    const connectedSettlements = this.getConnectedSettlements(city);
+export function buildHubModel(city) {
+  const { connected, disconnected } = getSettlementsByConnection(city);
+  const total = (connected.cities.length + connected.towns.length) * INFLUENCE_PER;
 
-    const totalSettlements =
-      connectedSettlements.cities.length + connectedSettlements.towns.length;
+  const sections = [{
+    title: composeWithFallback("LOC_MOD_ETFI_CONNECTED", "Connected"),
+    rows: settlementRows(connected, true),
+  }];
 
-    if (totalSettlements === 0) return null;
-
-    const bodyHtml = `
-      ${this.renderSettlementRow({
-        iconId: HUB_ICONS.CITY,
-        label: composeFocusLabel("LOC_MOD_ETFI_CONNECTED_CITIES", "Cities"),
-        names: connectedSettlements.cities,
-      })}
-
-      ${this.renderSettlementRow({
-        iconId: HUB_ICONS.TOWN,
-        label: composeFocusLabel("LOC_MOD_ETFI_CONNECTED_TOWNS", "Towns"),
-        names: connectedSettlements.towns,
-      })}
-    `;
-
-    return renderFocusDetails({
-      headerYields: ETFI_YIELDS.INFLUENCE,
-      headerTotals: totalSettlements,
-      summaryLabel: composeFocusLabel(
-        "LOC_MOD_ETFI_TOTAL_SETTLEMENTS",
-        "Total Settlements"
-      ),
-      summaryValue: totalSettlements,
-      bodyHtml,
+  if (disconnected.cities.length || disconnected.towns.length) {
+    sections.push({
+      title: composeWithFallback("LOC_MOD_ETFI_DISCONNECTED", "Disconnected"),
+      separatePanel: "bottom",
+      hidden: true,
+      rows: settlementRows(disconnected, false),
     });
   }
 
-  getConnectedSettlements(city) {
-    const result = {
-      cities: [],
-      towns: [],
-    };
-
-    const connectedIds = city.getConnectedCities() || [];
-
-    for (const id of connectedIds) {
-      const settlement = Cities.get(id);
-      if (!settlement) continue;
-
-      const name = Locale.compose(settlement.name);
-
-      if (settlement.isTown) {
-        result.towns.push(name);
-      } else {
-        result.cities.push(name);
-      }
-    }
-
-    return result;
-  }
-
-  renderSettlementRow({ iconId, label, names }) {
-    const count = names.length;
-
-    if (count <= 0) return "";
-
-    const rowHtml = renderFocusRow({
-      leftHtml: renderFocusIconName({
-        iconId,
-        name: label,
-        count,
-        iconSizeClass: "size-4",
-      }),
-      yieldIconId: ETFI_YIELDS.INFLUENCE,
-      yieldValue: count,
-    });
-
-    return `
-      ${rowHtml}
-
-      <div class="ml-6 opacity-80" style="font-size: 0.8em;">
-        ${names.join(" • ")}
-      </div>
-    `;
-  }
+  return {
+    header: [{ yieldType: ETFI_YIELDS.INFLUENCE, value: total }],
+    rows: [],
+    sections,
+    notes: [],
+  };
 }

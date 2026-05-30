@@ -1,104 +1,29 @@
 <?xml version='1.0' encoding='utf-8'?>
 <Database>
   <LocalizedText>
-    <!-- Quartiers / bâtiments -->
-    <Replace Tag="LOC_MOD_ETFI_SPECIAL_QUARTERS" Language="fr_FR">
-      <Text>Quartiers spéciaux</Text>
-    </Replace>
-    <Replace Tag="LOC_MOD_ETFI_BUILDING_QUARTERS" Language="fr_FR">
-      <Text>Quartiers de bâtiments</Text>
-    </Replace>
-    <Replace Tag="LOC_MOD_ETFI_UNIQUE_QUARTERS" Language="fr_FR">
-      <Text>Quartiers uniques de civilisation</Text>
-    </Replace>
-    <Replace Tag="LOC_MOD_ETFI_FULL_TILE_QUARTERS" Language="fr_FR">
-      <Text>Quartiers sur case entière</Text>
-    </Replace>
-    <Replace Tag="LOC_MOD_ETFI_ERA_BONUS" Language="fr_FR">
-      <Text>Bonus d’ère</Text>
-    </Replace>
+    <!-- Titres de catégorie -->
+    <Replace Tag="LOC_MOD_ETFI_IMPROVED" Language="fr_FR"><Text>Aménagés</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_UNIMPROVED" Language="fr_FR"><Text>Non aménagés</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_QUARTERS" Language="fr_FR"><Text>Quartiers</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_UNIQUE_QUARTERS" Language="fr_FR"><Text>Quartiers uniques</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_SPECIAL_QUARTERS" Language="fr_FR"><Text>Quartiers spéciaux</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_BUILDINGS" Language="fr_FR"><Text>Bâtiments</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_TOURISM" Language="fr_FR"><Text>Tourisme</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_CONNECTED" Language="fr_FR"><Text>Connectés</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_DISCONNECTED" Language="fr_FR"><Text>Non connectés</Text></Replace>
 
-    <!-- Améliorations -->
-    <Replace Tag="LOC_MOD_ETFI_IMPROVEMENT_WOODCUTTER" Language="fr_FR">
-      <Text>Bûcheron</Text>
-    </Replace>
-    <Replace Tag="LOC_MOD_ETFI_IMPROVEMENT_MINE" Language="fr_FR">
-      <Text>Mine</Text>
-    </Replace>
-    <Replace Tag="LOC_MOD_ETFI_IMPROVEMENT_FISHING_BOAT" Language="fr_FR">
-      <Text>Bateau de pêche</Text>
-    </Replace>
-    <Replace Tag="LOC_MOD_ETFI_IMPROVEMENT_FARM" Language="fr_FR">
-      <Text>Ferme</Text>
-    </Replace>
-    <Replace Tag="LOC_MOD_ETFI_IMPROVEMENT_PASTURE" Language="fr_FR">
-      <Text>Pâturage</Text>
-    </Replace>
-    <Replace Tag="LOC_MOD_ETFI_IMPROVEMENT_PLANTATION" Language="fr_FR">
-      <Text>Plantation</Text>
-    </Replace>
-    <Replace Tag="LOC_MOD_ETFI_IMPROVEMENT_CAMP" Language="fr_FR">
-      <Text>Camp</Text>
-    </Replace>
-    <Replace Tag="LOC_MOD_ETFI_IMPROVEMENT_CLAY_PIT" Language="fr_FR">
-      <Text>Fosse d’argile</Text>
-    </Replace>
-    <Replace Tag="LOC_MOD_ETFI_IMPROVEMENT_QUARRY" Language="fr_FR">
-      <Text>Carrière</Text>
-    </Replace>
+    <!-- Libellés de ligne -->
+    <Replace Tag="LOC_MOD_ETFI_CONNECTED_CITIES" Language="fr_FR"><Text>Villes</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_CONNECTED_TOWNS" Language="fr_FR"><Text>Bourgs</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_BREATHTAKING" Language="fr_FR"><Text>À couper le souffle</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_IMPROVEMENTS" Language="fr_FR"><Text>Aménagements</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_DISTRICTS" Language="fr_FR"><Text>Quartiers</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_REQUIRES_GLOBALISM" Language="fr_FR"><Text>Nécessite la maîtrise du Mondialisme</Text></Replace>
 
-    <!-- Routes / connexions -->
-    <Replace Tag="LOC_MOD_ETFI_TRADE_ROUTES" Language="fr_FR">
-      <Text>Routes commerciales</Text>
-    </Replace>
-    <Replace Tag="LOC_MOD_ETFI_TRADE_CONNECTIONS" Language="fr_FR">
-      <Text>Connexions</Text>
-    </Replace>
-    <Replace Tag="LOC_MOD_ETFI_CONNECTED_CITIES" Language="fr_FR">
-      <Text>Villes</Text>
-    </Replace>
-    <Replace Tag="LOC_MOD_ETFI_CONNECTED_TOWNS" Language="fr_FR">
-      <Text>Bourgs</Text>
-    </Replace>
-    <Replace Tag="LOC_MOD_ETFI_BONUS_PER_CONNECTION" Language="fr_FR">
-      <Text>Bonus par connexion</Text>
-    </Replace>
-    <Replace Tag="LOC_MOD_ETFI_HAPPINESS_PER_RESOURCE" Language="fr_FR">
-      <Text>Bonheur par ressource</Text>
-    </Replace>
+    <!-- Contrôles -->
+    <Replace Tag="LOC_MOD_ETFI_VIEW_HIDDEN" Language="fr_FR"><Text>Afficher masqués</Text></Replace>
 
-    <!-- Totaux -->
-    <Replace Tag="LOC_MOD_ETFI_TOTAL_RESOURCES" Language="fr_FR">
-      <Text>Total des ressources</Text>
-    </Replace>
-    <Replace Tag="LOC_MOD_ETFI_TOTAL_IMPROVEMENTS" Language="fr_FR">
-      <Text>Total des améliorations</Text>
-    </Replace>
-    <Replace Tag="LOC_MOD_ETFI_TOTAL_CONNECTIONS" Language="fr_FR">
-      <Text>Total des connexions</Text>
-    </Replace>
-    <Replace Tag="LOC_MOD_ETFI_TOTAL_BUILDINGS" Language="fr_FR">
-      <Text>Total des bâtiments</Text>
-    </Replace>
-    <Replace Tag="LOC_MOD_ETFI_TOTAL_SETTLEMENTS" Language="fr_FR">
-      <Text>Total des établissements</Text>
-    </Replace>
-
-    <!-- Libellés -->
-    <Replace Tag="LOC_MOD_ETFI_NATURAL_WONDER" Language="fr_FR">
-      <Text>Merveille naturelle</Text>
-    </Replace>
-    <Replace Tag="LOC_MOD_ETFI_RESOURCES" Language="fr_FR">
-      <Text>Ressources</Text>
-    </Replace>
-    <Replace Tag="LOC_MOD_ETFI_BUILDINGS_WITH_MAINTENANCE" Language="fr_FR">
-      <Text>Bâtiments avec entretien</Text>
-    </Replace>
-    <Replace Tag="LOC_MOD_ETFI_BUILDINGS_WITHOUT_MAINTENANCE" Language="fr_FR">
-      <Text>Autres bâtiments</Text>
-    </Replace>
-
-    <!-- Settings -->
+    <!-- Paramètres -->
     <Replace Tag="LOC_OPTIONS_GROUP_ETFI" Language="fr_FR"><Text>Mods de Zatygold</Text></Replace>
     <Replace Tag="LOC_MOD_ETFI_YIELDS_OPTION_COLORFUL" Language="fr_FR"><Text>Enhanced Town Focus Info • Colorer les aperçus des rendements</Text></Replace>
     <Replace Tag="LOC_MOD_ETFI_YIELDS_OPTION_COLORFUL_DESC" Language="fr_FR"><Text>Colore les aperçus des rendements selon leur type, ce qui les rend plus faciles à distinguer.</Text></Replace>

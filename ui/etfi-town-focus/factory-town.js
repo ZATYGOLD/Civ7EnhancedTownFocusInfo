@@ -1,40 +1,26 @@
 // File Path: ui/etfi-town-focus/factory-town.js
+//
+// Author: Zatygold
+//
+// Factory Town (PROJECT_TOWN_FACTORY, Modern): +1 Resource Slot and +5 Trade
+// Route range (pills by the name). Lists the town's Factory Resources, split by
+// the shared Improved / Unimproved categories. (The +100% purchase discount is
+// already in the project description, so it's not repeated here.)
 
-// Factory Town:
-// +1 Resource Slot.
-// +5 Trade Range.
-// Additional Factory purchase logic can be added later.
+import { RESOURCE_ICON, getFactoryResources, improvedUnimprovedSections, tradeRangePill } from "../../etfi-utilities.js";
 
-import { ETFI_YIELDS } from "../../etfi-utilities.js";
+const RESOURCE_SLOT = 1;
 
-import {
-  renderFocusDetails,
-  renderHeaderTextPill,
-} from "./town-focus-html.js";
+export function buildFactoryModel(city) {
+  const { improved, unimproved } = getFactoryResources(city);
 
-const RESOURCE_SLOTS = 1;
-const TRADE_RANGE = 5;
-
-const RESOURCE_SLOT_ICON_ID = "RADIAL_RESOURCES";
-
-export default class FactoryTownDetails {
-  render(city) {
-    if (!city) return null;
-
-    const resourceSlotPillHtml = renderHeaderTextPill({
-      iconId: RESOURCE_SLOT_ICON_ID,
-      label: "Resource Slot",
-      value: RESOURCE_SLOTS,
-      colorKey: ETFI_YIELDS.GOLD,
-    });
-
-    return renderFocusDetails({
-      headerYields: ETFI_YIELDS.TRADE,
-      headerTotals: TRADE_RANGE,
-      headerExtraHtml: resourceSlotPillHtml,
-      summaryLabel: "",
-      summaryValue: "",
-      bodyHtml: "",
-    });
-  }
+  return {
+    header: [
+      { yieldType: RESOURCE_ICON, value: RESOURCE_SLOT },
+      tradeRangePill(),
+    ],
+    rows: [],
+    sections: improvedUnimprovedSections({ improved, unimproved }),
+    notes: [],
+  };
 }

@@ -1,48 +1,38 @@
 // File Path: ui/etfi-town-focus/mining-town.js
+//
+// Author: Zatygold
+//
+// Mining Town (PROJECT_TOWN_PRODUCTION): +2 Production on Camps, Woodcutters,
+// Clay Pits, Mines, Quarries (Modern: Oil Rigs). Split into the shared Improved
+// (earn the Production) and Unimproved categories.
 
-// Mining / Production Town:
-// +2 Production on Camps, Woodcutters, Clay Pits, Mines, and Quarries.
-// Can purchase additional Production Buildings.
+import { ETFI_YIELDS, getFocusImprovements, improvedUnimprovedSections } from "../../etfi-utilities.js";
 
-import { ETFI_YIELDS, getImprovementSummaryForSet, } from "../../etfi-utilities.js";
-import { renderImprovementDetailsHTML } from "./town-focus-html.js";
-
-const PRODUCTION_PER_IMPROVEMENT = 2;
-
-const MINING_IMPROVEMENT_DISPLAY_NAMES = Object.freeze({
-  IMPROVEMENT_CAMP: "LOC_MOD_ETFI_IMPROVEMENT_CAMP",
-  IMPROVEMENT_WOODCUTTER: "LOC_MOD_ETFI_IMPROVEMENT_WOODCUTTER",
-  IMPROVEMENT_WOODCUTTER_RESOURCE: "LOC_MOD_ETFI_IMPROVEMENT_WOODCUTTER",
-  IMPROVEMENT_CLAY_PIT: "LOC_MOD_ETFI_IMPROVEMENT_CLAY_PIT",
-  IMPROVEMENT_MINE: "LOC_MOD_ETFI_IMPROVEMENT_MINE",
-  IMPROVEMENT_MINE_RESOURCE: "LOC_MOD_ETFI_IMPROVEMENT_MINE",
-  IMPROVEMENT_QUARRY: "LOC_MOD_ETFI_IMPROVEMENT_QUARRY",
-});
-
-const MINING_IMPROVEMENTS = new Set([
+const PRODUCTION_PER = 2;
+const PRODUCTION_IMPROVEMENTS = new Set([
   "IMPROVEMENT_CAMP",
   "IMPROVEMENT_WOODCUTTER",
   "IMPROVEMENT_WOODCUTTER_RESOURCE",
   "IMPROVEMENT_CLAY_PIT",
+  "IMPROVEMENT_CLAY_PIT_RESOURCE",
   "IMPROVEMENT_MINE",
   "IMPROVEMENT_MINE_RESOURCE",
   "IMPROVEMENT_QUARRY",
+  "IMPROVEMENT_OIL_RIG",
 ]);
 
-export default class MiningDetails {
-  render(city) {
-    const summary = getImprovementSummaryForSet({
-      city,
-      targetSet: MINING_IMPROVEMENTS,
-      displayNameMap: MINING_IMPROVEMENT_DISPLAY_NAMES,
-      baseMultiplier: PRODUCTION_PER_IMPROVEMENT,
-    });
+export function buildMiningModel(city) {
+  const { improved, unimproved } = getFocusImprovements(city, PRODUCTION_IMPROVEMENTS);
+  const improvedTotal = improved.reduce((s, g) => s + g.count, 0);
 
-    if (!summary) return null;
-
-    return renderImprovementDetailsHTML(
-      summary,
-      ETFI_YIELDS.PRODUCTION
-    );
-  }
+  return {
+    header: [{ yieldType: ETFI_YIELDS.PRODUCTION, value: improvedTotal * PRODUCTION_PER }],
+    rows: [],
+    sections: improvedUnimprovedSections({
+      improved,
+      unimproved,
+      improvedYields: (g) => [{ yieldType: ETFI_YIELDS.PRODUCTION, value: g.count * PRODUCTION_PER }],
+    }),
+    notes: [],
+  };
 }

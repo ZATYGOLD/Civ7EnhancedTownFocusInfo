@@ -284,7 +284,7 @@ class EtfiToolTipType {
       if (!city) { return; }
       const name = this.target.dataset.name ?? "";
       const description = (this.target.dataset.tooltipDescription || this.target.dataset.description) ?? "";
-      const detailsText = IsElement(this.target, "town-focus-chooser-item") ? this.getDetailsText(city) : void 0;   // NEW: project-specific ETFI data
+      const detailsModel = IsElement(this.target, "town-focus-chooser-item") ? this.getDetailsModel(city) : null;   // ETFI details model for this focus
       const growthType = Number(this.target.dataset.growthType);
       const productionCost = projectType ? city.Production?.getProjectProductionCost(projectType) : -1;
       const requirementsText = this.getRequirementsText();
@@ -317,7 +317,7 @@ class EtfiToolTipType {
         this.productionCost.classList.add("hidden");
       }
 
-      this.etfiContainer.setAttribute("content-html", detailsText || "");
+      this.applyDetailsModel(detailsModel);
 
       if (requirementsText) {
         this.requirementsText.innerHTML = requirementsText;
@@ -340,13 +340,28 @@ class EtfiToolTipType {
       }
       this.gemsContainer.classList.toggle("hidden", !recommendations);
     }
+    // Feed a model object to the <etfi-details> panel via the property +
+    // refresh-trigger pattern (the panel re-renders on the data-rev bump).
+    applyDetailsModel(model) {
+      this.etfiContainer.etfiModel = model || null;
+      this._etfiRev = (this._etfiRev || 0) + 1;
+      this.etfiContainer.setAttribute("data-rev", String(this._etfiRev));
+    }
+
+    // Details now render INLINE in the focus list item (see
+    // etfi-town-focus-section.js). The tooltip no longer shows the ETFI block —
+    // it will be repurposed for something else later.
+    getDetailsModel(city) {
+      return null;
+    }
+
     getProjectInfo() {
       const projectType = this.getProjectType();
-    
+
       if (projectType === null || projectType === undefined || Number.isNaN(projectType)) {
         return null;
       }
-    
+
       return GameInfo?.Projects?.lookup?.(projectType) ?? null;
     }
 
