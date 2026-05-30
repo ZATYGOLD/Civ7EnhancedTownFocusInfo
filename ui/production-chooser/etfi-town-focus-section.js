@@ -251,10 +251,10 @@ function renderSectionPanels(container, secs) {
   return last;
 }
 
-// Fully rebuild the focus list after a toggle. We reuse the base game's own
-// refresh event (the same path used when the panel reopens), which rebuilds
-// every town-focus-chooser-item from scratch — avoiding the partial-DOM update
-// that previously garbled the layout.
+// Fully rebuild the focus list. We reuse the base game's own refresh event (the
+// same path used when the panel reopens), which rebuilds every
+// town-focus-chooser-item from scratch — avoiding partial-DOM updates that
+// previously garbled the layout.
 function refreshFocusPanel(fromEl) {
   try {
     const panel = (fromEl && (fromEl.closest?.("panel-town-focus") || fromEl.getRootNode?.()?.querySelector?.("panel-town-focus")))
@@ -266,6 +266,47 @@ function refreshFocusPanel(fromEl) {
     console.error("[ETFI] refreshFocusPanel failed", e);
   }
 }
+
+// --- module-level focus-change listener ------------------------------------
+//
+// When the player picks a focus, the base panel collapses the chooser (so the
+// items DETACH), and the new project/yield state isn't committed until after
+// the CityGrowthModeChanged event fires. A per-item listener would be torn down
+// before it could re-render. Instead we keep ONE persistent listener at module
+// scope that, on any growth/yield change, rebuilds the whole focus list (the
+// same full rebuild that closing+reopening the panel performs).
+//
+// We ALSO refresh the production panel's city yield bar: the base game's
+// onCityGrowthModeChanged handler refreshes the focus section and item list but
+// never calls updateCityYieldBar(), so the top yield numbers stay stale until
+// the panel is reopened. We force that refresh here. Recomputed yields can lag a
+// frame after the event, so we run it on a short delay (and again, to be safe).
+function refreshProductionYieldBar() {
+  try {
+    const el = document.querySelector("panel-production-chooser");
+    const comp = el && (el.maybeComponent || el.component);
+    if (comp && typeof comp.updateCityYieldBar === "function") {
+      comp.updateCityYieldBar();
+    }
+  } catch {}
+}
+
+let etfiPanelRefreshTimer = null;
+function scheduleFocusPanelRebuild() {
+  try {
+    if (etfiPanelRefreshTimer) clearTimeout(etfiPanelRefreshTimer);
+    etfiPanelRefreshTimer = setTimeout(() => {
+      etfiPanelRefreshTimer = null;
+      // Only act when the production/town-focus panel is present (city panel open).
+      if (document.querySelector("panel-town-focus")) refreshFocusPanel(null);
+      refreshProductionYieldBar();
+    }, 0);
+    // Yields can recompute a frame later than the event; refresh again shortly.
+    setTimeout(refreshProductionYieldBar, 120);
+  } catch {}
+}
+try { engine.on("CityGrowthModeChanged", scheduleFocusPanelRebuild); } catch {}
+try { engine.on("CityYieldChanged", scheduleFocusPanelRebuild); } catch {}
 
 // --- model dispatch --------------------------------------------------------
 
