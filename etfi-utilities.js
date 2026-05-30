@@ -25,7 +25,12 @@ export const FORTIFY_ICON = "ACTION_FORTIFY";
 export const TOURISM_ICON = "CULTURE_VP";
 export const RESOURCE_ICON = "RADIAL_RESOURCES";
 export const RELIC_ICON = "NAR_REW_GREATWORK";
-export const CITY_ICON = "CITY_URBAN";
+
+// Shared: the +5 Trade Route range bonus, used by Trade Outpost and Factory Town.
+export const TRADE_RANGE = 5;
+export function tradeRangePill() {
+  return { yieldType: TRADE_ROUTE_ICON, value: TRADE_RANGE };
+}
 
 // --- small helpers ---------------------------------------------------------
 
@@ -72,13 +77,65 @@ export function improvedUnimprovedSections({ improved, unimproved, improvedYield
   return sections;
 }
 
-export function constructibleName(type) {
-  try {
-    const info = GameInfo?.Constructibles?.lookup?.(type);
-    return info?.Name ? Locale.compose(info.Name) : type;
-  } catch {
-    return type;
+// Build the standardized Quarter category sections (Quarters / Unique Quarters /
+// Special Quarters + a lone Buildings category) shared by Urban Center and
+// Religious Site from a getTownBuildings() result. Behavior is identical except
+// for the yields, supplied via callbacks:
+//   * quarterYields(quarter) -> yield array for a quarter row (all its buildings
+//       are shown together on one line via `items`),
+//   * buildingYields(building) -> yield array for a lone Building row (optional),
+//   * hideBuildings -> when true, the lone Buildings category is flagged `hidden`
+//       (Urban Center only rewards Quarters; Religious Site rewards every building).
+export function quarterSections({ quarters, uniqueQuarters, specialQuarters, buildings }, { quarterYields, buildingYields, hideBuildings = false } = {}) {
+  const quarterRow = (q) => {
+    const row = { items: q.buildings.map((b) => ({ iconId: b.iconId, name: b.name })) };
+    if (quarterYields) {
+      const y = quarterYields(q);
+      if (y && y.length) row.yields = y;
+    }
+    if (q.name) row.subText = q.name;
+    return row;
+  };
+
+  const sections = [];
+  if (quarters && quarters.length) {
+    sections.push({
+      title: composeWithFallback("LOC_MOD_ETFI_QUARTERS", "Quarters"),
+      separatePanel: true,
+      rows: quarters.map(quarterRow),
+    });
   }
+  if (uniqueQuarters && uniqueQuarters.length) {
+    sections.push({
+      title: composeWithFallback("LOC_MOD_ETFI_UNIQUE_QUARTERS", "Unique Quarters"),
+      separatePanel: true,
+      rows: uniqueQuarters.map(quarterRow),
+    });
+  }
+  if (specialQuarters && specialQuarters.length) {
+    sections.push({
+      title: composeWithFallback("LOC_MOD_ETFI_SPECIAL_QUARTERS", "Special Quarters"),
+      separatePanel: true,
+      rows: specialQuarters.map(quarterRow),
+    });
+  }
+  if (buildings && buildings.length) {
+    const section = {
+      title: composeWithFallback("LOC_MOD_ETFI_BUILDINGS", "Buildings"),
+      separatePanel: "bottom",
+      rows: buildings.map((b) => {
+        const row = { iconId: b.iconId, name: b.name };
+        if (buildingYields) {
+          const y = buildingYields(b);
+          if (y && y.length) row.yields = y;
+        }
+        return row;
+      }),
+    };
+    if (hideBuildings) section.hidden = true;
+    sections.push(section);
+  }
+  return sections;
 }
 
 export function getCurrentAgeType() {
@@ -238,7 +295,8 @@ export function countResourceTiles(city) {
 
 // --- connected settlements (Hub) -------------------------------------------
 
-export function getConnectedSettlements(city) {
+// Internal helper: used by getSettlementsByConnection (not imported directly).
+function getConnectedSettlements(city) {
   const result = { cities: [], towns: [] };
   let ids = [];
   try { ids = city?.getConnectedCities?.() || []; }
@@ -289,7 +347,8 @@ export function getSettlementsByConnection(city) {
 
 // --- building helpers (Religious Site) -------------------------------------
 
-export function isCurrentOrAgeless(type) {
+// Internal helper (not imported directly by builders).
+function isCurrentOrAgeless(type) {
   try {
     if (ConstructibleHasTagType(type, "AGELESS")) return true;
     const def = GameInfo?.Constructibles?.lookup?.(type);
@@ -299,24 +358,6 @@ export function isCurrentOrAgeless(type) {
   } catch {
     return false;
   }
-}
-
-export function getCountableBuildings(city) {
-  const out = [];
-  try {
-    const ids = city?.Constructibles?.getIdsOfClass?.("BUILDING") || [];
-    for (const id of ids) {
-      const inst = Constructibles.get(id);
-      if (!inst || !inst.complete) continue;
-      const def = GameInfo.Constructibles.lookup(inst.type);
-      if (!def || def.ConstructibleClass !== "BUILDING") continue;
-      if (!isCurrentOrAgeless(def.ConstructibleType)) continue;
-      out.push({ type: def.ConstructibleType, name: def.Name ? Locale.compose(def.Name) : def.ConstructibleType, iconId: def.ConstructibleType });
-    }
-  } catch (e) {
-    console.error("[ETFI] getCountableBuildings failed", e);
-  }
-  return out;
 }
 
 // A "Temple" for Relic-slot purposes is any building that has a RELIC great-work
@@ -336,7 +377,8 @@ const RELIC_SLOT_TEMPLE_TYPES = (() => {
   return set;
 })();
 
-export function isRelicTemple(type) {
+// Internal helper (not imported directly by builders).
+function isRelicTemple(type) {
   return RELIC_SLOT_TEMPLE_TYPES.has(type);
 }
 

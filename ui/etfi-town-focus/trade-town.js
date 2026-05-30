@@ -7,19 +7,18 @@
 // Resource tiles use the shared Improved (worked, earn the Happiness) and
 // Unimproved (no yield) categories.
 
-import { ETFI_YIELDS, TRADE_ROUTE_ICON, countResourceTiles, improvedUnimprovedSections } from "../../etfi-utilities.js";
+import { ETFI_YIELDS, countResourceTiles, improvedUnimprovedSections, tradeRangePill } from "../../etfi-utilities.js";
 
 const HAPPINESS_PER_RESOURCE = 1;
-const TRADE_RANGE = 5;
 
 export function buildTradeModel(city) {
-  const { improved, unimproved, total } = countResourceTiles(city);
+  const { improved, unimproved } = countResourceTiles(city);
   const improvedTotal = improved.reduce((s, g) => s + g.count, 0);
 
   return {
     header: [
       { yieldType: ETFI_YIELDS.HAPPINESS, value: improvedTotal * HAPPINESS_PER_RESOURCE },
-      { yieldType: TRADE_ROUTE_ICON, value: TRADE_RANGE },
+      tradeRangePill(),
     ],
     rows: [],
     sections: improvedUnimprovedSections({
