@@ -374,7 +374,9 @@ function ensureViewHiddenToggle(fromEl) {
     row.appendChild(cta);
 
     const toggle = document.createElement("div");
-    toggle.className = "absolute right-0 top-1\\/2 flex flex-row items-center";
+    toggle.className = "absolute top-1\\/2 flex flex-row items-center";
+    // Nudge in from the right edge so it isn't flush against the frame.
+    toggle.style.right = ".75rem";
     toggle.style.transform = "translateY(-50%)";
 
     const label = document.createElement("div");
