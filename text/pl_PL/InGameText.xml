@@ -1,34 +1,31 @@
-<?xml version='1.0' encoding='utf-8'?><Database><LocalizedText>
-<Replace Tag="LOC_MOD_ETFI_SPECIAL_QUARTERS" Language="pl_PL"><Text>Dzielnice specjalne</Text></Replace>
-<Replace Tag="LOC_MOD_ETFI_BUILDING_QUARTERS" Language="pl_PL"><Text>Dzielnice budynków</Text></Replace>
-<Replace Tag="LOC_MOD_ETFI_UNIQUE_QUARTERS" Language="pl_PL"><Text>Unikalne dzielnice cywilizacji</Text></Replace>
-<Replace Tag="LOC_MOD_ETFI_FULL_TILE_QUARTERS" Language="pl_PL"><Text>Dzielnice całopolowe</Text></Replace>
-<Replace Tag="LOC_MOD_ETFI_ERA_BONUS" Language="pl_PL"><Text>Premia epoki</Text></Replace>
-<Replace Tag="LOC_MOD_ETFI_IMPROVEMENT_WOODCUTTER" Language="pl_PL"><Text>Chata drwala</Text></Replace>
-<Replace Tag="LOC_MOD_ETFI_IMPROVEMENT_MINE" Language="pl_PL"><Text>Kopalnia</Text></Replace>
-<Replace Tag="LOC_MOD_ETFI_IMPROVEMENT_FISHING_BOAT" Language="pl_PL"><Text>Łódź rybacka</Text></Replace>
-<Replace Tag="LOC_MOD_ETFI_IMPROVEMENT_FARM" Language="pl_PL"><Text>Farma</Text></Replace>
-<Replace Tag="LOC_MOD_ETFI_IMPROVEMENT_PASTURE" Language="pl_PL"><Text>Pastwisko</Text></Replace>
-<Replace Tag="LOC_MOD_ETFI_IMPROVEMENT_PLANTATION" Language="pl_PL"><Text>Plantacja</Text></Replace>
-<Replace Tag="LOC_MOD_ETFI_IMPROVEMENT_CAMP" Language="pl_PL"><Text>Obóz</Text></Replace>
-<Replace Tag="LOC_MOD_ETFI_IMPROVEMENT_CLAY_PIT" Language="pl_PL"><Text>Wyrobisko gliny</Text></Replace>
-<Replace Tag="LOC_MOD_ETFI_IMPROVEMENT_QUARRY" Language="pl_PL"><Text>Kamieniołom</Text></Replace>
-<Replace Tag="LOC_MOD_ETFI_TRADE_ROUTES" Language="pl_PL"><Text>Szlaki handlowe</Text></Replace>
-<Replace Tag="LOC_MOD_ETFI_TRADE_CONNECTIONS" Language="pl_PL"><Text>Połączenia</Text></Replace>
-<Replace Tag="LOC_MOD_ETFI_CONNECTED_CITIES" Language="pl_PL"><Text>Miasta</Text></Replace>
-<Replace Tag="LOC_MOD_ETFI_CONNECTED_TOWNS" Language="pl_PL"><Text>Miasteczka</Text></Replace>
-<Replace Tag="LOC_MOD_ETFI_BONUS_PER_CONNECTION" Language="pl_PL"><Text>Premia za połączenie</Text></Replace>
-<Replace Tag="LOC_MOD_ETFI_HAPPINESS_PER_RESOURCE" Language="pl_PL"><Text>Szczęście na zasób</Text></Replace>
-<Replace Tag="LOC_MOD_ETFI_TOTAL_RESOURCES" Language="pl_PL"><Text>Suma zasobów</Text></Replace>
-<Replace Tag="LOC_MOD_ETFI_TOTAL_IMPROVEMENTS" Language="pl_PL"><Text>Suma ulepszeń</Text></Replace>
-<Replace Tag="LOC_MOD_ETFI_TOTAL_CONNECTIONS" Language="pl_PL"><Text>Suma połączeń</Text></Replace>
-<Replace Tag="LOC_MOD_ETFI_TOTAL_BUILDINGS" Language="pl_PL"><Text>Suma budynków</Text></Replace>
-<Replace Tag="LOC_MOD_ETFI_TOTAL_SETTLEMENTS" Language="pl_PL"><Text>Suma osiedli</Text></Replace>
-<Replace Tag="LOC_MOD_ETFI_NATURAL_WONDER" Language="pl_PL"><Text>Cud natury</Text></Replace>
-<Replace Tag="LOC_MOD_ETFI_RESOURCES" Language="pl_PL"><Text>Zasoby</Text></Replace>
-<Replace Tag="LOC_MOD_ETFI_BUILDINGS_WITH_MAINTENANCE" Language="pl_PL"><Text>Budynki z kosztami utrzymania</Text></Replace>
-<Replace Tag="LOC_MOD_ETFI_BUILDINGS_WITHOUT_MAINTENANCE" Language="pl_PL"><Text>Pozostałe budynki</Text></Replace>
-<Replace Tag="LOC_OPTIONS_GROUP_ETFI" Language="pl_PL"><Text>Mody Zatygold</Text></Replace>
-<Replace Tag="LOC_MOD_ETFI_YIELDS_OPTION_COLORFUL" Language="pl_PL"><Text>Enhanced Town Focus Info • Pokoloruj podglądy plonów</Text></Replace>
-<Replace Tag="LOC_MOD_ETFI_YIELDS_OPTION_COLORFUL_DESC" Language="pl_PL"><Text>Koloruje podglądy plonów w zależności od ich typu, dzięki czemu łatwiej je odróżnić.</Text></Replace>
-</LocalizedText></Database>
+<?xml version='1.0' encoding='utf-8'?>
+<Database>
+  <LocalizedText>
+    <!-- Tytuły kategorii -->
+    <Replace Tag="LOC_MOD_ETFI_IMPROVED" Language="pl_PL"><Text>Ulepszone</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_UNIMPROVED" Language="pl_PL"><Text>Nieulepszone</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_QUARTERS" Language="pl_PL"><Text>Dzielnice</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_UNIQUE_QUARTERS" Language="pl_PL"><Text>Unikalne dzielnice</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_SPECIAL_QUARTERS" Language="pl_PL"><Text>Dzielnice specjalne</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_BUILDINGS" Language="pl_PL"><Text>Budynki</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_TOURISM" Language="pl_PL"><Text>Turystyka</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_CONNECTED" Language="pl_PL"><Text>Połączone</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_DISCONNECTED" Language="pl_PL"><Text>Niepołączone</Text></Replace>
+
+    <!-- Etykiety wierszy -->
+    <Replace Tag="LOC_MOD_ETFI_CONNECTED_CITIES" Language="pl_PL"><Text>Miasta</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_CONNECTED_TOWNS" Language="pl_PL"><Text>Miasteczka</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_BREATHTAKING" Language="pl_PL"><Text>Zapierające dech</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_IMPROVEMENTS" Language="pl_PL"><Text>Ulepszenia</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_DISTRICTS" Language="pl_PL"><Text>Dzielnice</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_REQUIRES_GLOBALISM" Language="pl_PL"><Text>Wymaga mistrzostwa globalizmu</Text></Replace>
+
+    <!-- Sterowanie -->
+    <Replace Tag="LOC_MOD_ETFI_VIEW_HIDDEN" Language="pl_PL"><Text>Pokaż ukryte</Text></Replace>
+
+    <!-- Ustawienia -->
+    <Replace Tag="LOC_OPTIONS_GROUP_ETFI" Language="pl_PL"><Text>Mody Zatygolda</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_YIELDS_OPTION_COLORFUL" Language="pl_PL"><Text>Enhanced Town Focus Info • Koloruj podglądy plonów</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_YIELDS_OPTION_COLORFUL_DESC" Language="pl_PL"><Text>Koloruje podglądy plonów według ich typu, ułatwiając ich rozróżnianie.</Text></Replace>
+  </LocalizedText>
+</Database>

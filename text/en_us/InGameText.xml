@@ -1,52 +1,31 @@
 <?xml version='1.0' encoding='utf-8'?>
 <Database>
   <EnglishText>
-    <!-- Buildings & Quarters -->
-    <Row Tag="LOC_MOD_ETFI_SPECIAL_QUARTERS"><Text>Special Quarters</Text></Row>
-    <Row Tag="LOC_MOD_ETFI_BUILDING_QUARTERS"><Text>Building Quarters</Text></Row>
+    <!-- Category titles -->
+    <Row Tag="LOC_MOD_ETFI_IMPROVED"><Text>Improved</Text></Row>
+    <Row Tag="LOC_MOD_ETFI_UNIMPROVED"><Text>Unimproved</Text></Row>
     <Row Tag="LOC_MOD_ETFI_QUARTERS"><Text>Quarters</Text></Row>
+    <Row Tag="LOC_MOD_ETFI_UNIQUE_QUARTERS"><Text>Unique Quarters</Text></Row>
+    <Row Tag="LOC_MOD_ETFI_SPECIAL_QUARTERS"><Text>Special Quarters</Text></Row>
     <Row Tag="LOC_MOD_ETFI_BUILDINGS"><Text>Buildings</Text></Row>
-    <Row Tag="LOC_MOD_ETFI_UNIQUE_QUARTERS"><Text>Unique Civilization Quarters</Text></Row>
-    <Row Tag="LOC_MOD_ETFI_FULL_TILE_QUARTERS"><Text>Full-Tile Quarters</Text></Row>
-    <Row Tag="LOC_MOD_ETFI_ERA_BONUS"><Text>Era Bonus</Text></Row>
-
-    <!-- Improvements -->
-    <Row Tag="LOC_MOD_ETFI_IMPROVEMENT_WOODCUTTER"><Text>Woodcutter</Text></Row>
-    <Row Tag="LOC_MOD_ETFI_IMPROVEMENT_MINE"><Text>Mine</Text></Row>
-    <Row Tag="LOC_MOD_ETFI_IMPROVEMENT_FISHING_BOAT"><Text>Fishing Boat</Text></Row>
-    <Row Tag="LOC_MOD_ETFI_IMPROVEMENT_FARM"><Text>Farm</Text></Row>
-    <Row Tag="LOC_MOD_ETFI_IMPROVEMENT_PASTURE"><Text>Pasture</Text></Row>
-    <Row Tag="LOC_MOD_ETFI_IMPROVEMENT_PLANTATION"><Text>Plantation</Text></Row>
-    <Row Tag="LOC_MOD_ETFI_IMPROVEMENT_CAMP"><Text>Camp</Text></Row>
-    <Row Tag="LOC_MOD_ETFI_IMPROVEMENT_CLAY_PIT"><Text>Clay Pit</Text></Row>
-    <Row Tag="LOC_MOD_ETFI_IMPROVEMENT_QUARRY"><Text>Quarry</Text></Row>
-
-    <Row Tag="LOC_MOD_ETFI_TRADE_ROUTES"><Text>Trade Routes</Text></Row>
-    <Row Tag="LOC_MOD_ETFI_TRADE_CONNECTIONS"><Text>Connections</Text></Row>
-    <Row Tag="LOC_MOD_ETFI_CONNECTED_CITIES"><Text>Cities</Text></Row>
-    <Row Tag="LOC_MOD_ETFI_CONNECTED_TOWNS"><Text>Towns</Text></Row>
+    <Row Tag="LOC_MOD_ETFI_TOURISM"><Text>Tourism</Text></Row>
     <Row Tag="LOC_MOD_ETFI_CONNECTED"><Text>Connected</Text></Row>
     <Row Tag="LOC_MOD_ETFI_DISCONNECTED"><Text>Disconnected</Text></Row>
-    <Row Tag="LOC_MOD_ETFI_BONUS_PER_CONNECTION"><Text>Bonus per connection</Text></Row>
-    <Row Tag="LOC_MOD_ETFI_HAPPINESS_PER_RESOURCE"><Text>Happiness per resource</Text></Row>
 
-    <!-- Totals -->
-    <Row Tag="LOC_MOD_ETFI_TOTAL_RESOURCES"><Text>Total Resources</Text></Row>
-    <Row Tag="LOC_MOD_ETFI_TOTAL_IMPROVEMENTS"><Text>Total Improvements</Text></Row>
-    <Row Tag="LOC_MOD_ETFI_TOTAL_CONNECTIONS"><Text>Total Connections</Text></Row>
-    <Row Tag="LOC_MOD_ETFI_TOTAL_BUILDINGS"><Text>Total Buildings</Text></Row>
-    <Row Tag="LOC_MOD_ETFI_TEMPLES"><Text>Temples</Text></Row>
-    <Row Tag="LOC_MOD_ETFI_TOTAL_SETTLEMENTS"><Text>Total Settlements</Text></Row>
+    <!-- Row labels -->
+    <Row Tag="LOC_MOD_ETFI_CONNECTED_CITIES"><Text>Cities</Text></Row>
+    <Row Tag="LOC_MOD_ETFI_CONNECTED_TOWNS"><Text>Towns</Text></Row>
+    <Row Tag="LOC_MOD_ETFI_BREATHTAKING"><Text>Breathtaking</Text></Row>
+    <Row Tag="LOC_MOD_ETFI_IMPROVEMENTS"><Text>Improvements</Text></Row>
+    <Row Tag="LOC_MOD_ETFI_DISTRICTS"><Text>Districts</Text></Row>
+    <Row Tag="LOC_MOD_ETFI_REQUIRES_GLOBALISM"><Text>Requires Globalism's Mastery</Text></Row>
 
-    <!-- Label Titles -->
-    <Row Tag="LOC_MOD_ETFI_NATURAL_WONDER"><Text>Natural Wonder</Text></Row>
-    <Row Tag="LOC_MOD_ETFI_BUILDINGS_WITH_MAINTENANCE"><Text>Maintenance Buildings</Text></Row>
-    <Row Tag="LOC_MOD_ETFI_BUILDINGS_WITHOUT_MAINTENANCE"><Text>Other Buildings</Text></Row>
-    <Row Tag="LOC_MOD_ETFI_TOTAL_WALLS"><Text>Total Walls</Text></Row>
+    <!-- Controls -->
+    <Row Tag="LOC_MOD_ETFI_VIEW_HIDDEN"><Text>View Hidden</Text></Row>
 
     <!-- Settings -->
-      <Row Tag="LOC_OPTIONS_GROUP_ETFI"><Text>Zatygold's Mods</Text></Row>
-      <Row Tag="LOC_MOD_ETFI_YIELDS_OPTION_COLORFUL"><Text>Enhanced Town Focus Info • Color the yield previews</Text></Row>
-      <Row Tag="LOC_MOD_ETFI_YIELDS_OPTION_COLORFUL_DESC"><Text>Colors the yield previews based on their type, making them easier to distinguish.</Text></Row>
+    <Row Tag="LOC_OPTIONS_GROUP_ETFI"><Text>Zatygold's Mods</Text></Row>
+    <Row Tag="LOC_MOD_ETFI_YIELDS_OPTION_COLORFUL"><Text>Enhanced Town Focus Info • Color the yield previews</Text></Row>
+    <Row Tag="LOC_MOD_ETFI_YIELDS_OPTION_COLORFUL_DESC"><Text>Colors the yield previews based on their type, making them easier to distinguish.</Text></Row>
   </EnglishText>
 </Database>
