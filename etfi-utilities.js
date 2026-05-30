@@ -34,6 +34,18 @@ export function tradeRangePill() {
 
 // --- small helpers ---------------------------------------------------------
 
+// Build a bulleted tooltip body for a hover panel. Each item is one bullet; an
+// item may be a string OR an array of strings (e.g. the two buildings of a
+// Quarter) which are joined on the same line with a " | " divider. The result
+// is a Locale.stylize markup string ([BLIST]/[LI]) the tooltip system renders.
+export function bulletList(items) {
+  const lis = (items || [])
+    .filter((it) => it != null && (Array.isArray(it) ? it.length : true))
+    .map((it) => `[LI] ${Array.isArray(it) ? it.join(" | ") : it}`)
+    .join("");
+  return lis ? `[BLIST]${lis}[/BLIST]` : "";
+}
+
 export function composeWithFallback(key, fallback) {
   if (!key) return fallback || "";
   try {
@@ -61,6 +73,13 @@ export function improvedUnimprovedSections({ improved, unimproved, improvedYield
         if (improvedYields) {
           const y = improvedYields(g);
           if (y && y.length) row.yields = y;
+        }
+        // Optional hover tooltip: a group may carry `tiles` (an array of
+        // per-tile building-name arrays, e.g. Districts) -> bulleted list with
+        // each tile's building(s) joined by " | " when it's a Quarter.
+        if (Array.isArray(g.tiles) && g.tiles.length) {
+          const tip = bulletList(g.tiles);
+          if (tip) row.tooltip = tip;
         }
         return row;
       }),
@@ -566,33 +585,64 @@ export function getFactoryResources(city) {
 //   that are rural Improvements vs Districts (>=1 building). breathtakingTotal:
 //   all Breathtaking tiles. (The game counts a Breathtaking tile as developed
 //   if it has an improvement OR a building/district.)
-// 50% of a Natural Wonder tile's yields (Resort Town bonus). Adds each halved
-// yield amount into `acc` (a Map of yieldType -> running total), so multi-tile
-// wonders accumulate across their tiles. When the tile is Appealing it also
-// receives the Resort's +1 Happiness / +1 Gold, and those are folded into the
-// total BEFORE the 50% is applied (per the in-game calculation).
-const NATURAL_WONDER_YIELD_PCT = 0.5;
-const RESORT_APPEALING_PER_TILE = 1;
-function addNaturalWonderYields(acc, plotIndex, appealing) {
+// Round DOWN to the nearest 0.5 (applied once at the very end of a calculation).
+function roundToHalf(v) {
+  return Math.floor(v * 2) / 2;
+}
+
+// True when the town's CURRENTLY ACTIVE focus is already the Resort project.
+// This matters for yields: GameplayMap.getYields() returns EFFECTIVE yields, so
+// when Resort is already active a Natural Wonder tile's value already includes
+// the +50% (e.g. a 6-culture tile reads 9). There is no base-yield API.
+function isResortActive(city) {
   try {
-    // Tile's base yields.
-    const totals = new Map();
+    if (!city?.isTown) return false;
+    const g = city.Growth;
+    if (!g || typeof GrowthTypes === "undefined" || g.growthType !== GrowthTypes.PROJECT) return false;
+    return GameInfo.Projects.lookup(g.projectType)?.ProjectType === "PROJECT_TOWN_RESORT";
+  } catch {
+    return false;
+  }
+}
+
+// The Resort's per-improved-Natural-Wonder-tile contribution is what the tile
+// GAINS from the focus = (effective yields) - (pre-resort base yields). The game:
+//   * grants a flat +1 Happiness / +1 Gold appealing bonus (NW tiles are always
+//     Appealing), AND
+//   * applies +50% to the WHOLE tile, including that flat +1/+1.
+// So effective = (base + flat) * 1.5, and the contribution per type is:
+//     contribution = base*0.5 + flat*1.5   (flat = 1 for Happiness/Gold, else 0)
+// getYields() returns EFFECTIVE yields. We recover `base` per type:
+//   * Resort active  -> base = effective/1.5 - flat
+//   * Resort inactive-> effective already IS base (no focus bonus applied)
+// Example (per tile): base 6 Culture / 3 Happiness / 0 Gold -> effective with
+// Resort = 9 / 6 / 1.5 -> contribution = +3 Culture / +3 Happiness / +1.5 Gold.
+const NATURAL_WONDER_YIELD_PCT = 0.5;   // +50%
+const RESORT_APPEALING_PER_TILE = 1;    // flat +1 Happiness / +1 Gold
+function addNaturalWonderYields(acc, plotIndex, resortActive) {
+  try {
+    const M = NATURAL_WONDER_YIELD_PCT;
+    const FLAT = RESORT_APPEALING_PER_TILE;
+    const isFlatType = (t) => t === ETFI_YIELDS.HAPPINESS || t === ETFI_YIELDS.GOLD;
+    const add = (t, v) => acc.set(t, (acc.get(t) || 0) + v);
+
+    // Effective yields by type (the flat Happiness/Gold types always present so
+    // the appealing bonus shows even on a tile with 0 base Gold).
+    const eff = new Map();
     const raw = GameplayMap.getYields(plotIndex, GameContext.localPlayerID) || [];
     for (const [yieldType, amount] of raw) {
       if (!(amount > 0)) continue;
       const ydef = GameInfo.Yields.lookup(yieldType);
-      if (!ydef) continue;
-      totals.set(ydef.YieldType, (totals.get(ydef.YieldType) || 0) + amount);
+      if (ydef) eff.set(ydef.YieldType, (eff.get(ydef.YieldType) || 0) + amount);
     }
-    // Appealing tiles also gain the Resort's +1 Happiness / +1 Gold, included
-    // in the total that the 50% bonus is calculated from.
-    if (appealing) {
-      totals.set(ETFI_YIELDS.HAPPINESS, (totals.get(ETFI_YIELDS.HAPPINESS) || 0) + RESORT_APPEALING_PER_TILE);
-      totals.set(ETFI_YIELDS.GOLD, (totals.get(ETFI_YIELDS.GOLD) || 0) + RESORT_APPEALING_PER_TILE);
-    }
-    // Apply the 50% bonus and accumulate into the shared per-wonder map.
-    for (const [yieldType, amount] of totals) {
-      acc.set(yieldType, (acc.get(yieldType) || 0) + amount * NATURAL_WONDER_YIELD_PCT);
+    if (!eff.has(ETFI_YIELDS.HAPPINESS)) eff.set(ETFI_YIELDS.HAPPINESS, 0);
+    if (!eff.has(ETFI_YIELDS.GOLD)) eff.set(ETFI_YIELDS.GOLD, 0);
+
+    for (const [t, amount] of eff) {
+      const flat = isFlatType(t) ? FLAT : 0;
+      const base = resortActive ? (amount / (1 + M) - flat) : amount;
+      const contribution = base * M + flat * (1 + M);
+      if (contribution > 0) add(t, contribution);
     }
   } catch (e) {
     console.error("[ETFI] addNaturalWonderYields failed", e);
@@ -616,6 +666,7 @@ export function getResortData(city) {
   const imp = new Map();
   const unimp = new Map();
   const nwByName = new Map();
+  const resortActive = isResortActive(city);
   let charming = 3;
   let breathtaking = 5;
   try {
@@ -624,25 +675,26 @@ export function getResortData(city) {
   } catch {}
   try {
     const impMap = buildImprovementTileMap(city);
-    // District tiles = tiles with at least one completed building.
-    const districtSet = new Set();
+    // District tiles = tiles with at least one completed building. Track the
+    // building names per tile so the Districts row can show them on hover.
+    const districtBuildings = new Map(); // "x,y" -> [building name, ...]
     const bids = city?.Constructibles?.getIdsOfClass?.("BUILDING") || [];
     for (const id of bids) {
       const inst = Constructibles.get(id);
       if (!inst || !inst.complete) continue;
       const loc = inst.location;
       if (!loc || loc.x == null || loc.y == null) continue;
-      districtSet.add(`${loc.x},${loc.y}`);
+      const bkey = `${loc.x},${loc.y}`;
+      const def = GameInfo.Constructibles.lookup(inst.type);
+      const bname = def?.Name ? Locale.compose(def.Name) : (def?.ConstructibleType || inst.type);
+      if (!districtBuildings.has(bkey)) districtBuildings.set(bkey, []);
+      districtBuildings.get(bkey).push(bname);
     }
-    // getPurchasedPlots() omits the city-center tile (every base-game consumer
-    // adds city.location back separately), so include it explicitly.
-    const indices = [...(city?.getPurchasedPlots?.() || [])];
-    try {
-      if (city?.location) {
-        const centerIdx = GameplayMap.getIndexFromLocation(city.location);
-        if (centerIdx != null && !indices.includes(centerIdx)) indices.push(centerIdx);
-      }
-    } catch {}
+    // Note: getPurchasedPlots() omits the city-center tile, but we deliberately
+    // do NOT add it here — the center is always a district (City Hall), and
+    // counting it would add a phantom appealing-district +1 Happiness / +1 Gold.
+    // Natural wonders are never on the city center, so nothing is lost.
+    const indices = city?.getPurchasedPlots?.() || [];
     for (const idx of indices) {
       let loc;
       try { loc = GameplayMap.getLocationFromIndex(idx); } catch { continue; }
@@ -655,14 +707,12 @@ export function getResortData(city) {
         const wname = naturalWonderName(x, y) || "Natural Wonder";
         if (impMap.has(key)) {
           // IMPROVED Natural Wonder tile (carries an Expedition Base). Natural
-          // Wonder is its own top-level appeal category (the engine checks
-          // isNaturalWonder before the Charming/Breathtaking thresholds), so a
-          // wonder tile is ALWAYS Appealing and always receives the Resort's
-          // +1 Happiness / +1 Gold (folded into the 50% calculation).
+          // Wonder is its own appeal category, so the Resort grants +50% of the
+          // tile's raw yields (no +1 Happiness / +1 Gold appealing bonus here).
           let entry = nwByName.get(wname);
           if (!entry) { entry = { name: wname, count: 0, yieldMap: new Map() }; nwByName.set(wname, entry); }
           entry.count++;
-          addNaturalWonderYields(entry.yieldMap, idx, true);
+          addNaturalWonderYields(entry.yieldMap, idx, resortActive);
         } else {
           // Unimproved Natural Wonder tile: an eligible tile (can take an
           // Expedition Base) that isn't earning the bonus yet — list it under
@@ -678,7 +728,7 @@ export function getResortData(city) {
       let appeal = 0;
       try { appeal = GameplayMap.getAppeal(x, y); } catch {}
       const impAtTile = impMap.get(key);
-      const isDistrict = districtSet.has(key);
+      const isDistrict = districtBuildings.has(key);
 
       if (appeal >= breathtaking) {
         result.breathtakingTotal++;
@@ -689,11 +739,23 @@ export function getResortData(city) {
       if (appeal < charming) continue;
       const resInfo = resourceAt(x, y);
       if (impAtTile) {
+        // Appealing improved tile -> +1 Happiness / +1 Gold (grouped by
+        // resource/improvement name).
         const name = resInfo ? (resInfo.Name ? Locale.compose(resInfo.Name) : resInfo.ResourceType) : impAtTile.name;
         const iconId = resInfo ? resInfo.ResourceType : impAtTile.iconId;
         if (!imp.has(name)) imp.set(name, { name, iconId, count: 0 });
         imp.get(name).count++;
-      } else if (!isDistrict) {
+      } else if (isDistrict) {
+        // Appealing District tile (urban tile with a building) also counts as a
+        // developed appealing tile and earns the +1 Happiness / +1 Gold. Track
+        // each district's building(s) so the row's hover tooltip can list them
+        // (a 2-building tile is a Quarter -> shown together with a " | " divider).
+        const name = composeWithFallback("LOC_MOD_ETFI_DISTRICTS", "Districts");
+        if (!imp.has(name)) imp.set(name, { name, iconId: "CITY_BUILDINGS", count: 0, tiles: [], isDistrict: true });
+        const entry = imp.get(name);
+        entry.count++;
+        entry.tiles.push(districtBuildings.get(key).slice());
+      } else {
         let name = null;
         let iconId = null;
         if (resInfo) {
@@ -714,14 +776,21 @@ export function getResortData(city) {
   } catch (e) {
     console.error("[ETFI] getResortData failed", e);
   }
-  result.appealingImproved = Array.from(imp.values()).sort((a, b) => b.count - a.count);
+  // Districts first, then the rest by descending count.
+  result.appealingImproved = Array.from(imp.values()).sort((a, b) => {
+    if (!!a.isDistrict !== !!b.isDistrict) return a.isDistrict ? -1 : 1;
+    return b.count - a.count;
+  });
   result.appealingUnimproved = Array.from(unimp.values()).sort((a, b) => b.count - a.count);
   // One entry per wonder: { name, count, yields:[{yieldType,value}] }.
   result.naturalWonders = Array.from(nwByName.values())
     .map((e) => ({
       name: e.name,
       count: e.count,
-      yields: Array.from(e.yieldMap.entries()).map(([yieldType, value]) => ({ yieldType, value })),
+      // Round each accumulated bonus to the nearest 0.5.
+      yields: Array.from(e.yieldMap.entries())
+        .map(([yieldType, value]) => ({ yieldType, value: roundToHalf(value) }))
+        .filter((y) => y.value > 0),
     }))
     .sort((a, b) => b.count - a.count);
   return result;

@@ -9,7 +9,7 @@
 // Each lists Cities and Towns with their totals; hovering "Cities" / "Towns"
 // reveals the settlement names.
 
-import { ETFI_YIELDS, getSettlementsByConnection, composeWithFallback } from "../../etfi-utilities.js";
+import { ETFI_YIELDS, getSettlementsByConnection, composeWithFallback, bulletList } from "../../etfi-utilities.js";
 
 const INFLUENCE_PER = 1;
 const HUB_ICONS = { CITY: "CITY_URBAN", TOWN: "CITY_RURAL" };
@@ -20,7 +20,7 @@ function settlementRows(group, withYields) {
     if (withYields) {
       row.yields = [{ yieldType: ETFI_YIELDS.INFLUENCE, value: names.length * INFLUENCE_PER }];
     }
-    if (names.length) row.tooltip = names.join("[N]");
+    if (names.length) row.tooltip = bulletList(names);
     return row;
   };
   return [

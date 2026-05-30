@@ -14,7 +14,7 @@
 //   * APPEALING tiles split into Improved (+1 Happiness / +1 Gold) and
 //     Unimproved (no yield).
 
-import { ETFI_YIELDS, TOURISM_ICON, getResortData, getCurrentAgeType, hasGlobalismMastery, composeWithFallback, improvedUnimprovedSections } from "../../etfi-utilities.js";
+import { ETFI_YIELDS, TOURISM_ICON, getResortData, getCurrentAgeType, hasGlobalismMastery, composeWithFallback, improvedUnimprovedSections, bulletList } from "../../etfi-utilities.js";
 
 const PER_TILE = 1;
 const TOURISM_PER = 4;
@@ -40,11 +40,11 @@ export function buildResortModel(city) {
   // Tourism category — top, separate panel. Tourism is a Modern-Age-only bonus,
   // so the whole category is disabled (omitted) outside the Modern Age.
   if (isModern) {
-    // Hover breakdown for the Breathtaking text (rendered via Locale.stylize).
-    const breakdownTip = [
+    // Hover breakdown for the Breathtaking text (bulleted, via Locale.stylize).
+    const breakdownTip = bulletList([
       `${composeWithFallback("LOC_MOD_ETFI_IMPROVEMENTS", "Improvements")}: ${d.breathtakingImprovements} (+${TOURISM_PER * d.breathtakingImprovements} [icon:${TOURISM_ICON}])`,
       `${composeWithFallback("LOC_MOD_ETFI_DISTRICTS", "Districts")}: ${d.breathtakingDistricts} (+${TOURISM_PER * d.breathtakingDistricts} [icon:${TOURISM_ICON}])`,
-    ].join("[N]");
+    ]);
 
     sections.push({
       title: composeWithFallback("LOC_MOD_ETFI_TOURISM", "Tourism"),
