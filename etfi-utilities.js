@@ -319,6 +319,48 @@ export function getCountableBuildings(city) {
   return out;
 }
 
+// A "Temple" for Relic-slot purposes is any building that has a RELIC great-work
+// slot. This captures the base Temple AND any civ-unique temple replacement
+// without hardcoding civ-specific building types.
+const RELIC_SLOT_TEMPLE_TYPES = (() => {
+  const set = new Set();
+  try {
+    for (const row of GameInfo.Constructible_GreatWorks || []) {
+      if (row.GreatWorkSlotType === "GREATWORKSLOT_RELIC") set.add(row.ConstructibleType);
+    }
+  } catch (e) {
+    console.error("[ETFI] building relic-temple set failed", e);
+  }
+  // Always include the base Temple as a fallback.
+  set.add("BUILDING_TEMPLE");
+  return set;
+})();
+
+export function isRelicTemple(type) {
+  return RELIC_SLOT_TEMPLE_TYPES.has(type);
+}
+
+// Count the completed temple-type buildings (relic-slot buildings, excluding the
+// Palace, which is never a Town building) in the town.
+export function countTemples(city) {
+  let n = 0;
+  try {
+    const ids = city?.Constructibles?.getIdsOfClass?.("BUILDING") || [];
+    for (const id of ids) {
+      const inst = Constructibles.get(id);
+      if (!inst || !inst.complete) continue;
+      const def = GameInfo.Constructibles.lookup(inst.type);
+      if (!def || def.ConstructibleClass !== "BUILDING") continue;
+      const t = def.ConstructibleType;
+      if (t === "BUILDING_PALACE") continue;
+      if (isRelicTemple(t)) n++;
+    }
+  } catch (e) {
+    console.error("[ETFI] countTemples failed", e);
+  }
+  return n;
+}
+
 // --- fortifications (Fort) -------------------------------------------------
 
 export function getFortifications(city) {
@@ -365,8 +407,9 @@ function getUniqueQuarterName(loc) {
 }
 
 // A building "counts" for a Quarter / Religious Site if it is not a Wall and is
-// ageless, current-age, a Warehouse, a Unique building, or a FULL_TILE (special)
-// building. Shared by Urban Center and Religious Site so they use identical rules.
+// ageless (Palace, City Hall, ...), current-age, a Warehouse, a Unique building,
+// a FULL_TILE (special) building, or a relic Temple (so temples are always
+// listed). Shared by Urban Center and Religious Site so they use identical rules.
 function isQuarterBuilding(type) {
   if (isWallType(type)) return false;
   try {
@@ -374,6 +417,7 @@ function isQuarterBuilding(type) {
     if (ConstructibleHasTagType(type, "WAREHOUSE")) return true;
     if (ConstructibleHasTagType(type, "UNIQUE")) return true;
     if (isFullTileType(type)) return true;
+    if (isRelicTemple(type)) return true;
   } catch {}
   return false;
 }
@@ -393,7 +437,6 @@ export function getTownBuildings(city) {
   const specialQuarters = [];
   const buildings = [];
   try {
-    const centerKey = city?.location ? `${city.location.x},${city.location.y}` : null;
     const perTile = new Map();
     const ids = city?.Constructibles?.getIdsOfClass?.("BUILDING") || [];
     for (const id of ids) {
@@ -412,10 +455,13 @@ export function getTownBuildings(city) {
       });
     }
     for (const [key, { loc, blds }] of perTile) {
-      if (key === centerKey) continue;
       const qualifying = blds.filter((b) => isQuarterBuilding(b.type));
       if (!qualifying.length) continue;
       const mapped = (list) => list.map((b) => ({ name: b.name, iconId: b.iconId }));
+
+      // The City Center is a normal district that follows the same rules as any
+      // other tile: a single building (e.g. City Hall alone) is a lone Building,
+      // while two qualifying buildings (e.g. City Hall + Temple) form a Quarter.
 
       const uniqueName = getUniqueQuarterName(loc);
       if (uniqueName) {

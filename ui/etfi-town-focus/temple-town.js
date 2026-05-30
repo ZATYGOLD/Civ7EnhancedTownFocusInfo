@@ -7,12 +7,12 @@
 //   * +2 Relic Slots on Temples in this Town.
 // Eligibility matches Urban Center (ageless / current-age / warehouse / unique /
 // full-tile, never Walls). Buildings are listed in the same categories as Urban
-// Center — Quarters, Unique Quarters, Special Quarters, and Buildings (lone) —
+// Center: Quarters, Unique Quarters, Special Quarters, and Buildings (lone) -
 // each building shown with its +2 Happiness pill. Unlike Urban Center, lone
 // Buildings still earn the bonus here, so that category is NOT hidden. Header
 // pills: total Happiness and a +2 Relic Slots pill (relic icon).
 
-import { ETFI_YIELDS, RELIC_ICON, getTownBuildings, getCountableBuildings, composeWithFallback } from "../../etfi-utilities.js";
+import { ETFI_YIELDS, RELIC_ICON, getTownBuildings, countTemples, composeWithFallback } from "../../etfi-utilities.js";
 
 const HAPPINESS_PER_BUILDING = 2;
 const RELIC_SLOTS_PER_TEMPLE = 2;
@@ -43,7 +43,7 @@ export function buildTempleModel(city) {
   const { quarters, uniqueQuarters, specialQuarters, buildings, buildingCount } = getTownBuildings(city);
   const happiness = buildingCount * HAPPINESS_PER_BUILDING;
 
-  const templeCount = getCountableBuildings(city).filter((b) => b.type === "BUILDING_TEMPLE").length;
+  const templeCount = countTemples(city);
 
   const sections = [];
   if (quarters.length) {
@@ -75,16 +75,16 @@ export function buildTempleModel(city) {
     });
   }
 
-  // Header pills next to the focus name: total Happiness + the +2 Relic Slots.
-  const header = [
-    { yieldType: ETFI_YIELDS.HAPPINESS, value: happiness },
-    { yieldType: RELIC_ICON, value: RELIC_SLOTS_PER_TEMPLE, colored: false },
-  ];
+  // Header pills next to the focus name: total Happiness, plus the Relic Slots
+  // pill ONLY when the town actually has a Temple (or unique temple). The value
+  // reflects the real total: +2 Relic Slots per temple building.
+  const relicSlots = templeCount * RELIC_SLOTS_PER_TEMPLE;
+  const header = [{ yieldType: ETFI_YIELDS.HAPPINESS, value: happiness }];
+  if (relicSlots > 0) {
+    header.push({ yieldType: RELIC_ICON, value: relicSlots, colored: false });
+  }
 
   const notes = [];
-  if (templeCount) {
-    notes.push(`+${RELIC_SLOTS_PER_TEMPLE * templeCount} Relic Slots (${templeCount} Temple${templeCount === 1 ? "" : "s"})`);
-  }
 
   return {
     header,
