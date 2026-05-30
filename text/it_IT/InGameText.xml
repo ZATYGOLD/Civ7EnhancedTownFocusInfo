@@ -19,6 +19,7 @@
     <Replace Tag="LOC_MOD_ETFI_IMPROVEMENTS" Language="it_IT"><Text>Miglioramenti</Text></Replace>
     <Replace Tag="LOC_MOD_ETFI_DISTRICTS" Language="it_IT"><Text>Distretti</Text></Replace>
     <Replace Tag="LOC_MOD_ETFI_REQUIRES_GLOBALISM" Language="it_IT"><Text>Richiede la Maestria del Globalismo</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_NATURAL_WONDERS" Language="it_IT"><Text>Meraviglie naturali</Text></Replace>
 
     <!-- Controlli -->
     <Replace Tag="LOC_MOD_ETFI_VIEW_HIDDEN" Language="it_IT"><Text>Mostra nascosti</Text></Replace>

@@ -9,6 +9,8 @@
 //     is colored only when all requirements are met (Modern, 7+ developed
 //     Breathtaking, Globalism's Mastery), and also appears next to the focus
 //     name when met. A "Requires Globalism's Mastery" note shows until met.
+//   * NATURAL WONDERS (below Tourism, above Improved): one row per wonder, with
+//     the tile count (x#) and +50% of the wonder's accumulated tile yields.
 //   * APPEALING tiles split into Improved (+1 Happiness / +1 Gold) and
 //     Unimproved (no yield).
 
@@ -20,6 +22,8 @@ const BREATHTAKING_MIN = 7;
 
 const HEX_ICON_CLASS = "general-appeal-legend-hex size-5 bg-contain bg-no-repeat";
 const HEX_ICON_STYLE = "fxs-background-image-tint: rgb(26, 90, 0);";
+// Worked Natural Wonder tile improvement icon.
+const NATURAL_WONDER_ICON = "IMPROVEMENT_EXPEDITION_BASE";
 
 export function buildResortModel(city) {
   const d = getResortData(city);
@@ -57,6 +61,21 @@ export function buildResortModel(city) {
     });
   }
 
+  // Natural Wonders — own panel below Tourism, above Improved. One row per
+  // wonder, with the tile count (x#) and +50% of its accumulated yields.
+  if (d.naturalWonders.length) {
+    sections.push({
+      title: composeWithFallback("LOC_MOD_ETFI_NATURAL_WONDERS", "Natural Wonders"),
+      separatePanel: "top",
+      rows: d.naturalWonders.map((w) => ({
+        iconId: NATURAL_WONDER_ICON,
+        name: w.name,
+        count: w.count,
+        yields: w.yields,
+      })),
+    });
+  }
+
   // Appealing tiles — shared Improved (+1 Happiness / +1 Gold) / Unimproved.
   for (const s of improvedUnimprovedSections({
     improved: d.appealingImproved,
@@ -78,10 +97,14 @@ export function buildResortModel(city) {
     header.push({ yieldType: TOURISM_ICON, value: TOURISM_PER * developed });
   }
 
-  const notes = [];
-  if (d.naturalWonders) {
-    notes.push(`+50% tile yields from Natural Wonders (${d.naturalWonders})`);
+  // Add the Natural Wonder bonus (+50% yields) to the header. The section
+  // renderer merges duplicate yield types into one pill, so we can push each
+  // wonder's yields directly (they'll fold in with the appealing Happiness/Gold).
+  for (const w of d.naturalWonders) {
+    for (const y of w.yields) {
+      if (y.value > 0) header.push({ yieldType: y.yieldType, value: y.value });
+    }
   }
 
-  return { header, rows: [], sections, notes };
+  return { header, rows: [], sections, notes: [] };
 }

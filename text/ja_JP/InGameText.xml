@@ -19,6 +19,7 @@
     <Replace Tag="LOC_MOD_ETFI_IMPROVEMENTS" Language="ja_JP"><Text>改善施設</Text></Replace>
     <Replace Tag="LOC_MOD_ETFI_DISTRICTS" Language="ja_JP"><Text>地区</Text></Replace>
     <Replace Tag="LOC_MOD_ETFI_REQUIRES_GLOBALISM" Language="ja_JP"><Text>グローバリズムの極意が必要</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_NATURAL_WONDERS" Language="ja_JP"><Text>自然遺産</Text></Replace>
 
     <!-- コントロール -->
     <Replace Tag="LOC_MOD_ETFI_VIEW_HIDDEN" Language="ja_JP"><Text>非表示を表示</Text></Replace>

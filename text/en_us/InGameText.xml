@@ -11,6 +11,7 @@
     <Row Tag="LOC_MOD_ETFI_TOURISM"><Text>Tourism</Text></Row>
     <Row Tag="LOC_MOD_ETFI_CONNECTED"><Text>Connected</Text></Row>
     <Row Tag="LOC_MOD_ETFI_DISCONNECTED"><Text>Disconnected</Text></Row>
+    <Row Tag="LOC_MOD_ETFI_NATURAL_WONDERS"><Text>Natural Wonders</Text></Row>
 
     <!-- Row labels -->
     <Row Tag="LOC_MOD_ETFI_CONNECTED_CITIES"><Text>Cities</Text></Row>

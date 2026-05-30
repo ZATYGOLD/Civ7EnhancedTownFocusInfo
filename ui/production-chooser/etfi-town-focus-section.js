@@ -449,10 +449,25 @@ TownFocusChooserItem.prototype.etfiUpdate = function () {
 
   const model = buildModel(this) || { header: [], rows: [], sections: [], notes: [] };
 
-  // Header pills next to the focus name.
+  // Header pills next to the focus name. Merge duplicate yield types into one
+  // pill by summing their values (first-seen order is preserved).
   while (this.etfiYields.firstChild) this.etfiYields.removeChild(this.etfiYields.firstChild);
+  const headerMerged = [];
+  const headerByType = new Map();
   for (const y of model.header || []) {
-    if (y && typeof y.value === "number") this.etfiYields.appendChild(yieldPill(y));
+    if (!y || typeof y.value !== "number") continue;
+    const existing = headerByType.get(y.yieldType);
+    if (existing) {
+      existing.value += y.value;
+      if (y.colored === false) existing.colored = false;
+    } else {
+      const entry = { ...y };
+      headerByType.set(y.yieldType, entry);
+      headerMerged.push(entry);
+    }
+  }
+  for (const y of headerMerged) {
+    this.etfiYields.appendChild(yieldPill(y));
   }
   this.etfiYields.classList.toggle("hidden", this.etfiYields.childElementCount === 0);
 

@@ -566,14 +566,56 @@ export function getFactoryResources(city) {
 //   that are rural Improvements vs Districts (>=1 building). breathtakingTotal:
 //   all Breathtaking tiles. (The game counts a Breathtaking tile as developed
 //   if it has an improvement OR a building/district.)
+// 50% of a Natural Wonder tile's yields (Resort Town bonus). Adds each halved
+// yield amount into `acc` (a Map of yieldType -> running total), so multi-tile
+// wonders accumulate across their tiles. When the tile is Appealing it also
+// receives the Resort's +1 Happiness / +1 Gold, and those are folded into the
+// total BEFORE the 50% is applied (per the in-game calculation).
+const NATURAL_WONDER_YIELD_PCT = 0.5;
+const RESORT_APPEALING_PER_TILE = 1;
+function addNaturalWonderYields(acc, plotIndex, appealing) {
+  try {
+    // Tile's base yields.
+    const totals = new Map();
+    const raw = GameplayMap.getYields(plotIndex, GameContext.localPlayerID) || [];
+    for (const [yieldType, amount] of raw) {
+      if (!(amount > 0)) continue;
+      const ydef = GameInfo.Yields.lookup(yieldType);
+      if (!ydef) continue;
+      totals.set(ydef.YieldType, (totals.get(ydef.YieldType) || 0) + amount);
+    }
+    // Appealing tiles also gain the Resort's +1 Happiness / +1 Gold, included
+    // in the total that the 50% bonus is calculated from.
+    if (appealing) {
+      totals.set(ETFI_YIELDS.HAPPINESS, (totals.get(ETFI_YIELDS.HAPPINESS) || 0) + RESORT_APPEALING_PER_TILE);
+      totals.set(ETFI_YIELDS.GOLD, (totals.get(ETFI_YIELDS.GOLD) || 0) + RESORT_APPEALING_PER_TILE);
+    }
+    // Apply the 50% bonus and accumulate into the shared per-wonder map.
+    for (const [yieldType, amount] of totals) {
+      acc.set(yieldType, (acc.get(yieldType) || 0) + amount * NATURAL_WONDER_YIELD_PCT);
+    }
+  } catch (e) {
+    console.error("[ETFI] addNaturalWonderYields failed", e);
+  }
+}
+
+function naturalWonderName(x, y) {
+  try {
+    const def = GameInfo.Features.lookup(GameplayMap.getFeatureType(x, y));
+    if (def) return def.Name ? Locale.compose(def.Name) : def.FeatureType;
+  } catch {}
+  return null;
+}
+
 export function getResortData(city) {
   const result = {
     appealingImproved: [], appealingUnimproved: [],
     breathtakingImprovements: 0, breathtakingDistricts: 0, breathtakingTotal: 0,
-    naturalWonders: 0,
+    naturalWonders: [],
   };
   const imp = new Map();
   const unimp = new Map();
+  const nwByName = new Map();
   let charming = 3;
   let breathtaking = 5;
   try {
@@ -592,7 +634,15 @@ export function getResortData(city) {
       if (!loc || loc.x == null || loc.y == null) continue;
       districtSet.add(`${loc.x},${loc.y}`);
     }
-    const indices = city?.getPurchasedPlots?.() || [];
+    // getPurchasedPlots() omits the city-center tile (every base-game consumer
+    // adds city.location back separately), so include it explicitly.
+    const indices = [...(city?.getPurchasedPlots?.() || [])];
+    try {
+      if (city?.location) {
+        const centerIdx = GameplayMap.getIndexFromLocation(city.location);
+        if (centerIdx != null && !indices.includes(centerIdx)) indices.push(centerIdx);
+      }
+    } catch {}
     for (const idx of indices) {
       let loc;
       try { loc = GameplayMap.getLocationFromIndex(idx); } catch { continue; }
@@ -601,7 +651,27 @@ export function getResortData(city) {
       const key = `${x},${y}`;
       let isNW = false;
       try { isNW = !!GameplayMap.isNaturalWonder(x, y); } catch {}
-      if (isNW) { result.naturalWonders++; continue; }
+      if (isNW) {
+        const wname = naturalWonderName(x, y) || "Natural Wonder";
+        if (impMap.has(key)) {
+          // IMPROVED Natural Wonder tile (carries an Expedition Base). Natural
+          // Wonder is its own top-level appeal category (the engine checks
+          // isNaturalWonder before the Charming/Breathtaking thresholds), so a
+          // wonder tile is ALWAYS Appealing and always receives the Resort's
+          // +1 Happiness / +1 Gold (folded into the 50% calculation).
+          let entry = nwByName.get(wname);
+          if (!entry) { entry = { name: wname, count: 0, yieldMap: new Map() }; nwByName.set(wname, entry); }
+          entry.count++;
+          addNaturalWonderYields(entry.yieldMap, idx, true);
+        } else {
+          // Unimproved Natural Wonder tile: an eligible tile (can take an
+          // Expedition Base) that isn't earning the bonus yet — list it under
+          // the Unimproved category with the Expedition Base icon.
+          if (!unimp.has(wname)) unimp.set(wname, { name: wname, iconId: "IMPROVEMENT_EXPEDITION_BASE", count: 0 });
+          unimp.get(wname).count++;
+        }
+        continue;
+      }
       let water = false;
       try { water = !!GameplayMap.isWater(x, y); } catch {}
       if (water) continue;
@@ -646,6 +716,14 @@ export function getResortData(city) {
   }
   result.appealingImproved = Array.from(imp.values()).sort((a, b) => b.count - a.count);
   result.appealingUnimproved = Array.from(unimp.values()).sort((a, b) => b.count - a.count);
+  // One entry per wonder: { name, count, yields:[{yieldType,value}] }.
+  result.naturalWonders = Array.from(nwByName.values())
+    .map((e) => ({
+      name: e.name,
+      count: e.count,
+      yields: Array.from(e.yieldMap.entries()).map(([yieldType, value]) => ({ yieldType, value })),
+    }))
+    .sort((a, b) => b.count - a.count);
   return result;
 }
 

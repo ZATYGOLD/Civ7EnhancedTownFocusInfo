@@ -19,6 +19,7 @@
     <Replace Tag="LOC_MOD_ETFI_IMPROVEMENTS" Language="ko_KR"><Text>시설</Text></Replace>
     <Replace Tag="LOC_MOD_ETFI_DISTRICTS" Language="ko_KR"><Text>지구</Text></Replace>
     <Replace Tag="LOC_MOD_ETFI_REQUIRES_GLOBALISM" Language="ko_KR"><Text>세계주의 숙련 필요</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_NATURAL_WONDERS" Language="ko_KR"><Text>자연 불가사의</Text></Replace>
 
     <!-- 컨트롤 -->
     <Replace Tag="LOC_MOD_ETFI_VIEW_HIDDEN" Language="ko_KR"><Text>숨김 표시</Text></Replace>

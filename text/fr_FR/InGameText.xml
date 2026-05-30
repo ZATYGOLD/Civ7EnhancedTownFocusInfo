@@ -19,6 +19,7 @@
     <Replace Tag="LOC_MOD_ETFI_IMPROVEMENTS" Language="fr_FR"><Text>Aménagements</Text></Replace>
     <Replace Tag="LOC_MOD_ETFI_DISTRICTS" Language="fr_FR"><Text>Quartiers</Text></Replace>
     <Replace Tag="LOC_MOD_ETFI_REQUIRES_GLOBALISM" Language="fr_FR"><Text>Nécessite la maîtrise du Mondialisme</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_NATURAL_WONDERS" Language="fr_FR"><Text>Merveilles naturelles</Text></Replace>
 
     <!-- Contrôles -->
     <Replace Tag="LOC_MOD_ETFI_VIEW_HIDDEN" Language="fr_FR"><Text>Afficher masqués</Text></Replace>

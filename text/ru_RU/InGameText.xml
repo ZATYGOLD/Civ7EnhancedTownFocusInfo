@@ -19,6 +19,7 @@
     <Replace Tag="LOC_MOD_ETFI_IMPROVEMENTS" Language="ru_RU"><Text>Улучшения</Text></Replace>
     <Replace Tag="LOC_MOD_ETFI_DISTRICTS" Language="ru_RU"><Text>Районы</Text></Replace>
     <Replace Tag="LOC_MOD_ETFI_REQUIRES_GLOBALISM" Language="ru_RU"><Text>Требуется мастерство глобализма</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_NATURAL_WONDERS" Language="ru_RU"><Text>Чудеса природы</Text></Replace>
 
     <!-- Элементы управления -->
     <Replace Tag="LOC_MOD_ETFI_VIEW_HIDDEN" Language="ru_RU"><Text>Показать скрытое</Text></Replace>

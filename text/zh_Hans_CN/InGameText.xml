@@ -19,6 +19,7 @@
     <Replace Tag="LOC_MOD_ETFI_IMPROVEMENTS" Language="zh_Hans_CN"><Text>设施</Text></Replace>
     <Replace Tag="LOC_MOD_ETFI_DISTRICTS" Language="zh_Hans_CN"><Text>区域</Text></Replace>
     <Replace Tag="LOC_MOD_ETFI_REQUIRES_GLOBALISM" Language="zh_Hans_CN"><Text>需要全球主义精通</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_NATURAL_WONDERS" Language="zh_Hans_CN"><Text>自然奇观</Text></Replace>
 
     <!-- 控件 -->
     <Replace Tag="LOC_MOD_ETFI_VIEW_HIDDEN" Language="zh_Hans_CN"><Text>显示隐藏项</Text></Replace>
