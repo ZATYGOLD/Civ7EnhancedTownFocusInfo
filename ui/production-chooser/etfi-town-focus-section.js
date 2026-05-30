@@ -121,7 +121,8 @@ function isGrowthFocus(root) {
 
 function yieldPill(entry) {
   const body = document.createElement("div");
-  body.className = "flex items-center gap-1";
+  // Tight icon-to-number spacing (gap-0.5 instead of gap-1).
+  body.className = "flex items-center gap-0\\.5";
   body.appendChild(fxsIcon(entry.yieldType, "size-4"));
   const span = document.createElement("span");
   span.className = "font-semibold text-xs";
@@ -134,7 +135,12 @@ function yieldPill(entry) {
       ? { "background-color": YIELD_COLORS[entry.yieldType] }
       : undefined;
 
-  return Pill({ class: "ml-1", small: true, backgroundStyle, children: body });
+  const pill = Pill({ class: "ml-1", small: true, backgroundStyle, children: body });
+  // Narrow the pill: trim the horizontal padding (the small Pill defaults to
+  // px-1.5). Inline style reliably overrides the component's class.
+  pill.style.paddingLeft = "0.25rem";
+  pill.style.paddingRight = "0.25rem";
+  return pill;
 }
 
 function appendNameItem(left, spec) {
