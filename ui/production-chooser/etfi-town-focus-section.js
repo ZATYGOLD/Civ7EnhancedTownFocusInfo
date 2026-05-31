@@ -91,7 +91,7 @@ function hDivider() {
 function sectionTitle(label) {
   // Left-aligned category title with the constructible-details horizontal divider.
   const wrap = document.createElement("div");
-  wrap.className = "w-full flex flex-col mt-1";
+  wrap.className = "w-full flex flex-col";
   const d = document.createElement("div");
   d.className = "font-title uppercase text-2xs text-secondary";
   d.textContent = label;
@@ -229,6 +229,10 @@ function appendRows(panel, rows) {
 function newPanel() {
   const p = document.createElement("div");
   p.className = "img-base-ticket-bg-container w-full flex flex-col mt-2";
+  // Tighten the ticket's vertical padding (default is 1.333rem top/bottom) to
+  // reduce the gap above the title and below the last item; keep horizontal.
+  p.style.paddingTop = "0.5rem";
+  p.style.paddingBottom = "0.5rem";
   return p;
 }
 
@@ -449,6 +453,8 @@ TownFocusChooserItem.prototype.render = function () {
     this.etfiTop.className = "w-full flex flex-col";
     this.etfiDetails = document.createElement("div");
     this.etfiDetails.className = "img-base-ticket-bg-container w-full flex flex-col mt-2";
+    this.etfiDetails.style.paddingTop = "0.5rem";
+    this.etfiDetails.style.paddingBottom = "0.5rem";
     this.etfiBottom = document.createElement("div");
     this.etfiBottom.className = "w-full flex flex-col";
     if (container) {
