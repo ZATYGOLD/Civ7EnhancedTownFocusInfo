@@ -468,15 +468,39 @@ TownFocusChooserItem.prototype.render = function () {
 
   const inSummary = !!this.Root.closest("town-focus-section");
 
+  // Shrink the focus icon (base is size-16 = 4rem) for a more compact card.
+  try {
+    this.projectIconElement.classList.remove("size-16");
+    this.projectIconElement.classList.add("size-12");
+  } catch {}
+
+  // Keep the base layout: icon is a sibling to infoContainer (so both the name
+  // row AND the description start after the icon, matching the default look).
+  // Inside infoContainer, replace the name with a 2-column row [ name | pills ]:
+  //   name  - grows, left-aligned, ellipsizes if long.
+  //   pills - fixed width, right-aligned to the card edge.
+  // The description stays below this row, untouched, aligned under the name.
+  try {
+    infoContainer.classList.remove("flex-initial");
+    infoContainer.style.flex = "1 1 auto";
+    infoContainer.style.minWidth = "0";
+  } catch {}
+
   const nameRow = document.createElement("div");
   nameRow.className = "flex flex-row items-center w-full";
   infoContainer.replaceChild(nameRow, this.nameElement);
-  this.nameElement.classList.add("shrink-0");
-  nameRow.appendChild(this.nameElement);
+
+  this.nameElement.classList.add("text-left");
+  this.nameElement.style.flex = "1 1 auto";
+  this.nameElement.style.minWidth = "0";
+  this.nameElement.style.overflow = "hidden";
+  this.nameElement.style.textOverflow = "ellipsis";
+  this.nameElement.style.whiteSpace = "nowrap";
 
   this.etfiYields = document.createElement("div");
-  this.etfiYields.className = "flex flex-row flex-wrap items-center justify-end ml-auto";
-  nameRow.appendChild(this.etfiYields);
+  this.etfiYields.className = "flex flex-row flex-wrap items-center justify-end shrink-0";
+
+  nameRow.append(this.nameElement, this.etfiYields);
 
   this.etfiTop = null;
   this.etfiDetails = null;
@@ -493,11 +517,6 @@ TownFocusChooserItem.prototype.render = function () {
     if (container) {
       const topRow = document.createElement("div");
       topRow.className = "flex flex-row w-full";
-      // Shrink the focus icon (base is size-16 = 4rem) for a more compact card.
-      try {
-        this.projectIconElement.classList.remove("size-16");
-        this.projectIconElement.classList.add("size-12");
-      } catch {}
       topRow.appendChild(this.projectIconElement);
       topRow.appendChild(infoContainer);
       container.classList.remove("flex-row");
