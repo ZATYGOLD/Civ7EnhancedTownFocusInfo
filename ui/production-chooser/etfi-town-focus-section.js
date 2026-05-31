@@ -145,27 +145,14 @@ function constrainPanelWidth(fromEl) {
   }
 }
 
-// Hide the inline focus description and surface it as a hover tooltip on the
-// focus name instead. data-tooltip-style="none" suppresses the item's rich
-// project tooltip for the name element, so hovering the name shows just the
-// description text. Idempotent — safe to call on every render/update (and
-// re-asserted in etfiUpdate because data-description can arrive after the
-// first render, and the summary item is reused across focus changes).
-function applyNameDescriptionTooltip(item) {
-  const nameEl = item.nameElement;
-  if (!nameEl) return;
+// Hide the base game's inline focus description. (class + inline display:none,
+// since a class alone can be overridden by the element's other display
+// utilities in some render paths.)
+function hideDescription(item) {
   try {
     if (item.descriptionElement) {
       item.descriptionElement.classList.add("hidden");
-      // Inline display:none as well — a class alone can be overridden by the
-      // element's other display utilities in some render paths.
       item.descriptionElement.style.display = "none";
-    }
-    const descKey = item.Root.getAttribute("data-description");
-    if (descKey) {
-      nameEl.setAttribute("data-tooltip-content", Locale.compose(descKey));
-      nameEl.setAttribute("data-tooltip-style", "none");
-      nameEl.classList.add("pointer-events-auto");
     }
   } catch {}
 }
@@ -189,8 +176,8 @@ TownFocusChooserItem.prototype.render = function () {
 
   const growth = isGrowthFocus(this.Root);
 
-  // Inline description hidden; shown as a hover tooltip on the focus name.
-  applyNameDescriptionTooltip(this);
+  // Hide the inline focus description for every focus.
+  hideDescription(this);
 
   // Growing Town keeps the base card layout — no yield pills, detail panels, or
   // name-row restructuring.
@@ -282,8 +269,9 @@ TownFocusChooserItem.prototype.onAttributeChanged = function (name, oldValue, ne
 TownFocusChooserItem.prototype.etfiUpdate = function () {
   const growth = isGrowthFocus(this.Root);
 
-  // Inline description hidden; shown as a hover tooltip on the focus name.
-  applyNameDescriptionTooltip(this);
+  // Keep the inline description hidden (re-asserted here since the summary item
+  // is reused across focus changes).
+  hideDescription(this);
 
   if (!this.etfiYields) return;
 
