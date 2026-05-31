@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Mod id="EnhancedTownFocusInfoMod" version="20301"
+<Mod id="EnhancedTownFocusInfoMod" version="20400"
 	xmlns="ModInfo">
 	<Properties>
 		<Name>LOC_MOD_ENHANCEDTOWNFOCUSINFO</Name>
-		<Version>2.3.1</Version>
+		<Version>2.3.2</Version>
 		<Description>LOC_MOD_ENHANCEDTOWNFOCUSINFO_DESCRIPTION</Description>
 		<Authors>Zatygold</Authors>
 		<Package>Mod</Package>
@@ -57,7 +57,9 @@
 					<Item>ui/etfi-town-focus/fort-town.js</Item>
 					<Item>ui/etfi-town-focus/resort-town.js</Item>
 					<Item>ui/etfi-town-focus/factory-town.js</Item>
-					<Item>ui/etfi-details/etfi-details.js</Item>
+					<Item>ui/etfi-details/etfi-render.js</Item>
+					<Item>ui/etfi-details/etfi-tooltip-details.js</Item>
+					<Item>ui/etfi-details/etfi-tooltip-section-description.js</Item>
 					<Item>ui/production-chooser/town-focus-tooltip.js</Item>
 					<Item>ui/production-chooser/etfi-town-focus-section.js</Item>
 				</UIScripts>

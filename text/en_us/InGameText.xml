@@ -12,6 +12,11 @@
     <Row Tag="LOC_MOD_ETFI_CONNECTED"><Text>Connected</Text></Row>
     <Row Tag="LOC_MOD_ETFI_DISCONNECTED"><Text>Disconnected</Text></Row>
     <Row Tag="LOC_MOD_ETFI_NATURAL_WONDERS"><Text>Natural Wonders</Text></Row>
+    <Row Tag="LOC_MOD_ETFI_FOOD_TO_CITIES"><Text>Food Sent</Text></Row>
+    <Row Tag="LOC_MOD_ETFI_GOLD_CONVERTED"><Text>Town's Gold</Text></Row>
+    <Row Tag="LOC_MOD_ETFI_GROWTH"><Text>Growth</Text></Row>
+    <Row Tag="LOC_MOD_ETFI_FOOD_SAVED"><Text>Food Saved</Text></Row>
+    <Row Tag="LOC_MOD_ETFI_TURNS_SAVED"><Text>Turns Saved</Text></Row>
 
     <!-- Row labels -->
     <Row Tag="LOC_MOD_ETFI_CONNECTED_CITIES"><Text>Cities</Text></Row>
@@ -19,10 +24,12 @@
     <Row Tag="LOC_MOD_ETFI_BREATHTAKING"><Text>Breathtaking</Text></Row>
     <Row Tag="LOC_MOD_ETFI_IMPROVEMENTS"><Text>Improvements</Text></Row>
     <Row Tag="LOC_MOD_ETFI_DISTRICTS"><Text>Districts</Text></Row>
+    <Row Tag="LOC_MOD_ETFI_RESOURCES"><Text>Resources</Text></Row>
     <Row Tag="LOC_MOD_ETFI_REQUIRES_GLOBALISM"><Text>Requires Globalism's Mastery</Text></Row>
 
-    <!-- Controls -->
-    <Row Tag="LOC_MOD_ETFI_VIEW_HIDDEN"><Text>View Hidden</Text></Row>
+    <!-- Fort Town -->
+    <Row Tag="LOC_MOD_ETFI_WALLS"><Text>Walls</Text></Row>
+    <Row Tag="LOC_MOD_ETFI_FORTIFICATIONS"><Text>Fortifications</Text></Row>
 
     <!-- Settings -->
     <Row Tag="LOC_OPTIONS_GROUP_ETFI"><Text>Zatygold's Mods</Text></Row>

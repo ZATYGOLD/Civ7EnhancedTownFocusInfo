@@ -33,18 +33,11 @@ export function tradeRangePill() {
 }
 
 // --- small helpers ---------------------------------------------------------
-
-// Build a bulleted tooltip body for a hover panel. Each item is one bullet; an
-// item may be a string OR an array of strings (e.g. the two buildings of a
-// Quarter) which are joined on the same line with a " | " divider. The result
-// is a Locale.stylize markup string ([BLIST]/[LI]) the tooltip system renders.
-export function bulletList(items) {
-  const lis = (items || [])
-    .filter((it) => it != null && (Array.isArray(it) ? it.length : true))
-    .map((it) => `[LI] ${Array.isArray(it) ? it.join(" | ") : it}`)
-    .join("");
-  return lis ? `[BLIST]${lis}[/BLIST]` : "";
-}
+//
+// NOTE: hover tooltips are now built as structured MODELS (`row.tipModel`, a
+// { sections: [...] } object) and rendered by the framed tooltip in
+// etfi-render.js via the same renderSectionPanels the inline panels use. There
+// is no text-markup tooltip builder anymore.
 
 export function composeWithFallback(key, fallback) {
   if (!key) return fallback || "";
@@ -56,14 +49,13 @@ export function composeWithFallback(key, fallback) {
   }
 }
 
-// Build the standardized "Improved" / "Unimproved" category sections shared by
-// every focus that classifies tiles this way (Farming/Fishing, Mining, Trade,
-// Factory, Resort). This guarantees identical titles, layout, and behavior:
-//   * improved/unimproved: arrays of { name, iconId, count },
-//   * improvedYields(group) -> yield array for an Improved row (omit for none),
-//   * the Unimproved category never shows yields, lives in its own bottom panel,
-//     and is flagged `hidden` so the "View Hidden" toggle controls it.
-export function improvedUnimprovedSections({ improved, unimproved, improvedYields }) {
+// Build the standardized "Improved" category section shared by every focus that
+// classifies tiles this way (Farming/Fishing, Mining, Trade, Factory, Resort).
+// Only the Improved tiles are shown — the Unimproved category is intentionally
+// not rendered. (`unimproved` is still accepted for call-site compatibility.)
+//   * improved: array of { name, iconId, count },
+//   * improvedYields(group) -> yield array for an Improved row (omit for none).
+export function improvedUnimprovedSections({ improved, improvedYields }) {
   const sections = [];
   if (improved && improved.length) {
     sections.push({
@@ -75,22 +67,19 @@ export function improvedUnimprovedSections({ improved, unimproved, improvedYield
           if (y && y.length) row.yields = y;
         }
         // Optional hover tooltip: a group may carry `tiles` (an array of
-        // per-tile building-name arrays, e.g. Districts) -> bulleted list with
-        // each tile's building(s) joined by " | " when it's a Quarter.
+        // per-tile { name, iconId } building arrays, e.g. Districts). Each tile
+        // becomes a divided row listing its buildings as [icon] │ name items.
         if (Array.isArray(g.tiles) && g.tiles.length) {
-          const tip = bulletList(g.tiles);
-          if (tip) row.tooltip = tip;
+          row.tipModel = {
+            sections: [{
+              rows: g.tiles.map((tile) => ({
+                items: (tile || []).map((b) => ({ iconId: b.iconId, name: b.name })),
+              })),
+            }],
+          };
         }
         return row;
       }),
-    });
-  }
-  if (unimproved && unimproved.length) {
-    sections.push({
-      title: composeWithFallback("LOC_MOD_ETFI_UNIMPROVED", "Unimproved"),
-      separatePanel: "bottom",
-      hidden: true,
-      rows: unimproved.map((g) => ({ iconId: g.iconId, name: g.name, count: g.count })),
     });
   }
   return sections;
@@ -102,10 +91,8 @@ export function improvedUnimprovedSections({ improved, unimproved, improvedYield
 // for the yields, supplied via callbacks:
 //   * quarterYields(quarter) -> yield array for a quarter row (all its buildings
 //       are shown together on one line via `items`),
-//   * buildingYields(building) -> yield array for a lone Building row (optional),
-//   * hideBuildings -> when true, the lone Buildings category is flagged `hidden`
-//       (Urban Center only rewards Quarters; Religious Site rewards every building).
-export function quarterSections({ quarters, uniqueQuarters, specialQuarters, buildings }, { quarterYields, buildingYields, hideBuildings = false } = {}) {
+//   * buildingYields(building) -> yield array for a lone Building row (optional).
+export function quarterSections({ quarters, uniqueQuarters, specialQuarters, buildings }, { quarterYields, buildingYields, buildingsTitle } = {}) {
   const quarterRow = (q) => {
     const row = { items: q.buildings.map((b) => ({ iconId: b.iconId, name: b.name })) };
     if (quarterYields) {
@@ -140,7 +127,7 @@ export function quarterSections({ quarters, uniqueQuarters, specialQuarters, bui
   }
   if (buildings && buildings.length) {
     const section = {
-      title: composeWithFallback("LOC_MOD_ETFI_BUILDINGS", "Buildings"),
+      title: buildingsTitle || composeWithFallback("LOC_MOD_ETFI_BUILDINGS", "Buildings"),
       separatePanel: "bottom",
       rows: buildings.map((b) => {
         const row = { iconId: b.iconId, name: b.name };
@@ -151,7 +138,6 @@ export function quarterSections({ quarters, uniqueQuarters, specialQuarters, bui
         return row;
       }),
     };
-    if (hideBuildings) section.hidden = true;
     sections.push(section);
   }
   return sections;
@@ -364,6 +350,129 @@ export function getSettlementsByConnection(city) {
   return result;
 }
 
+// --- connected cities + food sent (Town -> connected Cities) ---------------
+//
+// Returns the player's Cities (NOT Towns) that this town is connected to, each
+// as { id, name, food }, where `food` is the Food per turn the town sends to
+// that City.
+//
+// Source: base-standard/ui/city-details/model-city-details.js
+// (buildSendingFoodData). A specialized Town distributes its Food equally to
+// every connected City; the engine exposes that per-City amount directly via
+// Town.getSentFoodPerCity(), and the receivers are Town.getConnectedCities()
+// filtered to non-Towns. The same `getConnectedCities()` call backs
+// getSettlementsByConnection().
+//
+// Note: the engine only sends Food while the town's growthType is PROJECT
+// (i.e. it has an active focus, not the default EXPAND/growing mode). When the
+// town is still growing, getSentFoodPerCity() reports 0, so `food` is 0 for
+// every City — that matches the game (an unspecialized town sends nothing).
+export function getConnectedCitiesFood(city) {
+  const cities = [];
+  let ids = [];
+  try {
+    ids = city?.getConnectedCities?.() || [];
+  } catch (e) {
+    console.error("[ETFI] getConnectedCitiesFood: getConnectedCities failed", e);
+    return cities;
+  }
+
+  // Food sent to EACH connected City (the engine splits the town's Food evenly,
+  // so every connected City receives the same amount).
+  let foodPerCity = null;
+  try {
+    const v = city?.getSentFoodPerCity?.();
+    if (typeof v === "number" && isFinite(v)) foodPerCity = v;
+  } catch (e) {
+    console.error("[ETFI] getConnectedCitiesFood: getSentFoodPerCity failed", e);
+  }
+
+  for (const id of ids) {
+    const s = Cities.get(id);
+    if (!s) continue;
+    if (s.isTown) continue; // Cities only — connected Towns do not receive food.
+    cities.push({
+      id,
+      name: Locale.compose(s.name),
+      food: foodPerCity,
+    });
+  }
+  return cities;
+}
+
+// --- converted gold (default Town behavior) --------------------------------
+//
+// The default Town behavior (LOC_PROJECT_DEFAULT_TOOLTIP_DESCRIPTION) converts
+// all of the Town's Production into Gold. This returns the Town's Production and
+// Gold per turn and their sum — the effective Gold/turn the Town yields once the
+// Production conversion is applied.
+//
+// Source: same yield API the base City Details panel uses
+// (base-standard/ui/city-details/model-city-details.js):
+// city.Yields.getNetYield(YieldTypes.YIELD_*).
+export function getConvertedGold(city) {
+  let production = 0;
+  let gold = 0;
+  try {
+    const y = city?.Yields;
+    if (y && typeof YieldTypes !== "undefined") {
+      production = y.getNetYield(YieldTypes.YIELD_PRODUCTION) || 0;
+      gold = y.getNetYield(YieldTypes.YIELD_GOLD) || 0;
+    }
+  } catch (e) {
+    console.error("[ETFI] getConvertedGold failed", e);
+  }
+  return { production, gold, total: production + gold };
+}
+
+// The Growing Town focus grants +50% growth (EFFECT_CITY_ADJUST_GROWTH
+// Percent=50), which the engine applies as a reduction to the Food needed to
+// grow population. It applies only while the town has no project (Growing).
+export const GROWTH_FOCUS_MULTIPLIER = 1.5;
+
+// Food + turns SAVED by using the Growing Town focus, computed per option 1:
+// anchor on the engine's exact live threshold for the town's current state and
+// derive the opposite side via the focus's +50%. Returns null if not derivable.
+//   * Town currently Growing  -> the live threshold already includes the +50%,
+//     so it IS the with-focus value; the without-focus value is threshold*1.5.
+//   * Town currently specialized -> the +50% is inactive, so the live threshold
+//     IS the without-focus value; the with-focus value is threshold/1.5.
+// NOTE: the derived side is exact only when no OTHER growth modifiers stack;
+// the engine-reported side is always exact (see town-focus-tooltip notes).
+export function getGrowthSavings(city) {
+  try {
+    const g = city?.Growth;
+    if (!g) return null;
+    const threshold = g.getNextGrowthFoodThreshold?.()?.value;
+    if (typeof threshold !== "number" || !(threshold > 0)) return null;
+
+    const currentFood = typeof g.currentFood === "number" ? g.currentFood : 0;
+    let foodPerTurn = 0;
+    try {
+      const y = city?.Yields;
+      if (y && typeof YieldTypes !== "undefined") foodPerTurn = y.getNetYield(YieldTypes.YIELD_FOOD) || 0;
+    } catch {}
+
+    const growing = typeof GrowthTypes !== "undefined" && g.growthType === GrowthTypes.EXPAND;
+    const withFocus = growing ? threshold : threshold / GROWTH_FOCUS_MULTIPLIER;
+    const withoutFocus = growing ? threshold * GROWTH_FOCUS_MULTIPLIER : threshold;
+    const foodSaved = withoutFocus - withFocus;
+
+    // Turns saved = difference in turns-to-grow between the two thresholds at the
+    // town's current Food/turn (same currentFood + rate on both sides).
+    let turnsSaved = null;
+    if (foodPerTurn > 0) {
+      const turnsFor = (thr) => Math.max(0, Math.ceil((thr - currentFood) / foodPerTurn));
+      turnsSaved = turnsFor(withoutFocus) - turnsFor(withFocus);
+    }
+
+    return { foodSaved, turnsSaved, withFocus, withoutFocus, foodPerTurn };
+  } catch (e) {
+    console.error("[ETFI] getGrowthSavings failed", e);
+    return null;
+  }
+}
+
 // --- building helpers (Religious Site) -------------------------------------
 
 // Internal helper (not imported directly by builders).
@@ -424,25 +533,40 @@ export function countTemples(city) {
 
 // --- fortifications (Fort) -------------------------------------------------
 
+// Fortifications in the town, grouped by type with a count and split into:
+//   * walls          - those tagged DISTRICT_WALL (Ancient/Medieval Walls, ...),
+//   * fortifications  - everything else tagged FORTIFICATION (Bailey, Great Wall,
+//                       Kasbah, Hillfort, Shore Battery, wonders, ...).
+// Each group is { name, iconId, type, count }. `total` is the combined count.
 export function getFortifications(city) {
-  const out = [];
+  const wallMap = new Map();
+  const fortMap = new Map();
   try {
-    for (const cls of ["BUILDING", "IMPROVEMENT"]) {
+    for (const cls of ["BUILDING", "IMPROVEMENT", "WONDER"]) {
       const ids = city?.Constructibles?.getIdsOfClass?.(cls) || [];
       for (const id of ids) {
         const inst = Constructibles.get(id);
         if (!inst || !inst.complete) continue;
         const def = GameInfo.Constructibles.lookup(inst.type);
         if (!def) continue;
-        if (ConstructibleHasTagType(def.ConstructibleType, "FORTIFICATION")) {
-          out.push({ type: def.ConstructibleType, name: def.Name ? Locale.compose(def.Name) : def.ConstructibleType, iconId: def.ConstructibleType });
+        const type = def.ConstructibleType;
+        if (!ConstructibleHasTagType(type, "FORTIFICATION")) continue;
+        const isWall = ConstructibleHasTagType(type, "DISTRICT_WALL");
+        const target = isWall ? wallMap : fortMap;
+        if (!target.has(type)) {
+          target.set(type, { type, name: def.Name ? Locale.compose(def.Name) : type, iconId: type, count: 0 });
         }
+        target.get(type).count++;
       }
     }
   } catch (e) {
     console.error("[ETFI] getFortifications failed", e);
   }
-  return out;
+  const sort = (m) => Array.from(m.values()).sort((a, b) => b.count - a.count);
+  const walls = sort(wallMap);
+  const fortifications = sort(fortMap);
+  const total = walls.reduce((s, g) => s + g.count, 0) + fortifications.reduce((s, g) => s + g.count, 0);
+  return { walls, fortifications, total };
 }
 
 // --- quarters (Urban Center) -----------------------------------------------
@@ -657,14 +781,41 @@ function naturalWonderName(x, y) {
   return null;
 }
 
+// Completed BUILDINGS on a single plot ({ name, iconId }), queried per-plot via
+// MapConstructibles so EVERY building on the tile is captured (e.g. both
+// buildings of a Quarter, or City Hall + a building on the city center).
+function tileBuildingsAt(x, y) {
+  const out = [];
+  try {
+    const ids = MapConstructibles.getConstructibles(x, y) || [];
+    for (const cid of ids) {
+      const inst = Constructibles.getByComponentID(cid);
+      if (!inst || inst.complete === false) continue;
+      const def = GameInfo.Constructibles.lookup(inst.type);
+      if (!def || def.ConstructibleClass !== "BUILDING") continue;
+      // Exclude Walls / Fortifications. isWallType expects the ConstructibleType
+      // STRING (as getFortifications uses), not the inst.type hash.
+      if (isWallType(def.ConstructibleType)) continue;
+      out.push({
+        name: def.Name ? Locale.compose(def.Name) : def.ConstructibleType,
+        iconId: def.ConstructibleType,
+      });
+    }
+  } catch {}
+  return out;
+}
+
 export function getResortData(city) {
   const result = {
     appealingImproved: [], appealingUnimproved: [],
     breathtakingImprovements: 0, breathtakingDistricts: 0, breathtakingTotal: 0,
+    breathtakingImprovementGroups: [], breathtakingDistrictTiles: [],
     naturalWonders: [],
   };
   const imp = new Map();
   const unimp = new Map();
+  const btImp = new Map();   // breathtaking improved tiles grouped by name
+  const btDistTiles = [];    // one entry per breathtaking district tile: its buildings
   const nwByName = new Map();
   const resortActive = isResortActive(city);
   let charming = 3;
@@ -675,25 +826,6 @@ export function getResortData(city) {
   } catch {}
   try {
     const impMap = buildImprovementTileMap(city);
-    // District tiles = tiles with at least one completed building. Track the
-    // building names per tile so the Districts row can show them on hover.
-    const districtBuildings = new Map(); // "x,y" -> [building name, ...]
-    const bids = city?.Constructibles?.getIdsOfClass?.("BUILDING") || [];
-    for (const id of bids) {
-      const inst = Constructibles.get(id);
-      if (!inst || !inst.complete) continue;
-      const loc = inst.location;
-      if (!loc || loc.x == null || loc.y == null) continue;
-      const bkey = `${loc.x},${loc.y}`;
-      const def = GameInfo.Constructibles.lookup(inst.type);
-      const bname = def?.Name ? Locale.compose(def.Name) : (def?.ConstructibleType || inst.type);
-      if (!districtBuildings.has(bkey)) districtBuildings.set(bkey, []);
-      districtBuildings.get(bkey).push(bname);
-    }
-    // Note: getPurchasedPlots() omits the city-center tile, but we deliberately
-    // do NOT add it here — the center is always a district (City Hall), and
-    // counting it would add a phantom appealing-district +1 Happiness / +1 Gold.
-    // Natural wonders are never on the city center, so nothing is lost.
     const indices = city?.getPurchasedPlots?.() || [];
     for (const idx of indices) {
       let loc;
@@ -728,16 +860,34 @@ export function getResortData(city) {
       let appeal = 0;
       try { appeal = GameplayMap.getAppeal(x, y); } catch {}
       const impAtTile = impMap.get(key);
-      const isDistrict = districtBuildings.has(key);
+      // A non-improved tile that has completed building(s) is a District. Query
+      // its buildings per-plot so a Quarter (2 buildings on one tile, e.g. City
+      // Hall + Altar on the city center) lists BOTH of them.
+      const tileBuildings = impAtTile ? [] : tileBuildingsAt(x, y);
+      const isDistrict = tileBuildings.length > 0;
+      const resInfo = resourceAt(x, y);
 
       if (appeal >= breathtaking) {
         result.breathtakingTotal++;
-        if (impAtTile) result.breathtakingImprovements++;
-        else if (isDistrict) result.breathtakingDistricts++;
+        if (impAtTile) {
+          result.breathtakingImprovements++;
+          // Group breathtaking improved tiles by improvement / resource name.
+          const bn = resInfo ? (resInfo.Name ? Locale.compose(resInfo.Name) : resInfo.ResourceType) : impAtTile.name;
+          const bi = resInfo ? resInfo.ResourceType : impAtTile.iconId;
+          if (!btImp.has(bn)) btImp.set(bn, { name: bn, iconId: bi, count: 0 });
+          btImp.get(bn).count++;
+        } else if (isDistrict) {
+          result.breathtakingDistricts++;
+          // Record this District tile's building(s) so the hover can list them
+          // together on one line (a 2-building tile is a Quarter).
+          btDistTiles.push(tileBuildings);
+        }
       }
 
-      if (appeal < charming) continue;
-      const resInfo = resourceAt(x, y);
+      // Appealing tiles are Charming OR Breathtaking. Use the lower of the two
+      // thresholds as the cutoff so BOTH levels are always counted, regardless
+      // of how the (age-specific) appeal parameters come back.
+      if (appeal < Math.min(charming, breathtaking)) continue;
       if (impAtTile) {
         // Appealing improved tile -> +1 Happiness / +1 Gold (grouped by
         // resource/improvement name).
@@ -754,7 +904,9 @@ export function getResortData(city) {
         if (!imp.has(name)) imp.set(name, { name, iconId: "CITY_BUILDINGS", count: 0, tiles: [], isDistrict: true });
         const entry = imp.get(name);
         entry.count++;
-        entry.tiles.push(districtBuildings.get(key).slice());
+        // A tile's building(s) on ONE bullet line — a 2-building Quarter (e.g.
+        // City Hall + Altar) shows both names joined by " | ".
+        entry.tiles.push(tileBuildings.slice());
       } else {
         let name = null;
         let iconId = null;
@@ -782,6 +934,9 @@ export function getResortData(city) {
     return b.count - a.count;
   });
   result.appealingUnimproved = Array.from(unimp.values()).sort((a, b) => b.count - a.count);
+  result.breathtakingImprovementGroups = Array.from(btImp.values()).sort((a, b) => b.count - a.count);
+  // Quarters (2-building tiles) first, then single-building Districts.
+  result.breathtakingDistrictTiles = btDistTiles.sort((a, b) => (b?.length || 0) - (a?.length || 0));
   // One entry per wonder: { name, count, yields:[{yieldType,value}] }.
   result.naturalWonders = Array.from(nwByName.values())
     .map((e) => ({

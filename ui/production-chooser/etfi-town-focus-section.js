@@ -1,25 +1,17 @@
 // File Path: ui/production-chooser/etfi-town-focus-section.js
 //
 // Author: Zatygold
-//
-// Overrides the base town-focus chooser to render ETFI info INLINE:
-//   * yield total pills (colored), RIGHT-aligned in the name row,
-//   * EVERY titled section in its own ticket panel, ordered ABOVE
-//     (separatePanel:"top"), in the middle (default), or BELOW
-//     (separatePanel:"bottom") a base panel holding any flat rows,
-//   * top-level notes attached to the last rendered panel.
-// Sections flagged `hidden` (e.g. the Unimproved categories) are shown only when
-// the "View Hidden" checkbox in the town-focus section header is enabled.
-// Growing Town is left untouched. Dividers match the plot tooltip's look.
-//
-// Row = { iconId?|iconClass?+iconStyle?, name?, items?, count?, countText?, yields?, subText?, tooltip? }.
-// Section = { title?, rows, notes?, separatePanel? ("top"|"bottom"|true), hidden? }.
 
 import { TownFocusChooserItem } from "/base-standard/ui/production-chooser/town-focus-section.js";
-import { Pill } from "/base-standard/ui-next/components/pills.js";
-import { ETFI_Settings } from "../../core/settings.js";
-import { getTownCity, composeWithFallback } from "../../etfi-utilities.js";
+import { getTownCity } from "../../etfi-utilities.js";
 import { ETFI_TOWN_FOCUS_TOOLTIP_STYLE } from "./town-focus-tooltip.js";
+import {
+  yieldPill,
+  noteLine,
+  appendRows,
+  renderSectionPanels,
+  ETFI_SECTION_CFG,
+} from "../etfi-details/etfi-render.js";
 import { buildFoodModel } from "../etfi-town-focus/farm-fish-towns.js";
 import { buildMiningModel } from "../etfi-town-focus/mining-town.js";
 import { buildTradeModel } from "../etfi-town-focus/trade-town.js";
@@ -30,85 +22,21 @@ import { buildFortModel } from "../etfi-town-focus/fort-town.js";
 import { buildResortModel } from "../etfi-town-focus/resort-town.js";
 import { buildFactoryModel } from "../etfi-town-focus/factory-town.js";
 
-const DIVIDER_COLOR = "rgba(77, 83, 102, 0.7)";
-
-const YIELD_COLORS = {
-  YIELD_FOOD: "rgba(128,179,77,0.35)",
-  YIELD_PRODUCTION: "rgba(163,61,41,0.35)",
-  YIELD_GOLD: "rgba(246,206,85,0.35)",
-  YIELD_SCIENCE: "rgba(108,166,224,0.35)",
-  YIELD_CULTURE: "rgba(92,92,214,0.35)",
-  YIELD_HAPPINESS: "rgba(245,153,61,0.35)",
-  YIELD_DIPLOMACY: "rgba(175,183,207,0.35)",
-  CULTURE_VP: "rgba(168,85,200,0.35)", // Tourism
-};
-
-function fmt(v) {
-  const n = Number(v || 0);
-  return Number.isInteger(n) ? String(n) : (Math.round(n * 10) / 10).toFixed(1);
-}
-
-function isColorful() {
-  try { return !!(ETFI_Settings && ETFI_Settings.IsColorful); } catch { return false; }
-}
-
-function viewHidden() {
-  try { return !!(ETFI_Settings && ETFI_Settings.ViewHidden); } catch { return false; }
-}
-
-function fxsIcon(iconId, sizeClass) {
-  const icon = document.createElement("fxs-icon");
-  icon.setAttribute("data-icon-id", iconId);
-  icon.className = `${sizeClass} shrink-0`;
-  return icon;
-}
-
-function iconEl(spec) {
-  if (spec && spec.iconClass) {
-    const d = document.createElement("div");
-    d.className = `${spec.iconClass} shrink-0`;
-    if (spec.iconStyle) d.style.cssText = spec.iconStyle;
-    return d;
+const ETFI_TOWN_FOCUS_WIDTH = 25;
+(function injectWidthOverride() {
+  try {
+    if (document.getElementById("etfi-width-override")) return;
+    const W = ETFI_TOWN_FOCUS_WIDTH;
+    const style = document.createElement("style");
+    style.id = "etfi-width-override";
+    style.textContent =
+      `panel-town-focus { width: ${W}rem !important; max-width: ${W}rem !important; }` +
+      `panel-town-focus town-focus-chooser-item { width: 100% !important; }`;
+    (document.head || document.documentElement).appendChild(style);
+  } catch (e) {
+    console.error("[ETFI] width override failed", e);
   }
-  if (spec && spec.iconId) return fxsIcon(spec.iconId, "size-5");
-  return null;
-}
-
-function vDivider() {
-  const d = document.createElement("div");
-  d.className = "self-stretch shrink-0 mx-2";
-  d.style.cssText = `width:0.0625rem; background-color:${DIVIDER_COLOR};`;
-  return d;
-}
-
-function hDivider() {
-  const d = document.createElement("div");
-  d.className = "w-full shrink-0 my-1";
-  d.style.cssText = `height:0.0625rem; background-color:${DIVIDER_COLOR};`;
-  return d;
-}
-
-function sectionTitle(label) {
-  // Left-aligned category title with the constructible-details horizontal divider.
-  const wrap = document.createElement("div");
-  wrap.className = "w-full flex flex-col mt-1";
-  const d = document.createElement("div");
-  d.className = "font-title uppercase text-2xs text-secondary";
-  d.textContent = label;
-  wrap.appendChild(d);
-  const div = document.createElement("div");
-  div.className = "img-shell-line-divider h-1 w-full self-center my-1";
-  wrap.appendChild(div);
-  return wrap;
-}
-
-function noteLine(text) {
-  const p = document.createElement("p");
-  p.className = "mt-1 opacity-80";
-  p.style.fontSize = "0.85em";
-  p.innerHTML = Locale.stylize(text);
-  return p;
-}
+})();
 
 function isGrowthFocus(root) {
   const gt = root.getAttribute("data-growth-type");
@@ -118,138 +46,6 @@ function isGrowthFocus(root) {
   const projectType = pt != null && pt !== "" ? parseInt(pt) : null;
   if (typeof ProjectTypes !== "undefined" && projectType === ProjectTypes.NO_PROJECT) return true;
   return false;
-}
-
-function yieldPill(entry) {
-  const body = document.createElement("div");
-  // Tight icon-to-number spacing (gap-0.5 instead of gap-1).
-  body.className = "flex items-center gap-0\\.5";
-  body.appendChild(fxsIcon(entry.yieldType, "size-4"));
-  const span = document.createElement("span");
-  span.className = "font-semibold text-xs";
-  span.textContent = `+${fmt(entry.value)}`;
-  body.appendChild(span);
-
-  const colored = entry.colored !== false;
-  const backgroundStyle =
-    colored && isColorful() && YIELD_COLORS[entry.yieldType]
-      ? { "background-color": YIELD_COLORS[entry.yieldType] }
-      : undefined;
-
-  const pill = Pill({ class: "ml-1", small: true, backgroundStyle, children: body });
-  // Narrow the pill: trim the horizontal padding (the small Pill defaults to
-  // px-1.5). Inline style reliably overrides the component's class.
-  pill.style.paddingLeft = "0.25rem";
-  pill.style.paddingRight = "0.25rem";
-  return pill;
-}
-
-function appendNameItem(left, spec) {
-  const ic = iconEl(spec);
-  if (ic) {
-    left.appendChild(ic);
-    left.appendChild(vDivider());
-  }
-  const nm = document.createElement("span");
-  nm.style.cssText = "overflow:hidden; text-overflow:ellipsis; white-space:nowrap;";
-  nm.textContent = spec.name ?? "";
-  // Optional hover tooltip on the name itself, with a colored "link" cue.
-  if (spec.tooltip) {
-    nm.setAttribute("data-tooltip-content", spec.tooltip);
-    nm.setAttribute("data-tooltip-style", "none"); // suppress the item's project tooltip here
-    nm.classList.add("pointer-events-auto");
-    // Darker than the (secondary/gold) category title, so the two read distinctly.
-    nm.style.color = "rgb(168, 133, 78)";
-    nm.style.textDecoration = "underline dotted";
-    nm.style.textUnderlineOffset = "0.2rem";
-  }
-  left.appendChild(nm);
-}
-
-function detailRow(row) {
-  const line = document.createElement("div");
-  line.className = "flex justify-between items-center w-full mt-1";
-
-  const left = document.createElement("div");
-  left.className = "flex items-center min-w-0";
-  left.style.cssText = "flex:1 1 auto; overflow:hidden;";
-
-  if (Array.isArray(row.items) && row.items.length) {
-    row.items.forEach((it, i) => {
-      if (i > 0) {
-        const sep = document.createElement("span");
-        sep.className = "opacity-50 mx-1 shrink-0";
-        sep.textContent = "•";
-        left.appendChild(sep);
-      }
-      appendNameItem(left, it);
-    });
-  } else {
-    appendNameItem(left, row);
-  }
-
-  const countDisplay = row.countText != null ? row.countText : (typeof row.count === "number" ? String(row.count) : null);
-  if (countDisplay != null) {
-    const c = document.createElement("span");
-    c.className = "opacity-70 ml-1 shrink-0";
-    c.textContent = `x${countDisplay}`;
-    left.appendChild(c);
-  }
-
-  const right = document.createElement("div");
-  right.className = "flex items-center justify-end flex-wrap shrink-0";
-  for (const y of row.yields || []) {
-    if (!y || typeof y.value !== "number") continue;
-    right.appendChild(yieldPill(y));
-  }
-
-  line.append(left, right);
-
-  if (row.subText) {
-    const wrap = document.createElement("div");
-    wrap.className = "flex flex-col w-full";
-    wrap.appendChild(line);
-    const sub = document.createElement("div");
-    sub.className = "ml-6 opacity-70";
-    sub.style.fontSize = "0.85em";
-    sub.textContent = row.subText;
-    wrap.appendChild(sub);
-    return wrap;
-  }
-  return line;
-}
-
-function appendRows(panel, rows) {
-  rows.forEach((row, i) => {
-    if (i > 0) panel.appendChild(hDivider());
-    panel.appendChild(detailRow(row));
-  });
-}
-
-function newPanel() {
-  const p = document.createElement("div");
-  p.className = "img-base-ticket-bg-container w-full flex flex-col mt-2";
-  return p;
-}
-
-// Render each section into its own ticket panel inside `container`.
-// Returns the last panel element created (or null).
-function renderSectionPanels(container, secs) {
-  while (container.firstChild) container.removeChild(container.firstChild);
-  let last = null;
-  for (const section of secs) {
-    const srows = (section.rows || []).filter(Boolean);
-    const snotes = (section.notes || []).filter(Boolean);
-    if (!srows.length && !snotes.length && !section.title) continue;
-    const p = newPanel();
-    if (section.title) p.appendChild(sectionTitle(section.title));
-    appendRows(p, srows);
-    for (const n of snotes) p.appendChild(noteLine(n));
-    container.appendChild(p);
-    last = p;
-  }
-  container.classList.toggle("hidden", container.childElementCount === 0);
-  return last;
 }
 
 // Fully rebuild the focus list. We reuse the base game's own refresh event (the
@@ -269,19 +65,7 @@ function refreshFocusPanel(fromEl) {
 }
 
 // --- module-level focus-change listener ------------------------------------
-//
-// When the player picks a focus, the base panel collapses the chooser (so the
-// items DETACH), and the new project/yield state isn't committed until after
-// the CityGrowthModeChanged event fires. A per-item listener would be torn down
-// before it could re-render. Instead we keep ONE persistent listener at module
-// scope that, on any growth/yield change, rebuilds the whole focus list (the
-// same full rebuild that closing+reopening the panel performs).
-//
-// We ALSO refresh the production panel's city yield bar: the base game's
-// onCityGrowthModeChanged handler refreshes the focus section and item list but
-// never calls updateCityYieldBar(), so the top yield numbers stay stale until
-// the panel is reopened. We force that refresh here. Recomputed yields can lag a
-// frame after the event, so we run it on a short delay (and again, to be safe).
+
 function refreshProductionYieldBar() {
   try {
     const el = document.querySelector("panel-production-chooser");
@@ -346,58 +130,31 @@ function buildModel(item) {
   }
 }
 
-// --- "View Hidden" checkbox in the Town Focus CTA header -------------------
-//
-// The panel's instructions line (LOC_UI_TOWN_FOCUS_CTA, "Choose a Town Focus:
-// Towns without a Growing Town Focus...") sits above the focus list. We wrap it
-// in a row and add a "View Hidden" checkbox to its right. The PanelTownFocus
-// class isn't exported, so we locate the CTA element by walking up from a focus
-// item and inject the checkbox once per panel.
-function ensureViewHiddenToggle(fromEl) {
+// --- panel width constraint ------------------------------------------------
+
+// Constrain the Town Focus panel width directly (in addition to the injected
+// CSS override) once an item is attached and can reach its host panel.
+function constrainPanelWidth(fromEl) {
   try {
     const panel = fromEl.closest?.("panel-town-focus") || fromEl.getRootNode?.()?.querySelector?.("panel-town-focus");
-    const scope = panel || document;
-    const cta = scope.querySelector('[data-l10n-id="LOC_UI_TOWN_FOCUS_CTA"]');
-    if (!cta || cta.dataset.etfiToggleAttached === "1") return;
-
-    const host = cta.parentElement;
-    if (!host) return;
-    cta.dataset.etfiToggleAttached = "1";
-
-    // Wrap the CTA in a relative, full-width row so the description stays
-    // centered exactly as before; the toggle is positioned absolutely on the
-    // right so it does NOT shift the centered text.
-    const row = document.createElement("div");
-    row.className = "relative flex flex-row items-center justify-center w-full mb-2";
-    host.replaceChild(row, cta);
-
-    cta.classList.remove("mb-2");
-    row.appendChild(cta);
-
-    const toggle = document.createElement("div");
-    toggle.className = "absolute top-1\\/2 flex flex-row items-center";
-    // Nudge in from the right edge so it isn't flush against the frame.
-    toggle.style.right = ".75rem";
-    toggle.style.transform = "translateY(-50%)";
-
-    const label = document.createElement("div");
-    label.className = "text-xs mr-1 whitespace-nowrap text-accent-2";
-    label.textContent = composeWithFallback("LOC_MOD_ETFI_VIEW_HIDDEN", "View Hidden");
-    toggle.appendChild(label);
-
-    const checkbox = document.createElement("fxs-checkbox");
-    checkbox.setAttribute("selected", viewHidden() ? "true" : "false");
-    checkbox.addEventListener("component-value-changed", (e) => {
-      const v = !!(e && e.detail && e.detail.value);
-      try { ETFI_Settings.ViewHidden = v; } catch {}
-      refreshFocusPanel(checkbox);
-    });
-    toggle.appendChild(checkbox);
-
-    row.appendChild(toggle);
+    if (panel) {
+      try { panel.style.width = `${ETFI_TOWN_FOCUS_WIDTH}rem`; panel.style.maxWidth = `${ETFI_TOWN_FOCUS_WIDTH}rem`; } catch {}
+    }
   } catch (err) {
-    console.error("[ETFI] view-hidden toggle failed", err);
+    console.error("[ETFI] panel width constraint failed", err);
   }
+}
+
+// Hide the base game's inline focus description. (class + inline display:none,
+// since a class alone can be overridden by the element's other display
+// utilities in some render paths.)
+function hideDescription(item) {
+  try {
+    if (item.descriptionElement) {
+      item.descriptionElement.classList.add("hidden");
+      item.descriptionElement.style.display = "none";
+    }
+  } catch {}
 }
 
 // --- prototype patch -------------------------------------------------------
@@ -408,22 +165,23 @@ const baseOnAttach = TownFocusChooserItem.prototype.onAttach;
 
 TownFocusChooserItem.prototype.onAttach = function () {
   if (baseOnAttach) baseOnAttach.call(this);
-  // Now that the item is in the DOM, ensure the panel has the View Hidden toggle.
-  ensureViewHiddenToggle(this.Root);
+  // Now that the item is in the DOM, pin the panel width.
+  constrainPanelWidth(this.Root);
 };
 
 TownFocusChooserItem.prototype.render = function () {
   baseRender.call(this);
 
-  // Point the item at our own copy of the project tooltip (registered under a
-  // unique style) instead of the base "production-project-tooltip", so the Town
-  // Focus tooltip can be customized without affecting the shared base type.
   try { this.Root.dataset.tooltipStyle = ETFI_TOWN_FOCUS_TOOLTIP_STYLE; } catch {}
 
-  if (isGrowthFocus(this.Root)) return;
+  const growth = isGrowthFocus(this.Root);
 
-  // Back-reference so the View Hidden toggle can re-render every item.
-  this.Root.__etfiItem = this;
+  // Hide the inline focus description for every focus.
+  hideDescription(this);
+
+  // Growing Town keeps the base card layout — no yield pills, detail panels, or
+  // name-row restructuring.
+  if (growth) return;
 
   const infoContainer = this.nameElement.parentElement;
   if (!infoContainer) return;
@@ -431,15 +189,35 @@ TownFocusChooserItem.prototype.render = function () {
 
   const inSummary = !!this.Root.closest("town-focus-section");
 
+  // Shrink the focus icon (base is size-16 = 4rem) for a more compact card.
+  try {
+    this.projectIconElement.classList.remove("size-16");
+    this.projectIconElement.classList.add("size-12");
+  } catch {}
+
+  try {
+    infoContainer.classList.remove("flex-initial");
+    infoContainer.style.flex = "1 1 auto";
+    infoContainer.style.minWidth = "0";
+  } catch {}
+
   const nameRow = document.createElement("div");
   nameRow.className = "flex flex-row items-center w-full";
   infoContainer.replaceChild(nameRow, this.nameElement);
-  this.nameElement.classList.add("shrink-0");
-  nameRow.appendChild(this.nameElement);
+
+  this.nameElement.classList.add("text-left");
+  this.nameElement.style.flex = "1 1 auto";
+  this.nameElement.style.minWidth = "0";
+  this.nameElement.style.overflow = "hidden";
+  this.nameElement.style.textOverflow = "ellipsis";
+  this.nameElement.style.whiteSpace = "nowrap";
 
   this.etfiYields = document.createElement("div");
-  this.etfiYields.className = "flex flex-row flex-wrap items-center justify-end ml-auto";
-  nameRow.appendChild(this.etfiYields);
+  this.etfiYields.className = "flex flex-row flex-wrap items-center justify-end shrink-0";
+  // Nudge the name-row pills away from the right edge of the card a little.
+  this.etfiYields.style.marginRight = "0.4rem";
+
+  nameRow.append(this.nameElement, this.etfiYields);
 
   this.etfiTop = null;
   this.etfiDetails = null;
@@ -448,9 +226,12 @@ TownFocusChooserItem.prototype.render = function () {
     this.etfiTop = document.createElement("div");
     this.etfiTop.className = "w-full flex flex-col";
     this.etfiDetails = document.createElement("div");
-    this.etfiDetails.className = "img-base-ticket-bg-container w-full flex flex-col mt-2";
+    this.etfiDetails.className = "img-base-ticket-bg-container w-full flex flex-col mt-2 text-2xs";
+    this.etfiDetails.style.paddingTop = "0.5rem";
+    this.etfiDetails.style.paddingBottom = "0.5rem";
     this.etfiBottom = document.createElement("div");
     this.etfiBottom.className = "w-full flex flex-col";
+
     if (container) {
       const topRow = document.createElement("div");
       topRow.className = "flex flex-row w-full";
@@ -458,6 +239,9 @@ TownFocusChooserItem.prototype.render = function () {
       topRow.appendChild(infoContainer);
       container.classList.remove("flex-row");
       container.classList.add("flex-col", "w-full");
+      // The base container uses p-3 (0.75rem) all sides; trim the horizontal
+      // padding so the focus icon sits closer to the left edge of the card.
+      try { container.style.paddingLeft = "0.35rem"; container.style.paddingRight = "0.35rem"; } catch {}
       container.appendChild(topRow);
       container.appendChild(this.etfiTop);
       container.appendChild(this.etfiDetails);
@@ -485,9 +269,15 @@ TownFocusChooserItem.prototype.onAttributeChanged = function (name, oldValue, ne
 };
 
 TownFocusChooserItem.prototype.etfiUpdate = function () {
+  const growth = isGrowthFocus(this.Root);
+
+  // Keep the inline description hidden (re-asserted here since the summary item
+  // is reused across focus changes).
+  hideDescription(this);
+
   if (!this.etfiYields) return;
 
-  if (isGrowthFocus(this.Root)) {
+  if (growth) {
     this.etfiYields.classList.add("hidden");
     while (this.etfiYields.firstChild) this.etfiYields.removeChild(this.etfiYields.firstChild);
     for (const el of [this.etfiTop, this.etfiDetails, this.etfiBottom]) {
@@ -522,9 +312,7 @@ TownFocusChooserItem.prototype.etfiUpdate = function () {
 
   if (!this.etfiDetails) return;
 
-  // Drop hidden sections unless "View Hidden" is enabled.
-  const show = viewHidden();
-  const sections = (model.sections || []).filter(Boolean).filter((s) => show || !s.hidden);
+  const sections = (model.sections || []).filter(Boolean);
   const topSecs = sections.filter((s) => s.separatePanel === "top" || s.separatePanel === true);
   const bottomSecs = sections.filter((s) => s.separatePanel === "bottom");
   const midSecs = sections.filter((s) => !s.separatePanel);
@@ -532,16 +320,16 @@ TownFocusChooserItem.prototype.etfiUpdate = function () {
   const notes = (model.notes || []).filter(Boolean);
 
   // Top zone: top sections, each its own panel.
-  const lastTop = renderSectionPanels(this.etfiTop, topSecs);
+  const lastTop = renderSectionPanels(this.etfiTop, topSecs, ETFI_SECTION_CFG);
 
   // Base panel: any flat (untitled) rows.
   const base = this.etfiDetails;
   while (base.firstChild) base.removeChild(base.firstChild);
-  if (flat.length) appendRows(base, flat);
+  if (flat.length) appendRows(base, flat, ETFI_SECTION_CFG);
   base.classList.toggle("hidden", base.childElementCount === 0);
 
   // Bottom zone: middle (default) sections then bottom sections, each its own panel.
-  const lastBottom = renderSectionPanels(this.etfiBottom, [...midSecs, ...bottomSecs]);
+  const lastBottom = renderSectionPanels(this.etfiBottom, [...midSecs, ...bottomSecs], ETFI_SECTION_CFG);
 
   // Top-level notes attach to the last rendered panel (falling back to base).
   if (notes.length) {

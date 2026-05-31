@@ -22,7 +22,6 @@
     <Replace Tag="LOC_MOD_ETFI_NATURAL_WONDERS" Language="ja_JP"><Text>自然遺産</Text></Replace>
 
     <!-- コントロール -->
-    <Replace Tag="LOC_MOD_ETFI_VIEW_HIDDEN" Language="ja_JP"><Text>非表示を表示</Text></Replace>
 
     <!-- 設定 -->
     <Replace Tag="LOC_OPTIONS_GROUP_ETFI" Language="ja_JP"><Text>Zatygoldのモッド</Text></Replace>

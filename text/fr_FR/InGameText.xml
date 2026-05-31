@@ -22,7 +22,6 @@
     <Replace Tag="LOC_MOD_ETFI_NATURAL_WONDERS" Language="fr_FR"><Text>Merveilles naturelles</Text></Replace>
 
     <!-- Contrôles -->
-    <Replace Tag="LOC_MOD_ETFI_VIEW_HIDDEN" Language="fr_FR"><Text>Afficher masqués</Text></Replace>
 
     <!-- Paramètres -->
     <Replace Tag="LOC_OPTIONS_GROUP_ETFI" Language="fr_FR"><Text>Mods de Zatygold</Text></Replace>

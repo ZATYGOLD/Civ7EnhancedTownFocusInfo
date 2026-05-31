@@ -22,7 +22,6 @@
     <Replace Tag="LOC_MOD_ETFI_NATURAL_WONDERS" Language="zh_Hans_CN"><Text>自然奇观</Text></Replace>
 
     <!-- 控件 -->
-    <Replace Tag="LOC_MOD_ETFI_VIEW_HIDDEN" Language="zh_Hans_CN"><Text>显示隐藏项</Text></Replace>
 
     <!-- 设置 -->
     <Replace Tag="LOC_OPTIONS_GROUP_ETFI" Language="zh_Hans_CN"><Text>Zatygold 的模组</Text></Replace>

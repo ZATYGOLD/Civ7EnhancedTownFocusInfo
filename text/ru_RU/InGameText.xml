@@ -22,7 +22,6 @@
     <Replace Tag="LOC_MOD_ETFI_NATURAL_WONDERS" Language="ru_RU"><Text>Чудеса природы</Text></Replace>
 
     <!-- Элементы управления -->
-    <Replace Tag="LOC_MOD_ETFI_VIEW_HIDDEN" Language="ru_RU"><Text>Показать скрытое</Text></Replace>
 
     <!-- Настройки -->
     <Replace Tag="LOC_OPTIONS_GROUP_ETFI" Language="ru_RU"><Text>Моды Zatygold</Text></Replace>

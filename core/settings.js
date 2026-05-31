@@ -34,8 +34,7 @@ const ModSettingsManager = {
 
 export const ETFI_Settings = new class {
     _data = {
-        IsColorful: true,
-        ViewHidden: false
+        IsColorful: true
     };
 
     constructor() {
@@ -56,15 +55,6 @@ export const ETFI_Settings = new class {
 
     set IsColorful(value) {
         this._data.IsColorful = value;
-        this.save();
-    }
-
-    get ViewHidden() {
-        return !!this._data.ViewHidden;
-    }
-
-    set ViewHidden(value) {
-        this._data.ViewHidden = value;
         this.save();
     }
 }
