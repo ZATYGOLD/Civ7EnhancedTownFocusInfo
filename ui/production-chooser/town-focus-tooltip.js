@@ -171,10 +171,13 @@ class EtfiTownFocusTooltipType {
     //   * tooltipDescription (data-tooltip-description) — the generic Town
     //     behavior (e.g. "All of the Town's Production is converted into
     //     Gold..."). Shown in the legacy `description` <p>, exactly like base.
-    let focusDescription = this.target.dataset.description
-      || this.target.__etfiDescription
-      || "";
-    if (!focusDescription) {
+    // The Growing Town focus is handled separately for now: it keeps its inline
+    // description in the section panel and is NOT mirrored onto the tooltip, so
+    // leave the section-description block empty for it.
+    let focusDescription = this.isGrowingFocus()
+      ? ""
+      : (this.target.dataset.description || this.target.__etfiDescription || "");
+    if (!focusDescription && !this.isGrowingFocus()) {
       try {
         const def = projectType ? GameInfo.Projects.lookup(projectType) : null;
         if (def?.Description) focusDescription = def.Description;
@@ -248,7 +251,7 @@ class EtfiTownFocusTooltipType {
     const { production, gold, total } = getConvertedGold(city);
     if (production > 0 || gold > 0) {
       sections.push({
-        title: composeWithFallback("LOC_MOD_ETFI_GOLD_CONVERTED", "Gold Converted"),
+        title: composeWithFallback("LOC_MOD_ETFI_GOLD_CONVERTED", "Town's Gold"),
         rows: [
           {
             items: [

@@ -1,19 +1,6 @@
 // File Path: ui/production-chooser/etfi-town-focus-section.js
 //
 // Author: Zatygold
-//
-// Overrides the base town-focus chooser to render ETFI info INLINE:
-//   * yield total pills (colored), RIGHT-aligned in the name row,
-//   * EVERY titled section in its own ticket panel, ordered ABOVE
-//     (separatePanel:"top"), in the middle (default), or BELOW
-//     (separatePanel:"bottom") a base panel holding any flat rows,
-//   * top-level notes attached to the last rendered panel.
-// Sections flagged `hidden` (e.g. the Unimproved categories) are shown only when
-// the "View Hidden" checkbox in the town-focus section header is enabled.
-// Growing Town is left untouched. Dividers match the plot tooltip's look.
-//
-// Row = { iconId?|iconClass?+iconStyle?, name?, items?, count?, countText?, yields?, subText?, tooltip? }.
-// Section = { title?, rows, notes?, separatePanel? ("top"|"bottom"|true), hidden? }.
 
 import { TownFocusChooserItem } from "/base-standard/ui/production-chooser/town-focus-section.js";
 import { Pill } from "/base-standard/ui-next/components/pills.js";
@@ -32,11 +19,6 @@ import { buildFactoryModel } from "../etfi-town-focus/factory-town.js";
 
 const DIVIDER_COLOR = "rgba(77, 83, 102, 0.7)";
 
-// Reduce the Town Focus panel width by 5%. The base CSS fixes the panel-town-
-// focus width (via the focus item at 24.611rem). We override the panel to 0.95x
-// and make the focus ITEMS fill 100% of the panel (minus its padding) rather
-// than a fixed rem — otherwise item width + the scrollable's horizontal padding
-// exceeds the panel and the right side gets clipped.
 const ETFI_TOWN_FOCUS_WIDTH = 25;
 (function injectWidthOverride() {
   try {
@@ -293,19 +275,7 @@ function refreshFocusPanel(fromEl) {
 }
 
 // --- module-level focus-change listener ------------------------------------
-//
-// When the player picks a focus, the base panel collapses the chooser (so the
-// items DETACH), and the new project/yield state isn't committed until after
-// the CityGrowthModeChanged event fires. A per-item listener would be torn down
-// before it could re-render. Instead we keep ONE persistent listener at module
-// scope that, on any growth/yield change, rebuilds the whole focus list (the
-// same full rebuild that closing+reopening the panel performs).
-//
-// We ALSO refresh the production panel's city yield bar: the base game's
-// onCityGrowthModeChanged handler refreshes the focus section and item list but
-// never calls updateCityYieldBar(), so the top yield numbers stay stale until
-// the panel is reopened. We force that refresh here. Recomputed yields can lag a
-// frame after the event, so we run it on a short delay (and again, to be safe).
+
 function refreshProductionYieldBar() {
   try {
     const el = document.querySelector("panel-production-chooser");
@@ -371,12 +341,7 @@ function buildModel(item) {
 }
 
 // --- "View Hidden" checkbox in the Town Focus CTA header -------------------
-//
-// The panel's instructions line (LOC_UI_TOWN_FOCUS_CTA, "Choose a Town Focus:
-// Towns without a Growing Town Focus...") sits above the focus list. We wrap it
-// in a row and add a "View Hidden" checkbox to its right. The PanelTownFocus
-// class isn't exported, so we locate the CTA element by walking up from a focus
-// item and inject the checkbox once per panel.
+
 function ensureViewHiddenToggle(fromEl) {
   try {
     const panel = fromEl.closest?.("panel-town-focus") || fromEl.getRootNode?.()?.querySelector?.("panel-town-focus");
@@ -443,12 +408,19 @@ TownFocusChooserItem.prototype.onAttach = function () {
 TownFocusChooserItem.prototype.render = function () {
   baseRender.call(this);
 
-  // Point the item at our own copy of the project tooltip (registered under a
-  // unique style) instead of the base "production-project-tooltip", so the Town
-  // Focus tooltip can be customized without affecting the shared base type.
   try { this.Root.dataset.tooltipStyle = ETFI_TOWN_FOCUS_TOOLTIP_STYLE; } catch {}
 
-  if (isGrowthFocus(this.Root)) return;
+  const growth = isGrowthFocus(this.Root);
+
+  try {
+    if (this.descriptionElement) {
+      this.descriptionElement.classList.toggle("hidden", !growth);
+    }
+  } catch {}
+
+  // Growing Town keeps the base card layout — no yield pills, detail panels, or
+  // name-row restructuring.
+  if (growth) return;
 
   // Back-reference so the View Hidden toggle can re-render every item.
   this.Root.__etfiItem = this;
@@ -456,15 +428,6 @@ TownFocusChooserItem.prototype.render = function () {
   const infoContainer = this.nameElement.parentElement;
   if (!infoContainer) return;
   const container = this.container || infoContainer.parentElement;
-
-  // Shrink the focus description text (base styles it text-sm) to be more compact.
-  try {
-    if (this.descriptionElement) {
-      this.descriptionElement.classList.remove("text-sm");
-      this.descriptionElement.classList.add("text-2xs");
-      this.descriptionElement.style.lineHeight = "1.25";
-    }
-  } catch {}
 
   const inSummary = !!this.Root.closest("town-focus-section");
 
@@ -474,12 +437,6 @@ TownFocusChooserItem.prototype.render = function () {
     this.projectIconElement.classList.add("size-12");
   } catch {}
 
-  // Keep the base layout: icon is a sibling to infoContainer (so both the name
-  // row AND the description start after the icon, matching the default look).
-  // Inside infoContainer, replace the name with a 2-column row [ name | pills ]:
-  //   name  - grows, left-aligned, ellipsizes if long.
-  //   pills - fixed width, right-aligned to the card edge.
-  // The description stays below this row, untouched, aligned under the name.
   try {
     infoContainer.classList.remove("flex-initial");
     infoContainer.style.flex = "1 1 auto";
@@ -551,9 +508,17 @@ TownFocusChooserItem.prototype.onAttributeChanged = function (name, oldValue, ne
 };
 
 TownFocusChooserItem.prototype.etfiUpdate = function () {
+  const growth = isGrowthFocus(this.Root);
+
+  try {
+    if (this.descriptionElement) {
+      this.descriptionElement.classList.toggle("hidden", !growth);
+    }
+  } catch {}
+
   if (!this.etfiYields) return;
 
-  if (isGrowthFocus(this.Root)) {
+  if (growth) {
     this.etfiYields.classList.add("hidden");
     while (this.etfiYields.firstChild) this.etfiYields.removeChild(this.etfiYields.firstChild);
     for (const el of [this.etfiTop, this.etfiDetails, this.etfiBottom]) {
