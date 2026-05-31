@@ -22,6 +22,7 @@ import { GetTownFocusBlp } from "/base-standard/ui/production-chooser/production
 import { AdvisorUtilities } from "/base-standard/ui/tutorial/advisor-utilities.js";
 import { getConnectedCitiesFood, getConvertedGold, composeWithFallback, isTownGrowing } from "../../etfi-utilities.js";
 import { buildFocusModel, focusHeaderYield } from "../etfi-town-focus/focus-models.js";
+import { fmt } from "../etfi-details/etfi-render.js";
 // Imported for its side effect: registers the <etfi-tooltip-details> custom
 // element (also loaded via modinfo) and provides the tag name we instantiate.
 import { ETFI_TOOLTIP_DETAILS_TAG } from "../etfi-details/etfi-tooltip-details.js";
@@ -252,7 +253,8 @@ class EtfiTownFocusTooltipType {
   }
   // Feed the <etfi-tooltip-details> container its model and trigger a re-render
   // by bumping data-rev. Builds the default-Town breakdown:
-  //   * Town's Gold: Production (converted) + base Gold = total Gold/turn,
+  //   * Town's Gold: a divided row per source (Current Production, Potential
+  //     Production, Current Gold), each shown as the Gold it yields,
   //   * Food Sent to Connected Cities: Food/turn sent to each connected City.
   // While the town is still Growing (no active focus), the hovered focus's
   // yields are unrealized, so we fold them into the preview: its Production into
@@ -270,24 +272,34 @@ class EtfiTownFocusTooltipType {
       unrealizedFood = focusHeaderYield(model, "YIELD_FOOD");
     }
 
-    // Town's Gold — Production (live + any previewed focus gain) + base Gold.
-    // One inline row: Production and Gold (split by a vertical divider) on the
-    // left, the total as a pill on the right.
+    // Town's Gold — all of the Town's Production converts to Gold. One divided
+    // row per source: left = [icon] │ amount, right = the colored Gold it yields.
+    //   * Current Production   ([production icon])      -> Gold,
+    //   * Potential Production ([focus icon], when Growing & focus adds Prod) -> Gold,
+    //   * Current Gold         ([gold icon]).
     const { production, gold } = getConvertedGold(city);
-    const totalProduction = production + unrealizedProduction;
-    const total = totalProduction + gold;
-    if (totalProduction > 0 || gold > 0) {
+    const goldPill = (value) => ({ yieldType: "YIELD_GOLD", value, sign: false });
+    const goldRows = [];
+    if (production > 0) {
+      goldRows.push({ iconId: "YIELD_PRODUCTION", name: fmt(production), pill: goldPill(production) });
+    }
+    if (unrealizedProduction > 0) {
+      let focusIconBlp = "";
+      try { focusIconBlp = GetTownFocusBlp(Number(this.target?.dataset?.growthType), this.getProjectType()); } catch {}
+      goldRows.push({
+        iconClass: "size-5 bg-contain bg-center bg-no-repeat",
+        iconStyle: `background-image: url(${focusIconBlp});`,
+        name: fmt(unrealizedProduction),
+        pill: goldPill(unrealizedProduction),
+      });
+    }
+    if (gold > 0) {
+      goldRows.push({ iconId: "YIELD_GOLD", name: fmt(gold), pill: goldPill(gold) });
+    }
+    if (goldRows.length) {
       sections.push({
         title: composeWithFallback("LOC_MOD_ETFI_GOLD_CONVERTED", "Town's Gold"),
-        rows: [
-          {
-            items: [
-              { yieldType: "YIELD_PRODUCTION", value: totalProduction, sign: false },
-              { yieldType: "YIELD_GOLD", value: gold, sign: false },
-            ],
-            pill: { yieldType: "YIELD_GOLD", value: total, sign: false },
-          },
-        ],
+        rows: goldRows,
       });
     }
 
