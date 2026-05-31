@@ -30,21 +30,15 @@ function settlementRows(group, withYields) {
 }
 
 export function buildHubModel(city) {
-  const { connected, disconnected } = getSettlementsByConnection(city);
+  const { connected } = getSettlementsByConnection(city);
   const total = (connected.cities.length + connected.towns.length) * INFLUENCE_PER;
 
+  // Only the Connected settlements are shown; the Disconnected category is
+  // intentionally not rendered.
   const sections = [{
     title: composeWithFallback("LOC_MOD_ETFI_CONNECTED", "Connected"),
     rows: settlementRows(connected, true),
   }];
-
-  if (disconnected.cities.length || disconnected.towns.length) {
-    sections.push({
-      title: composeWithFallback("LOC_MOD_ETFI_DISCONNECTED", "Disconnected"),
-      separatePanel: "bottom",
-      rows: settlementRows(disconnected, false),
-    });
-  }
 
   return {
     header: [{ yieldType: ETFI_YIELDS.INFLUENCE, value: total }],

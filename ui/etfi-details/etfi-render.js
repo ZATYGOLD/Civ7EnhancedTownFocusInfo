@@ -302,6 +302,9 @@ export function newPanel(cfg = {}) {
   const pad = `${cfg.panelPadRem ?? 0.6666666667}rem`;
   p.style.paddingTop = pad;
   p.style.paddingBottom = pad;
+  // The ticket background defaults to ~1rem horizontal padding; trim the right
+  // side so the trailing yield pill sits a little closer to the panel edge.
+  p.style.paddingRight = "0.5rem";
   return p;
 }
 

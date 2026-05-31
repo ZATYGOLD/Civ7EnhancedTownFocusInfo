@@ -56,14 +56,13 @@ export function composeWithFallback(key, fallback) {
   }
 }
 
-// Build the standardized "Improved" / "Unimproved" category sections shared by
-// every focus that classifies tiles this way (Farming/Fishing, Mining, Trade,
-// Factory, Resort). This guarantees identical titles, layout, and behavior:
-//   * improved/unimproved: arrays of { name, iconId, count },
-//   * improvedYields(group) -> yield array for an Improved row (omit for none),
-//   * the Unimproved category never shows yields, lives in its own bottom panel,
-//     and is flagged `hidden` so the "View Hidden" toggle controls it.
-export function improvedUnimprovedSections({ improved, unimproved, improvedYields }) {
+// Build the standardized "Improved" category section shared by every focus that
+// classifies tiles this way (Farming/Fishing, Mining, Trade, Factory, Resort).
+// Only the Improved tiles are shown — the Unimproved category is intentionally
+// not rendered. (`unimproved` is still accepted for call-site compatibility.)
+//   * improved: array of { name, iconId, count },
+//   * improvedYields(group) -> yield array for an Improved row (omit for none).
+export function improvedUnimprovedSections({ improved, improvedYields }) {
   const sections = [];
   if (improved && improved.length) {
     sections.push({
@@ -83,13 +82,6 @@ export function improvedUnimprovedSections({ improved, unimproved, improvedYield
         }
         return row;
       }),
-    });
-  }
-  if (unimproved && unimproved.length) {
-    sections.push({
-      title: composeWithFallback("LOC_MOD_ETFI_UNIMPROVED", "Unimproved"),
-      separatePanel: "bottom",
-      rows: unimproved.map((g) => ({ iconId: g.iconId, name: g.name, count: g.count })),
     });
   }
   return sections;

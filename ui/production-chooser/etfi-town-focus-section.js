@@ -214,6 +214,8 @@ TownFocusChooserItem.prototype.render = function () {
 
   this.etfiYields = document.createElement("div");
   this.etfiYields.className = "flex flex-row flex-wrap items-center justify-end shrink-0";
+  // Nudge the name-row pills away from the right edge of the card a little.
+  this.etfiYields.style.marginRight = "0.4rem";
 
   nameRow.append(this.nameElement, this.etfiYields);
 

@@ -20,7 +20,7 @@ import TooltipManager from "/core/ui/tooltips/tooltip-manager.js";
 import { IsElement } from "/core/ui/utilities/utilities-dom.js";
 import { GetTownFocusBlp } from "/base-standard/ui/production-chooser/production-chooser-helpers.js";
 import { AdvisorUtilities } from "/base-standard/ui/tutorial/advisor-utilities.js";
-import { getConnectedCitiesFood, getConvertedGold, getGrowthSavings, composeWithFallback } from "../../etfi-utilities.js";
+import { getConnectedCitiesFood, getConvertedGold, composeWithFallback } from "../../etfi-utilities.js";
 // Imported for its side effect: registers the <etfi-tooltip-details> custom
 // element (also loaded via modinfo) and provides the tag name we instantiate.
 import { ETFI_TOOLTIP_DETAILS_TAG } from "../etfi-details/etfi-tooltip-details.js";
@@ -264,31 +264,10 @@ class EtfiTownFocusTooltipType {
       });
     }
 
-    if (this.isGrowingFocus()) {
-      // Growing Town keeps its Food (NOT sent to Cities); the +50% growth focus
-      // lowers the Food needed to grow. Show the Food and Turns it saves.
-      const sav = getGrowthSavings(city);
-      if (sav && (sav.foodSaved > 0 || (sav.turnsSaved != null && sav.turnsSaved > 0))) {
-        const rows = [];
-        if (sav.foodSaved > 0) {
-          rows.push({
-            name: composeWithFallback("LOC_MOD_ETFI_FOOD_SAVED", "Food Saved"),
-            pill: { yieldType: "YIELD_FOOD", value: sav.foodSaved },
-          });
-        }
-        if (sav.turnsSaved != null && sav.turnsSaved > 0) {
-          rows.push({
-            name: composeWithFallback("LOC_MOD_ETFI_TURNS_SAVED", "Turns Saved"),
-            valueText: String(sav.turnsSaved),
-          });
-        }
-        if (rows.length) {
-          sections.push({ title: composeWithFallback("LOC_MOD_ETFI_GROWTH", "Growth"), rows });
-        }
-      }
-    } else {
-      // Food Sent to Connected Cities — one row per connected City (only when the
-      // Town is actually sending Food, i.e. getSentFoodPerCity() > 0).
+    // Food Sent to Connected Cities — one row per connected City (only when the
+    // Town is actually sending Food, i.e. getSentFoodPerCity() > 0). The Growing
+    // Town keeps its Food for growth, so it shows no Food-Sent section.
+    if (!this.isGrowingFocus()) {
       const foodCities = getConnectedCitiesFood(city)
         .filter((c) => typeof c.food === "number" && c.food > 0);
       if (foodCities.length) {
