@@ -547,25 +547,40 @@ export function countTemples(city) {
 
 // --- fortifications (Fort) -------------------------------------------------
 
+// Fortifications in the town, grouped by type with a count and split into:
+//   * walls          - those tagged DISTRICT_WALL (Ancient/Medieval Walls, ...),
+//   * fortifications  - everything else tagged FORTIFICATION (Bailey, Great Wall,
+//                       Kasbah, Hillfort, Shore Battery, wonders, ...).
+// Each group is { name, iconId, type, count }. `total` is the combined count.
 export function getFortifications(city) {
-  const out = [];
+  const wallMap = new Map();
+  const fortMap = new Map();
   try {
-    for (const cls of ["BUILDING", "IMPROVEMENT"]) {
+    for (const cls of ["BUILDING", "IMPROVEMENT", "WONDER"]) {
       const ids = city?.Constructibles?.getIdsOfClass?.(cls) || [];
       for (const id of ids) {
         const inst = Constructibles.get(id);
         if (!inst || !inst.complete) continue;
         const def = GameInfo.Constructibles.lookup(inst.type);
         if (!def) continue;
-        if (ConstructibleHasTagType(def.ConstructibleType, "FORTIFICATION")) {
-          out.push({ type: def.ConstructibleType, name: def.Name ? Locale.compose(def.Name) : def.ConstructibleType, iconId: def.ConstructibleType });
+        const type = def.ConstructibleType;
+        if (!ConstructibleHasTagType(type, "FORTIFICATION")) continue;
+        const isWall = ConstructibleHasTagType(type, "DISTRICT_WALL");
+        const target = isWall ? wallMap : fortMap;
+        if (!target.has(type)) {
+          target.set(type, { type, name: def.Name ? Locale.compose(def.Name) : type, iconId: type, count: 0 });
         }
+        target.get(type).count++;
       }
     }
   } catch (e) {
     console.error("[ETFI] getFortifications failed", e);
   }
-  return out;
+  const sort = (m) => Array.from(m.values()).sort((a, b) => b.count - a.count);
+  const walls = sort(wallMap);
+  const fortifications = sort(fortMap);
+  const total = walls.reduce((s, g) => s + g.count, 0) + fortifications.reduce((s, g) => s + g.count, 0);
+  return { walls, fortifications, total };
 }
 
 // --- quarters (Urban Center) -----------------------------------------------

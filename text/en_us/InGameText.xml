@@ -26,6 +26,10 @@
     <Row Tag="LOC_MOD_ETFI_DISTRICTS"><Text>Districts</Text></Row>
     <Row Tag="LOC_MOD_ETFI_REQUIRES_GLOBALISM"><Text>Requires Globalism's Mastery</Text></Row>
 
+    <!-- Fort Town -->
+    <Row Tag="LOC_MOD_ETFI_WALLS"><Text>Walls</Text></Row>
+    <Row Tag="LOC_MOD_ETFI_FORTIFICATIONS"><Text>Fortifications</Text></Row>
+
     <!-- Controls -->
     <Row Tag="LOC_MOD_ETFI_VIEW_HIDDEN"><Text>View Hidden</Text></Row>
 
