@@ -37,13 +37,11 @@ export function buildResortModel(city) {
 
   const sections = [];
 
-  // Tourism category — top, separate panel. Tourism is a Modern-Age-only bonus,
-  // so the whole category is disabled (omitted) outside the Modern Age.
+  // Tourism — Modern-Age-only, so the category is omitted in other ages.
   if (isModern) {
-    // Hover breakdown for the Breathtaking text: separate Improvements and
-    // Districts containers, each listing the developed Breathtaking tiles by
-    // type (icon │ name x#) with the Tourism yield pill on the right.
-    // Improvements: grouped by type with x# (you can have many of the same).
+    // Breathtaking hover: separate Improvements / Districts containers, each row
+    // with its Tourism pill. Improvements group by type with x# (you can have
+    // many of the same).
     const tourismRow = (g) => ({
       iconId: g.iconId,
       name: g.name,
@@ -57,9 +55,8 @@ export function buildResortModel(city) {
       items: (tile || []).map((b) => ({ iconId: b.iconId, name: b.name })),
       yields: [{ yieldType: TOURISM_ICON, value: TOURISM_PER, colored: reqsMet }],
     });
-    // Always render BOTH containers (each with its category Tourism total) so the
-    // Breathtaking hover — and the name's hover-cue color — are present even
-    // before any tiles are developed. Each container lists its tiles by type.
+    // Always render BOTH containers so the hover (and the name's cue color) show
+    // even before any tiles are developed.
     const breakdownModel = {
       sections: [
         {

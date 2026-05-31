@@ -2,6 +2,18 @@
 
 A mod for Civilization VII that enhances the display of town focus yield bonuses, showing detailed breakdowns of improvements, buildings, and trade routes that contribute to specialization bonuses.
 
+## Version 2.3.2
+
+### What's New
+
+- **New hover tooltips:** every hover (connected settlements, Districts, and the Resort Town Breathtaking breakdown) now uses a single, consistent tooltip drawn in the game's own framed style instead of plain bulleted text. Content is laid out with real icons, dividers, counts, and yield pills at a fixed width, so all hovers read the same.
+- **Breathtaking breakdown:** the Resort Town Breathtaking hover splits into separate **Improvements** and **Districts** containers. Improvements are grouped by type with a count; each Breathtaking District is listed individually with its building(s) on one line (Quarters shown together). Tourism pills stay uncolored until the Resort's requirements (Modern Age, 7+ developed Breathtaking tiles, Globalism's Mastery) are met.
+- **Polish:** the hover always appears — even before any tiles are developed — and tooltip yield pills are sized smaller to suit the compact layout.
+
+### Maintenance
+
+- Consolidated the tooltip into the shared render kit, removed dead scaffolding, and tightened comments across the focus builders.
+
 ## Version 2.3.1
 
 ### What's New

@@ -119,6 +119,7 @@ export function hDivider(marginYRem = 0.125) {
 }
 
 // A "[yield icon] +N" pill (colored background when the colorful option is on).
+// `compact` shrinks the icon/text for use inside hover tooltips.
 export function yieldPill(entry, compact = false) {
   const body = document.createElement("div");
   // Tight icon-to-number spacing (gap-0.5 instead of gap-1).
@@ -136,12 +137,9 @@ export function yieldPill(entry, compact = false) {
       : undefined;
 
   const pill = Pill({ class: "ml-1", small: true, backgroundStyle, children: body });
-  // Narrow the pill: trim the horizontal padding (the small Pill defaults to
-  // px-1.5). Inline style reliably overrides the component's class. Compact pills
-  // (used inside hover tooltips) shrink further.
-  const pad = "0.25rem";
-  pill.style.paddingLeft = pad;
-  pill.style.paddingRight = pad;
+  // Trim the small Pill's default px-1.5 padding for a tighter pill.
+  pill.style.paddingLeft = "0.25rem";
+  pill.style.paddingRight = "0.25rem";
   return pill;
 }
 
