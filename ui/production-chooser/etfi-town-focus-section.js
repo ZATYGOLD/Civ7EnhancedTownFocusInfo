@@ -4,10 +4,16 @@
 
 import { TownFocusChooserItem } from "/base-standard/ui/production-chooser/town-focus-section.js";
 import { ProductionChooserAccordionSection } from "/base-standard/ui/production-chooser/production-chooser-accordion.js";
-import { Pill } from "/base-standard/ui-next/components/pills.js";
-import { ETFI_Settings } from "../../core/settings.js";
 import { getTownCity } from "../../etfi-utilities.js";
 import { ETFI_TOWN_FOCUS_TOOLTIP_STYLE } from "./town-focus-tooltip.js";
+import {
+  DIVIDER_COLOR,
+  yieldPill,
+  noteLine,
+  appendRows,
+  renderSectionPanels,
+  ETFI_SECTION_CFG,
+} from "../etfi-details/etfi-render.js";
 import { buildFoodModel } from "../etfi-town-focus/farm-fish-towns.js";
 import { buildMiningModel } from "../etfi-town-focus/mining-town.js";
 import { buildTradeModel } from "../etfi-town-focus/trade-town.js";
@@ -17,8 +23,6 @@ import { buildUrbanModel } from "../etfi-town-focus/urban-town.js";
 import { buildFortModel } from "../etfi-town-focus/fort-town.js";
 import { buildResortModel } from "../etfi-town-focus/resort-town.js";
 import { buildFactoryModel } from "../etfi-town-focus/factory-town.js";
-
-const DIVIDER_COLOR = "rgba(77, 83, 102, 0.7)";
 
 // Monotonic counter for unique accordion element ids (one per focus card).
 let etfiAccordionSeq = 0;
@@ -39,80 +43,6 @@ const ETFI_TOWN_FOCUS_WIDTH = 25;
   }
 })();
 
-const YIELD_COLORS = {
-  YIELD_FOOD: "rgba(128,179,77,0.35)",
-  YIELD_PRODUCTION: "rgba(163,61,41,0.35)",
-  YIELD_GOLD: "rgba(246,206,85,0.35)",
-  YIELD_SCIENCE: "rgba(108,166,224,0.35)",
-  YIELD_CULTURE: "rgba(92,92,214,0.35)",
-  YIELD_HAPPINESS: "rgba(245,153,61,0.35)",
-  YIELD_DIPLOMACY: "rgba(175,183,207,0.35)",
-  CULTURE_VP: "rgba(168,85,200,0.35)", // Tourism
-};
-
-function fmt(v) {
-  const n = Number(v || 0);
-  return Number.isInteger(n) ? String(n) : (Math.round(n * 10) / 10).toFixed(1);
-}
-
-function isColorful() {
-  try { return !!(ETFI_Settings && ETFI_Settings.IsColorful); } catch { return false; }
-}
-
-function fxsIcon(iconId, sizeClass) {
-  const icon = document.createElement("fxs-icon");
-  icon.setAttribute("data-icon-id", iconId);
-  icon.className = `${sizeClass} shrink-0`;
-  return icon;
-}
-
-function iconEl(spec) {
-  if (spec && spec.iconClass) {
-    const d = document.createElement("div");
-    d.className = `${spec.iconClass} shrink-0`;
-    if (spec.iconStyle) d.style.cssText = spec.iconStyle;
-    return d;
-  }
-  if (spec && spec.iconId) return fxsIcon(spec.iconId, "size-5");
-  return null;
-}
-
-function vDivider() {
-  const d = document.createElement("div");
-  d.className = "self-stretch shrink-0 mx-1";
-  d.style.cssText = `width:0.0625rem; background-color:${DIVIDER_COLOR};`;
-  return d;
-}
-
-function hDivider() {
-  const d = document.createElement("div");
-  d.className = "w-full shrink-0 my-1";
-  d.style.cssText = `height:0.0625rem; background-color:${DIVIDER_COLOR};`;
-  return d;
-}
-
-function sectionTitle(label) {
-  // Left-aligned category title with the constructible-details horizontal divider.
-  const wrap = document.createElement("div");
-  wrap.className = "w-full flex flex-col";
-  const d = document.createElement("div");
-  d.className = "font-title uppercase text-2xs text-secondary";
-  d.textContent = label;
-  wrap.appendChild(d);
-  const div = document.createElement("div");
-  div.className = "img-shell-line-divider h-1 w-full self-center my-1";
-  wrap.appendChild(div);
-  return wrap;
-}
-
-function noteLine(text) {
-  const p = document.createElement("p");
-  p.className = "mt-1 opacity-80";
-  p.style.fontSize = "0.85em";
-  p.innerHTML = Locale.stylize(text);
-  return p;
-}
-
 function isGrowthFocus(root) {
   const gt = root.getAttribute("data-growth-type");
   const growthType = gt != null && gt !== "" ? parseInt(gt) : null;
@@ -121,141 +51,6 @@ function isGrowthFocus(root) {
   const projectType = pt != null && pt !== "" ? parseInt(pt) : null;
   if (typeof ProjectTypes !== "undefined" && projectType === ProjectTypes.NO_PROJECT) return true;
   return false;
-}
-
-function yieldPill(entry) {
-  const body = document.createElement("div");
-  // Tight icon-to-number spacing (gap-0.5 instead of gap-1).
-  body.className = "flex items-center gap-0\\.5";
-  body.appendChild(fxsIcon(entry.yieldType, "size-4"));
-  const span = document.createElement("span");
-  span.className = "font-semibold text-xs";
-  span.textContent = `+${fmt(entry.value)}`;
-  body.appendChild(span);
-
-  const colored = entry.colored !== false;
-  const backgroundStyle =
-    colored && isColorful() && YIELD_COLORS[entry.yieldType]
-      ? { "background-color": YIELD_COLORS[entry.yieldType] }
-      : undefined;
-
-  const pill = Pill({ class: "ml-1", small: true, backgroundStyle, children: body });
-  // Narrow the pill: trim the horizontal padding (the small Pill defaults to
-  // px-1.5). Inline style reliably overrides the component's class.
-  pill.style.paddingLeft = "0.25rem";
-  pill.style.paddingRight = "0.25rem";
-  return pill;
-}
-
-function appendNameItem(left, spec) {
-  const ic = iconEl(spec);
-  if (ic) {
-    left.appendChild(ic);
-    left.appendChild(vDivider());
-  }
-  const nm = document.createElement("span");
-  nm.style.cssText = "overflow:hidden; text-overflow:ellipsis; white-space:nowrap;";
-  nm.textContent = spec.name ?? "";
-  // Optional hover tooltip on the name itself, with a colored "link" cue.
-  if (spec.tooltip) {
-    nm.setAttribute("data-tooltip-content", spec.tooltip);
-    nm.setAttribute("data-tooltip-style", "none"); // suppress the item's project tooltip here
-    nm.classList.add("pointer-events-auto");
-    // Darker than the (secondary/gold) category title, so the two read distinctly.
-    nm.style.color = "rgb(168, 133, 78)";
-    nm.style.textDecoration = "underline dotted";
-    nm.style.textUnderlineOffset = "0.2rem";
-  }
-  left.appendChild(nm);
-}
-
-function detailRow(row) {
-  const line = document.createElement("div");
-  line.className = "flex justify-between items-center w-full mt-1";
-
-  const left = document.createElement("div");
-  left.className = "flex items-center min-w-0";
-  left.style.cssText = "flex:1 1 auto; overflow:hidden;";
-
-  if (Array.isArray(row.items) && row.items.length) {
-    row.items.forEach((it, i) => {
-      if (i > 0) {
-        const sep = document.createElement("span");
-        sep.className = "opacity-50 mx-1 shrink-0";
-        sep.textContent = "•";
-        left.appendChild(sep);
-      }
-      appendNameItem(left, it);
-    });
-  } else {
-    appendNameItem(left, row);
-  }
-
-  const countDisplay = row.countText != null ? row.countText : (typeof row.count === "number" ? String(row.count) : null);
-  if (countDisplay != null) {
-    const c = document.createElement("span");
-    c.className = "opacity-70 ml-1 shrink-0";
-    c.textContent = `x${countDisplay}`;
-    left.appendChild(c);
-  }
-
-  const right = document.createElement("div");
-  right.className = "flex items-center justify-end flex-wrap shrink-0";
-  for (const y of row.yields || []) {
-    if (!y || typeof y.value !== "number") continue;
-    right.appendChild(yieldPill(y));
-  }
-
-  line.append(left, right);
-
-  if (row.subText) {
-    const wrap = document.createElement("div");
-    wrap.className = "flex flex-col w-full";
-    wrap.appendChild(line);
-    const sub = document.createElement("div");
-    sub.className = "ml-6 opacity-70";
-    sub.style.fontSize = "0.85em";
-    sub.textContent = row.subText;
-    wrap.appendChild(sub);
-    return wrap;
-  }
-  return line;
-}
-
-function appendRows(panel, rows) {
-  rows.forEach((row, i) => {
-    if (i > 0) panel.appendChild(hDivider());
-    panel.appendChild(detailRow(row));
-  });
-}
-
-function newPanel() {
-  const p = document.createElement("div");
-  // text-2xs makes the category-card contents (row names, counts, notes) compact.
-  p.className = "img-base-ticket-bg-container w-full flex flex-col mt-2 text-2xs";
-  p.style.paddingTop = "0.5rem";
-  p.style.paddingBottom = "0.5rem";
-  return p;
-}
-
-// Render each section into its own ticket panel inside `container`.
-// Returns the last panel element created (or null).
-function renderSectionPanels(container, secs) {
-  while (container.firstChild) container.removeChild(container.firstChild);
-  let last = null;
-  for (const section of secs) {
-    const srows = (section.rows || []).filter(Boolean);
-    const snotes = (section.notes || []).filter(Boolean);
-    if (!srows.length && !snotes.length && !section.title) continue;
-    const p = newPanel();
-    if (section.title) p.appendChild(sectionTitle(section.title));
-    appendRows(p, srows);
-    for (const n of snotes) p.appendChild(noteLine(n));
-    container.appendChild(p);
-    last = p;
-  }
-  container.classList.toggle("hidden", container.childElementCount === 0);
-  return last;
 }
 
 // Fully rebuild the focus list. We reuse the base game's own refresh event (the
@@ -568,16 +363,16 @@ TownFocusChooserItem.prototype.etfiUpdate = function () {
   const notes = (model.notes || []).filter(Boolean);
 
   // Top zone: top sections, each its own panel.
-  const lastTop = renderSectionPanels(this.etfiTop, topSecs);
+  const lastTop = renderSectionPanels(this.etfiTop, topSecs, ETFI_SECTION_CFG);
 
   // Base panel: any flat (untitled) rows.
   const base = this.etfiDetails;
   while (base.firstChild) base.removeChild(base.firstChild);
-  if (flat.length) appendRows(base, flat);
+  if (flat.length) appendRows(base, flat, ETFI_SECTION_CFG);
   base.classList.toggle("hidden", base.childElementCount === 0);
 
   // Bottom zone: middle (default) sections then bottom sections, each its own panel.
-  const lastBottom = renderSectionPanels(this.etfiBottom, [...midSecs, ...bottomSecs]);
+  const lastBottom = renderSectionPanels(this.etfiBottom, [...midSecs, ...bottomSecs], ETFI_SECTION_CFG);
 
   // Top-level notes attach to the last rendered panel (falling back to base).
   if (notes.length) {
