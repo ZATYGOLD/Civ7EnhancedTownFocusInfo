@@ -266,36 +266,39 @@ class EtfiTownFocusTooltipType {
 
     let unrealizedProduction = 0;
     let unrealizedFood = 0;
+    let unrealizedGold = 0;
     if (isTownGrowing(city) && !this.isGrowingFocus()) {
       const model = buildFocusModel(city, this.getProjectTypeString());
       unrealizedProduction = focusHeaderYield(model, "YIELD_PRODUCTION");
       unrealizedFood = focusHeaderYield(model, "YIELD_FOOD");
+      unrealizedGold = focusHeaderYield(model, "YIELD_GOLD");
     }
 
-    // Town's Gold — all of the Town's Production converts to Gold. One divided
-    // row per source: left = [icon] │ amount, right = the colored Gold it yields.
-    //   * Current Production   ([production icon])      -> Gold,
-    //   * Potential Production ([focus icon], when Growing & focus adds Prod) -> Gold,
-    //   * Current Gold         ([gold icon]).
+    // Town's Gold — all of the Town's Production converts to Gold, plus any Gold
+    // the focus grants directly (e.g. Fort, Resort). One divided row per source:
+    // left = [icon] │ amount, right = the colored Gold it yields.
+    //   * Current Production   ([production icon])  -> Gold,
+    //   * Potential Production ([focus icon])       -> Gold,   (Growing + focus adds Prod)
+    //   * Current Gold         ([gold icon]),
+    //   * Potential Gold       ([focus icon]).               (Growing + focus adds Gold)
     const { production, gold } = getConvertedGold(city);
     const goldPill = (value) => ({ yieldType: "YIELD_GOLD", value, sign: false });
-    const goldRows = [];
-    if (production > 0) {
-      goldRows.push({ iconId: "YIELD_PRODUCTION", name: fmt(production), pill: goldPill(production) });
-    }
-    if (unrealizedProduction > 0) {
-      let focusIconBlp = "";
+    // Focus icon (background image) for the "potential" preview rows.
+    let focusIconBlp = "";
+    if (unrealizedProduction > 0 || unrealizedGold > 0) {
       try { focusIconBlp = GetTownFocusBlp(Number(this.target?.dataset?.growthType), this.getProjectType()); } catch {}
-      goldRows.push({
-        iconClass: "size-5 bg-contain bg-center bg-no-repeat",
-        iconStyle: `background-image: url(${focusIconBlp});`,
-        name: fmt(unrealizedProduction),
-        pill: goldPill(unrealizedProduction),
-      });
     }
-    if (gold > 0) {
-      goldRows.push({ iconId: "YIELD_GOLD", name: fmt(gold), pill: goldPill(gold) });
-    }
+    const focusGoldRow = (value) => ({
+      iconClass: "size-5 bg-contain bg-center bg-no-repeat",
+      iconStyle: `background-image: url(${focusIconBlp});`,
+      name: fmt(value),
+      pill: goldPill(value),
+    });
+    const goldRows = [];
+    if (production > 0) goldRows.push({ iconId: "YIELD_PRODUCTION", name: fmt(production), pill: goldPill(production) });
+    if (unrealizedProduction > 0) goldRows.push(focusGoldRow(unrealizedProduction));
+    if (gold > 0) goldRows.push({ iconId: "YIELD_GOLD", name: fmt(gold), pill: goldPill(gold) });
+    if (unrealizedGold > 0) goldRows.push(focusGoldRow(unrealizedGold));
     if (goldRows.length) {
       sections.push({
         title: composeWithFallback("LOC_MOD_ETFI_GOLD_CONVERTED", "Town's Gold"),
