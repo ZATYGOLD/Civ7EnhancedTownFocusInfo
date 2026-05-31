@@ -228,9 +228,8 @@ function appendRows(panel, rows) {
 
 function newPanel() {
   const p = document.createElement("div");
-  p.className = "img-base-ticket-bg-container w-full flex flex-col mt-2";
-  // Tighten the ticket's vertical padding (default is 1.333rem top/bottom) to
-  // reduce the gap above the title and below the last item; keep horizontal.
+  // text-2xs makes the category-card contents (row names, counts, notes) compact.
+  p.className = "img-base-ticket-bg-container w-full flex flex-col mt-2 text-2xs";
   p.style.paddingTop = "0.5rem";
   p.style.paddingBottom = "0.5rem";
   return p;
@@ -433,6 +432,15 @@ TownFocusChooserItem.prototype.render = function () {
   if (!infoContainer) return;
   const container = this.container || infoContainer.parentElement;
 
+  // Shrink the focus description text (base styles it text-sm) to be more compact.
+  try {
+    if (this.descriptionElement) {
+      this.descriptionElement.classList.remove("text-sm");
+      this.descriptionElement.classList.add("text-2xs");
+      this.descriptionElement.style.lineHeight = "1.25";
+    }
+  } catch {}
+
   const inSummary = !!this.Root.closest("town-focus-section");
 
   const nameRow = document.createElement("div");
@@ -452,7 +460,7 @@ TownFocusChooserItem.prototype.render = function () {
     this.etfiTop = document.createElement("div");
     this.etfiTop.className = "w-full flex flex-col";
     this.etfiDetails = document.createElement("div");
-    this.etfiDetails.className = "img-base-ticket-bg-container w-full flex flex-col mt-2";
+    this.etfiDetails.className = "img-base-ticket-bg-container w-full flex flex-col mt-2 text-2xs";
     this.etfiDetails.style.paddingTop = "0.5rem";
     this.etfiDetails.style.paddingBottom = "0.5rem";
     this.etfiBottom = document.createElement("div");
