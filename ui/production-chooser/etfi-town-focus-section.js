@@ -3,11 +3,9 @@
 // Author: Zatygold
 
 import { TownFocusChooserItem } from "/base-standard/ui/production-chooser/town-focus-section.js";
-import { ProductionChooserAccordionSection } from "/base-standard/ui/production-chooser/production-chooser-accordion.js";
 import { getTownCity } from "../../etfi-utilities.js";
 import { ETFI_TOWN_FOCUS_TOOLTIP_STYLE } from "./town-focus-tooltip.js";
 import {
-  DIVIDER_COLOR,
   yieldPill,
   noteLine,
   appendRows,
@@ -23,9 +21,6 @@ import { buildUrbanModel } from "../etfi-town-focus/urban-town.js";
 import { buildFortModel } from "../etfi-town-focus/fort-town.js";
 import { buildResortModel } from "../etfi-town-focus/resort-town.js";
 import { buildFactoryModel } from "../etfi-town-focus/factory-town.js";
-
-// Monotonic counter for unique accordion element ids (one per focus card).
-let etfiAccordionSeq = 0;
 
 const ETFI_TOWN_FOCUS_WIDTH = 25;
 (function injectWidthOverride() {
@@ -248,38 +243,6 @@ TownFocusChooserItem.prototype.render = function () {
     this.etfiBottom = document.createElement("div");
     this.etfiBottom.className = "w-full flex flex-col";
 
-    // Wrap all of the detail panels in a collapsible "Details" accordion (the
-    // game's own ProductionChooserAccordionSection — rotating chevron, list-bg
-    // header, animated height). Collapsed by default. etfiUpdate() keeps
-    // refilling etfiTop/etfiDetails/etfiBottom in place inside the slot, so the
-    // inner formatting is unchanged — only the show/hide wrapper is new.
-    // Title is applied via data-l10n-id inside the accordion, so pass the raw
-    // LOC key (resolved by the localization system, not pre-composed text).
-    this.etfiAccordion = new ProductionChooserAccordionSection(
-      `etfi-details-${++etfiAccordionSeq}`,
-      "LOC_MOD_ETFI_DETAILS",
-      false
-    );
-    // Group the clickable header and the panels it reveals into ONE cohesive
-    // container so the dropdown doesn't read as a floating header above loose
-    // panels. We:
-    //   * drop the base ml-4 indent so it aligns with the compact card,
-    //   * remove the header's mb-2 gap so the content sits flush beneath it,
-    //   * give the whole accordion a shared background + subtle border frame
-    //     with rounded corners (overflow-hidden clips the header art to match).
-    const acc = this.etfiAccordion;
-    acc.root.classList.remove("ml-4");
-    acc.header.classList.remove("mb-2");
-    acc.root.style.borderRadius = "0.3333333333rem";
-    acc.root.style.overflow = "hidden";
-    acc.root.style.border = `0.0625rem solid ${DIVIDER_COLOR}`;
-    acc.root.style.backgroundColor = "rgba(0, 0, 0, 0.22)";
-    // Small inset so the revealed panels don't butt up against the frame.
-    acc.slot.style.paddingLeft = "0.3rem";
-    acc.slot.style.paddingRight = "0.3rem";
-    acc.slot.style.paddingBottom = "0.35rem";
-    acc.slot.append(this.etfiTop, this.etfiDetails, this.etfiBottom);
-
     if (container) {
       const topRow = document.createElement("div");
       topRow.className = "flex flex-row w-full";
@@ -291,9 +254,13 @@ TownFocusChooserItem.prototype.render = function () {
       // padding so the focus icon sits closer to the left edge of the card.
       try { container.style.paddingLeft = "0.35rem"; container.style.paddingRight = "0.35rem"; } catch {}
       container.appendChild(topRow);
-      container.appendChild(this.etfiAccordion.root);
+      container.appendChild(this.etfiTop);
+      container.appendChild(this.etfiDetails);
+      container.appendChild(this.etfiBottom);
     } else {
-      infoContainer.appendChild(this.etfiAccordion.root);
+      infoContainer.appendChild(this.etfiTop);
+      infoContainer.appendChild(this.etfiDetails);
+      infoContainer.appendChild(this.etfiBottom);
     }
   }
 
