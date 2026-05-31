@@ -37,6 +37,7 @@
 
 import { Pill } from "/base-standard/ui-next/components/pills.js";
 import { ETFI_Settings } from "../../core/settings.js";
+import TooltipManager from "/core/ui/tooltips/tooltip-manager.js";
 
 // Divider color + per-yield pill background colors.
 export const DIVIDER_COLOR = "rgba(77, 83, 102, 0.7)";
@@ -118,14 +119,14 @@ export function hDivider(marginYRem = 0.125) {
 }
 
 // A "[yield icon] +N" pill (colored background when the colorful option is on).
-export function yieldPill(entry) {
+export function yieldPill(entry, compact = false) {
   const body = document.createElement("div");
   // Tight icon-to-number spacing (gap-0.5 instead of gap-1).
   body.className = "flex items-center gap-0\\.5";
-  body.appendChild(fxsIcon(entry.yieldType, "size-4"));
+  body.appendChild(fxsIcon(entry.yieldType, compact ? "size-3" : "size-4"));
   const span = document.createElement("span");
-  span.className = "font-semibold text-xs";
-  span.textContent = `+${fmt(entry.value)}`;
+  span.className = compact ? "font-semibold text-2xs" : "font-semibold text-xs";
+  span.textContent = `${entry.sign === false ? "" : "+"}${fmt(entry.value)}`;
   body.appendChild(span);
 
   const colored = entry.colored !== false;
@@ -136,9 +137,11 @@ export function yieldPill(entry) {
 
   const pill = Pill({ class: "ml-1", small: true, backgroundStyle, children: body });
   // Narrow the pill: trim the horizontal padding (the small Pill defaults to
-  // px-1.5). Inline style reliably overrides the component's class.
-  pill.style.paddingLeft = "0.25rem";
-  pill.style.paddingRight = "0.25rem";
+  // px-1.5). Inline style reliably overrides the component's class. Compact pills
+  // (used inside hover tooltips) shrink further.
+  const pad = "0.25rem";
+  pill.style.paddingLeft = pad;
+  pill.style.paddingRight = pad;
   return pill;
 }
 
@@ -149,7 +152,7 @@ export function yieldValue(entry) {
   cell.appendChild(fxsIcon(entry.yieldType, "size-4"));
   const span = document.createElement("span");
   span.className = "font-semibold text-xs";
-  span.textContent = `+${fmt(entry.value)}`;
+  span.textContent = `${entry.sign === false ? "" : "+"}${fmt(entry.value)}`;
   cell.appendChild(span);
   return cell;
 }
@@ -164,7 +167,7 @@ export function noteLine(text) {
 
 // Uppercase title (left) + optional total yield pill (right) + shell-line
 // underline. lineMarginYRem controls the underline's top/bottom margin.
-export function sectionTitle(label, { total, lineMarginYRem = 0.0625 } = {}) {
+export function sectionTitle(label, { total, lineMarginYRem = 0.0625, compactPills = false } = {}) {
   const wrap = document.createElement("div");
   wrap.className = "w-full flex flex-col";
 
@@ -174,7 +177,7 @@ export function sectionTitle(label, { total, lineMarginYRem = 0.0625 } = {}) {
   d.className = "font-title uppercase text-2xs text-secondary";
   d.textContent = label;
   row.appendChild(d);
-  if (total && typeof total.value === "number") row.appendChild(yieldPill(total));
+  if (total && typeof total.value === "number") row.appendChild(yieldPill(total, compactPills));
   wrap.appendChild(row);
 
   const line = document.createElement("div");
@@ -196,9 +199,19 @@ export function appendNameItem(left, spec, cfg = {}) {
   const nm = document.createElement("span");
   nm.style.cssText = "overflow:hidden; text-overflow:ellipsis; white-space:nowrap;";
   nm.textContent = spec.name ?? "";
-  if (spec.tooltip) {
-    nm.setAttribute("data-tooltip-content", spec.tooltip);
-    nm.setAttribute("data-tooltip-style", "none"); // suppress the item's project tooltip here
+  // A row may carry a tooltip as a structured model (spec.tipModel — preferred,
+  // rendered with real containers/icons/pills) or plain text (spec.tooltip).
+  if (spec.tipModel || spec.tooltip) {
+    // Render this hover via our registered framed tooltip. Setting our own
+    // data-tooltip-style overrides the parent item's project tooltip here. The
+    // row's name becomes the tooltip's header (like the plot tooltip's title).
+    if (spec.tipModel) {
+      nm.setAttribute(ETFI_TIP_MODEL_ATTR, JSON.stringify(spec.tipModel));
+    } else {
+      nm.setAttribute(ETFI_TIP_ATTR, spec.tooltip);
+    }
+    if (spec.name) nm.setAttribute(ETFI_TIP_TITLE_ATTR, spec.name);
+    nm.setAttribute("data-tooltip-style", ETFI_TEXT_TOOLTIP_STYLE);
     nm.classList.add("pointer-events-auto");
     if (cfg.nameLinkCue) {
       // Darker than the (secondary/gold) category title, so the two read distinctly.
@@ -257,10 +270,10 @@ export function detailRow(row, cfg = {}) {
 
   const right = document.createElement("div");
   right.className = "flex items-center justify-end flex-wrap shrink-0";
-  if (row.pill && typeof row.pill.value === "number") right.appendChild(yieldPill(row.pill));
+  if (row.pill && typeof row.pill.value === "number") right.appendChild(yieldPill(row.pill, cfg.compactPills));
   for (const y of row.yields || []) {
     if (!y || typeof y.value !== "number") continue;
-    right.appendChild(cfg.yieldsAsPills ? yieldPill(y) : yieldValue(y));
+    right.appendChild(cfg.yieldsAsPills ? yieldPill(y, cfg.compactPills) : yieldValue(y));
   }
   if (row.valueText != null) {
     const span = document.createElement("span");
@@ -320,7 +333,7 @@ export function renderSectionPanels(container, sections, cfg = {}) {
     const snotes = (section.notes || []).filter(Boolean);
     if (!srows.length && !snotes.length && !section.title) continue;
     const p = newPanel(cfg);
-    if (section.title) p.appendChild(sectionTitle(section.title, { total: section.total, lineMarginYRem: cfg.titleLineMarginYRem }));
+    if (section.title) p.appendChild(sectionTitle(section.title, { total: section.total, lineMarginYRem: cfg.titleLineMarginYRem, compactPills: cfg.compactPills }));
     appendRows(p, srows, cfg);
     for (const n of snotes) p.appendChild(noteLine(n));
     container.appendChild(p);
@@ -328,4 +341,91 @@ export function renderSectionPanels(container, sections, cfg = {}) {
   }
   container.classList.toggle("hidden", container.childElementCount === 0);
   return last;
+}
+
+// ---------------------------------------------------------------------------
+// Reusable framed hover tooltip (the single hover-text tooltip for the mod).
+// ---------------------------------------------------------------------------
+// Registered with the TooltipManager so it renders in the game's proper framed
+// tooltip background (the manager wraps the fxs-tooltip). It shows an optional
+// uppercase title header, then renders its content at a FIXED width (so every
+// tooltip is the same size) — either a JSON model rendered via the SAME
+// renderSectionPanels the inline panels use (real containers, icons, vertical
+// dividers, x# counts, yield pills), or, as a fallback, plain "[N]"-separated
+// stylize text divided by horizontal dividers.
+//
+// USE on any hoverable element (appendNameItem wires this automatically):
+//   data-tooltip-style   = ETFI_TEXT_TOOLTIP_STYLE
+//   data-etfi-tip-model  = JSON.stringify({ sections: [...] })   (preferred)  OR
+//   data-etfi-tip        = "[N]-separated stylize markup"        (fallback)
+//   data-etfi-tip-title  = optional header text
+export const ETFI_TEXT_TOOLTIP_STYLE = "etfi-text-tooltip";
+export const ETFI_TIP_ATTR = "data-etfi-tip";
+export const ETFI_TIP_TITLE_ATTR = "data-etfi-tip-title";
+export const ETFI_TIP_MODEL_ATTR = "data-etfi-tip-model";
+
+const ETFI_TIP_WIDTH = "15rem"; // fixed: every hover tooltip is the same width
+
+class EtfiTextTooltipType {
+  tooltip = document.createElement("fxs-tooltip");
+  header = document.createElement("div");
+  content = document.createElement("div");
+  _title = null;
+  _text = null;
+  _modelJson = null;
+
+  constructor() {
+    this.header.className = "relative text-center font-title text-sm text-secondary mb-2 uppercase tracking-100";
+    this.content.className = "flex flex-col font-body text-2xs text-accent-2";
+    this.content.style.width = ETFI_TIP_WIDTH;
+    this.tooltip.appendChild(this.header);
+    this.tooltip.appendChild(this.content);
+  }
+
+  getHTML() { return this.tooltip; }
+  reset() { return; }
+
+  isUpdateNeeded(target) {
+    const el = target?.closest?.(`[${ETFI_TIP_ATTR}],[${ETFI_TIP_MODEL_ATTR}]`) ?? null;
+    const text = el ? el.getAttribute(ETFI_TIP_ATTR) : null;
+    const modelJson = el ? el.getAttribute(ETFI_TIP_MODEL_ATTR) : null;
+    const title = el ? el.getAttribute(ETFI_TIP_TITLE_ATTR) : null;
+    if (text === this._text && modelJson === this._modelJson && title === this._title) return false;
+    this._text = text;
+    this._modelJson = modelJson;
+    this._title = title;
+    return true;
+  }
+
+  update() {
+    this.header.innerHTML = this._title ? Locale.stylize(this._title) : "";
+    this.header.classList.toggle("hidden", !this._title);
+    if (this._modelJson) {
+      let sections = [];
+      try {
+        const model = JSON.parse(this._modelJson);
+        if (model && Array.isArray(model.sections)) sections = model.sections;
+      } catch {}
+      // Tooltips use compact (smaller) yield pills.
+      renderSectionPanels(this.content, sections, { ...ETFI_SECTION_CFG, compactPills: true });
+    } else {
+      // Plain-text fallback: one line per "[N]", divided by hDivider.
+      this.content.innerHTML = "";
+      const parts = (this._text || "").split("[N]");
+      parts.forEach((part, i) => {
+        if (i > 0) this.content.appendChild(hDivider(ETFI_SECTION_CFG.hDividerMarginYRem));
+        const line = document.createElement("div");
+        line.innerHTML = Locale.stylize(part);
+        this.content.appendChild(line);
+      });
+    }
+  }
+
+  isBlank() { return !this._text && !this._modelJson && !this._title; }
+}
+
+try {
+  TooltipManager.registerType(ETFI_TEXT_TOOLTIP_STYLE, new EtfiTextTooltipType());
+} catch (e) {
+  console.error("[ETFI] failed to register framed text tooltip", e);
 }

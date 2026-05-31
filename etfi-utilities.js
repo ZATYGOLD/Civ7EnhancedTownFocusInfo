@@ -33,18 +33,11 @@ export function tradeRangePill() {
 }
 
 // --- small helpers ---------------------------------------------------------
-
-// Build a bulleted tooltip body for a hover panel. Each item is one bullet; an
-// item may be a string OR an array of strings (e.g. the two buildings of a
-// Quarter) which are joined on the same line with a " | " divider. The result
-// is a Locale.stylize markup string ([BLIST]/[LI]) the tooltip system renders.
-export function bulletList(items) {
-  const lis = (items || [])
-    .filter((it) => it != null && (Array.isArray(it) ? it.length : true))
-    .map((it) => `[LI] ${Array.isArray(it) ? it.join(" | ") : it}`)
-    .join("");
-  return lis ? `[BLIST]${lis}[/BLIST]` : "";
-}
+//
+// NOTE: hover tooltips are now built as structured MODELS (`row.tipModel`, a
+// { sections: [...] } object) and rendered by the framed tooltip in
+// etfi-render.js via the same renderSectionPanels the inline panels use. There
+// is no text-markup tooltip builder anymore.
 
 export function composeWithFallback(key, fallback) {
   if (!key) return fallback || "";
@@ -74,11 +67,16 @@ export function improvedUnimprovedSections({ improved, improvedYields }) {
           if (y && y.length) row.yields = y;
         }
         // Optional hover tooltip: a group may carry `tiles` (an array of
-        // per-tile building-name arrays, e.g. Districts) -> bulleted list with
-        // each tile's building(s) joined by " | " when it's a Quarter.
+        // per-tile { name, iconId } building arrays, e.g. Districts). Each tile
+        // becomes a divided row listing its buildings as [icon] │ name items.
         if (Array.isArray(g.tiles) && g.tiles.length) {
-          const tip = bulletList(g.tiles);
-          if (tip) row.tooltip = tip;
+          row.tipModel = {
+            sections: [{
+              rows: g.tiles.map((tile) => ({
+                items: (tile || []).map((b) => ({ iconId: b.iconId, name: b.name })),
+              })),
+            }],
+          };
         }
         return row;
       }),
@@ -94,7 +92,7 @@ export function improvedUnimprovedSections({ improved, improvedYields }) {
 //   * quarterYields(quarter) -> yield array for a quarter row (all its buildings
 //       are shown together on one line via `items`),
 //   * buildingYields(building) -> yield array for a lone Building row (optional).
-export function quarterSections({ quarters, uniqueQuarters, specialQuarters, buildings }, { quarterYields, buildingYields } = {}) {
+export function quarterSections({ quarters, uniqueQuarters, specialQuarters, buildings }, { quarterYields, buildingYields, buildingsTitle } = {}) {
   const quarterRow = (q) => {
     const row = { items: q.buildings.map((b) => ({ iconId: b.iconId, name: b.name })) };
     if (quarterYields) {
@@ -129,7 +127,7 @@ export function quarterSections({ quarters, uniqueQuarters, specialQuarters, bui
   }
   if (buildings && buildings.length) {
     const section = {
-      title: composeWithFallback("LOC_MOD_ETFI_BUILDINGS", "Buildings"),
+      title: buildingsTitle || composeWithFallback("LOC_MOD_ETFI_BUILDINGS", "Buildings"),
       separatePanel: "bottom",
       rows: buildings.map((b) => {
         const row = { iconId: b.iconId, name: b.name };
@@ -783,14 +781,41 @@ function naturalWonderName(x, y) {
   return null;
 }
 
+// Completed BUILDINGS on a single plot ({ name, iconId }), queried per-plot via
+// MapConstructibles so EVERY building on the tile is captured (e.g. both
+// buildings of a Quarter, or City Hall + a building on the city center).
+function tileBuildingsAt(x, y) {
+  const out = [];
+  try {
+    const ids = MapConstructibles.getConstructibles(x, y) || [];
+    for (const cid of ids) {
+      const inst = Constructibles.getByComponentID(cid);
+      if (!inst || inst.complete === false) continue;
+      const def = GameInfo.Constructibles.lookup(inst.type);
+      if (!def || def.ConstructibleClass !== "BUILDING") continue;
+      // Exclude Walls / Fortifications. isWallType expects the ConstructibleType
+      // STRING (as getFortifications uses), not the inst.type hash.
+      if (isWallType(def.ConstructibleType)) continue;
+      out.push({
+        name: def.Name ? Locale.compose(def.Name) : def.ConstructibleType,
+        iconId: def.ConstructibleType,
+      });
+    }
+  } catch {}
+  return out;
+}
+
 export function getResortData(city) {
   const result = {
     appealingImproved: [], appealingUnimproved: [],
     breathtakingImprovements: 0, breathtakingDistricts: 0, breathtakingTotal: 0,
+    breathtakingImprovementGroups: [], breathtakingDistrictTiles: [],
     naturalWonders: [],
   };
   const imp = new Map();
   const unimp = new Map();
+  const btImp = new Map();   // breathtaking improved tiles grouped by name
+  const btDistTiles = [];    // one entry per breathtaking district tile: its buildings
   const nwByName = new Map();
   const resortActive = isResortActive(city);
   let charming = 3;
@@ -801,25 +826,6 @@ export function getResortData(city) {
   } catch {}
   try {
     const impMap = buildImprovementTileMap(city);
-    // District tiles = tiles with at least one completed building. Track the
-    // building names per tile so the Districts row can show them on hover.
-    const districtBuildings = new Map(); // "x,y" -> [building name, ...]
-    const bids = city?.Constructibles?.getIdsOfClass?.("BUILDING") || [];
-    for (const id of bids) {
-      const inst = Constructibles.get(id);
-      if (!inst || !inst.complete) continue;
-      const loc = inst.location;
-      if (!loc || loc.x == null || loc.y == null) continue;
-      const bkey = `${loc.x},${loc.y}`;
-      const def = GameInfo.Constructibles.lookup(inst.type);
-      const bname = def?.Name ? Locale.compose(def.Name) : (def?.ConstructibleType || inst.type);
-      if (!districtBuildings.has(bkey)) districtBuildings.set(bkey, []);
-      districtBuildings.get(bkey).push(bname);
-    }
-    // Note: getPurchasedPlots() omits the city-center tile, but we deliberately
-    // do NOT add it here — the center is always a district (City Hall), and
-    // counting it would add a phantom appealing-district +1 Happiness / +1 Gold.
-    // Natural wonders are never on the city center, so nothing is lost.
     const indices = city?.getPurchasedPlots?.() || [];
     for (const idx of indices) {
       let loc;
@@ -854,16 +860,34 @@ export function getResortData(city) {
       let appeal = 0;
       try { appeal = GameplayMap.getAppeal(x, y); } catch {}
       const impAtTile = impMap.get(key);
-      const isDistrict = districtBuildings.has(key);
+      // A non-improved tile that has completed building(s) is a District. Query
+      // its buildings per-plot so a Quarter (2 buildings on one tile, e.g. City
+      // Hall + Altar on the city center) lists BOTH of them.
+      const tileBuildings = impAtTile ? [] : tileBuildingsAt(x, y);
+      const isDistrict = tileBuildings.length > 0;
+      const resInfo = resourceAt(x, y);
 
       if (appeal >= breathtaking) {
         result.breathtakingTotal++;
-        if (impAtTile) result.breathtakingImprovements++;
-        else if (isDistrict) result.breathtakingDistricts++;
+        if (impAtTile) {
+          result.breathtakingImprovements++;
+          // Group breathtaking improved tiles by improvement / resource name.
+          const bn = resInfo ? (resInfo.Name ? Locale.compose(resInfo.Name) : resInfo.ResourceType) : impAtTile.name;
+          const bi = resInfo ? resInfo.ResourceType : impAtTile.iconId;
+          if (!btImp.has(bn)) btImp.set(bn, { name: bn, iconId: bi, count: 0 });
+          btImp.get(bn).count++;
+        } else if (isDistrict) {
+          result.breathtakingDistricts++;
+          // Record this District tile's building(s) so the hover can list them
+          // together on one line (a 2-building tile is a Quarter).
+          btDistTiles.push(tileBuildings);
+        }
       }
 
-      if (appeal < charming) continue;
-      const resInfo = resourceAt(x, y);
+      // Appealing tiles are Charming OR Breathtaking. Use the lower of the two
+      // thresholds as the cutoff so BOTH levels are always counted, regardless
+      // of how the (age-specific) appeal parameters come back.
+      if (appeal < Math.min(charming, breathtaking)) continue;
       if (impAtTile) {
         // Appealing improved tile -> +1 Happiness / +1 Gold (grouped by
         // resource/improvement name).
@@ -880,7 +904,9 @@ export function getResortData(city) {
         if (!imp.has(name)) imp.set(name, { name, iconId: "CITY_BUILDINGS", count: 0, tiles: [], isDistrict: true });
         const entry = imp.get(name);
         entry.count++;
-        entry.tiles.push(districtBuildings.get(key).slice());
+        // A tile's building(s) on ONE bullet line — a 2-building Quarter (e.g.
+        // City Hall + Altar) shows both names joined by " | ".
+        entry.tiles.push(tileBuildings.slice());
       } else {
         let name = null;
         let iconId = null;
@@ -908,6 +934,9 @@ export function getResortData(city) {
     return b.count - a.count;
   });
   result.appealingUnimproved = Array.from(unimp.values()).sort((a, b) => b.count - a.count);
+  result.breathtakingImprovementGroups = Array.from(btImp.values()).sort((a, b) => b.count - a.count);
+  // Quarters (2-building tiles) first, then single-building Districts.
+  result.breathtakingDistrictTiles = btDistTiles.sort((a, b) => (b?.length || 0) - (a?.length || 0));
   // One entry per wonder: { name, count, yields:[{yieldType,value}] }.
   result.naturalWonders = Array.from(nwByName.values())
     .map((e) => ({

@@ -255,10 +255,10 @@ class EtfiTownFocusTooltipType {
         rows: [
           {
             items: [
-              { yieldType: "YIELD_PRODUCTION", value: production },
-              { yieldType: "YIELD_GOLD", value: gold },
+              { yieldType: "YIELD_PRODUCTION", value: production, sign: false },
+              { yieldType: "YIELD_GOLD", value: gold, sign: false },
             ],
-            pill: { yieldType: "YIELD_GOLD", value: total },
+            pill: { yieldType: "YIELD_GOLD", value: total, sign: false },
           },
         ],
       });

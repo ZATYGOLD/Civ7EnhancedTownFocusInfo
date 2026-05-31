@@ -12,7 +12,7 @@
 //     (no bonus, hidden by default since Urban Center only rewards Quarters).
 // Each quarter row lists its building(s) with the +1 Science / +1 Culture pills.
 
-import { ETFI_YIELDS, getTownBuildings, quarterSections } from "../../etfi-utilities.js";
+import { ETFI_YIELDS, getTownBuildings, quarterSections, composeWithFallback } from "../../etfi-utilities.js";
 
 const PER_QUARTER = 1;
 
@@ -32,7 +32,9 @@ export function buildUrbanModel(city) {
         { yieldType: ETFI_YIELDS.CULTURE, value: PER_QUARTER },
       ],
       // Lone Buildings aren't Quarters yet, so they earn nothing (shown for
-      // reference, no yields).
+      // reference, no yields). For Urban Center this category is labeled
+      // "Districts" rather than "Buildings".
+      buildingsTitle: composeWithFallback("LOC_MOD_ETFI_DISTRICTS", "Districts"),
     }),
     notes: [],
   };

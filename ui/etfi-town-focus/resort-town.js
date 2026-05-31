@@ -14,7 +14,7 @@
 //   * APPEALING tiles split into Improved (+1 Happiness / +1 Gold) and
 //     Unimproved (no yield).
 
-import { ETFI_YIELDS, TOURISM_ICON, getResortData, getCurrentAgeType, hasGlobalismMastery, composeWithFallback, improvedUnimprovedSections, bulletList } from "../../etfi-utilities.js";
+import { ETFI_YIELDS, TOURISM_ICON, getResortData, getCurrentAgeType, hasGlobalismMastery, composeWithFallback, improvedUnimprovedSections } from "../../etfi-utilities.js";
 
 const PER_TILE = 1;
 const TOURISM_PER = 4;
@@ -40,11 +40,38 @@ export function buildResortModel(city) {
   // Tourism category — top, separate panel. Tourism is a Modern-Age-only bonus,
   // so the whole category is disabled (omitted) outside the Modern Age.
   if (isModern) {
-    // Hover breakdown for the Breathtaking text (bulleted, via Locale.stylize).
-    const breakdownTip = bulletList([
-      `${composeWithFallback("LOC_MOD_ETFI_IMPROVEMENTS", "Improvements")}: ${d.breathtakingImprovements} (+${TOURISM_PER * d.breathtakingImprovements} [icon:${TOURISM_ICON}])`,
-      `${composeWithFallback("LOC_MOD_ETFI_DISTRICTS", "Districts")}: ${d.breathtakingDistricts} (+${TOURISM_PER * d.breathtakingDistricts} [icon:${TOURISM_ICON}])`,
-    ]);
+    // Hover breakdown for the Breathtaking text: separate Improvements and
+    // Districts containers, each listing the developed Breathtaking tiles by
+    // type (icon │ name x#) with the Tourism yield pill on the right.
+    // Improvements: grouped by type with x# (you can have many of the same).
+    const tourismRow = (g) => ({
+      iconId: g.iconId,
+      name: g.name,
+      count: g.count,
+      yields: [{ yieldType: TOURISM_ICON, value: TOURISM_PER * g.count, colored: reqsMet }],
+    });
+    // Districts: one row per tile, listing the tile's building(s) on a single
+    // line (no x# — a settlement can't have two of the same building). Each tile
+    // is one developed Breathtaking District worth +TOURISM_PER Tourism.
+    const districtRow = (tile) => ({
+      items: (tile || []).map((b) => ({ iconId: b.iconId, name: b.name })),
+      yields: [{ yieldType: TOURISM_ICON, value: TOURISM_PER, colored: reqsMet }],
+    });
+    // Always render BOTH containers (each with its category Tourism total) so the
+    // Breathtaking hover — and the name's hover-cue color — are present even
+    // before any tiles are developed. Each container lists its tiles by type.
+    const breakdownModel = {
+      sections: [
+        {
+          title: composeWithFallback("LOC_MOD_ETFI_IMPROVEMENTS", "Improvements"),
+          rows: d.breathtakingImprovementGroups.map(tourismRow),
+        },
+        {
+          title: composeWithFallback("LOC_MOD_ETFI_DISTRICTS", "Districts"),
+          rows: d.breathtakingDistrictTiles.map(districtRow),
+        },
+      ],
+    };
 
     sections.push({
       title: composeWithFallback("LOC_MOD_ETFI_TOURISM", "Tourism"),
@@ -53,7 +80,7 @@ export function buildResortModel(city) {
         iconClass: HEX_ICON_CLASS,
         iconStyle: HEX_ICON_STYLE,
         name: composeWithFallback("LOC_MOD_ETFI_BREATHTAKING", "Breathtaking"),
-        tooltip: breakdownTip,
+        tipModel: breakdownModel,
         countText: `${developed}/${BREATHTAKING_MIN}`,
         yields: [{ yieldType: TOURISM_ICON, value: TOURISM_PER * developed, colored: reqsMet }],
       }],
