@@ -24,6 +24,9 @@ import { getConnectedCitiesFood, getConvertedGold, getGrowthSavings, composeWith
 // Imported for its side effect: registers the <etfi-tooltip-details> custom
 // element (also loaded via modinfo) and provides the tag name we instantiate.
 import { ETFI_TOOLTIP_DETAILS_TAG } from "../etfi-details/etfi-tooltip-details.js";
+// Likewise registers the <etfi-tooltip-section-description> element and provides
+// its tag name (the focus description block shown below the header).
+import { ETFI_TOWN_FOCUS_SECTION_DESCRIPTION } from "../etfi-details/etfi-tooltip-section-description.js";
 
 // The unique tooltip style name the town-focus items reference.
 export const ETFI_TOWN_FOCUS_TOOLTIP_STYLE = "etfi-town-focus-tooltip";
@@ -45,6 +48,10 @@ class EtfiTownFocusTooltipType {
   header = document.createElement("fxs-header");
   divider = document.createElement("div");
   glow = document.createElement("div");
+  sectionDescription = document.createElement(ETFI_TOWN_FOCUS_SECTION_DESCRIPTION);
+  // Thin separator drawn between the two descriptions (focus-specific above,
+  // generic Town behavior below) so they read as distinct blocks.
+  descDivider = document.createElement("div");
   description = document.createElement("p");
   productionCost = document.createElement("div");
   requirementsContainer = document.createElement("div");
@@ -52,9 +59,10 @@ class EtfiTownFocusTooltipType {
   details = document.createElement(ETFI_TOOLTIP_DETAILS_TAG);
   gemsContainer = document.createElement("div");
   // #endregion
-  // Re-render counter bumped onto the <etfi-tooltip-details> data-rev attribute
-  // to trigger its render() each time we set a new model.
+  // Re-render counters bumped onto the data-rev attributes of the custom
+  // elements to trigger their render() each time we set new content.
   _detailsRev = 0;
+  _descRev = 0;
   constructor() {
     this.glow.classList.add(
       "h-24",
@@ -79,10 +87,25 @@ class EtfiTownFocusTooltipType {
     this.requirementsContainer.append(this.requirementsText);
     this.details.className = "flex flex-col";
     this.gemsContainer.className = "mt-10";
+    // Layout below the header:
+    //   * sectionDescription — the focus-specific specialization text
+    //     (data-description, e.g. "+1 Food on Farms..."), rendered by the
+    //     <etfi-tooltip-section-description> element.
+    //   * descDivider — a thin separator line between the two blocks.
+    //   * description (legacy <p>) — the generic Town behavior
+    //     (data-tooltip-description, e.g. "All of the Town's Production is
+    //     converted into Gold..."), rendered exactly like the base tooltip.
+    this.sectionDescription.className = "flex flex-col";
+    this.descDivider.className = "w-full self-center shrink-0";
+    this.descDivider.style.cssText =
+      "height:0.0625rem; margin-top:0.4rem; margin-bottom:0.4rem; background-color:rgba(77, 83, 102, 0.7);";
+    this.description.className = "text-2xs";
     this.tooltip.append(
       this.glow,
       this.header,
       this.divider,
+      this.sectionDescription,
+      this.descDivider,
       this.description,
       this.productionCost,
       this.requirementsContainer,
@@ -141,25 +164,48 @@ class EtfiTownFocusTooltipType {
       return;
     }
     const name = this.target.dataset.name ?? "";
-    const description = (this.target.dataset.tooltipDescription || this.target.dataset.description) ?? "";
+    // Two distinct descriptions, mirroring the town-focus-chooser-item data:
+    //   * focusDescription  (data-description) — the focus-specific
+    //     specialization text (e.g. "+1 Food on Farms..."). Shown in the
+    //     <etfi-tooltip-section-description> block directly below the header.
+    //   * tooltipDescription (data-tooltip-description) — the generic Town
+    //     behavior (e.g. "All of the Town's Production is converted into
+    //     Gold..."). Shown in the legacy `description` <p>, exactly like base.
+    let focusDescription = this.target.dataset.description
+      || this.target.__etfiDescription
+      || "";
+    if (!focusDescription) {
+      try {
+        const def = projectType ? GameInfo.Projects.lookup(projectType) : null;
+        if (def?.Description) focusDescription = def.Description;
+      } catch {}
+    }
+    const tooltipDescription = this.target.dataset.tooltipDescription || "";
     const growthType = Number(this.target.dataset.growthType);
     const productionCost = projectType ? city.Production?.getProjectProductionCost(projectType) : -1;
     const requirementsText = this.getRequirementsText();
     this.header.setAttribute("title", name);
-    this.description.innerHTML = description ? Locale.stylize(description) : "";
+    // Hand the focus-specific description to the
+    // <etfi-tooltip-section-description> element and trigger its render.
+    this.sectionDescription.etfiDescription = focusDescription;
+    this.sectionDescription.setAttribute("data-rev", String(++this._descRev));
+    // Render the generic Town description in the legacy <p>, applying the base
+    // game's bullet/paragraph spacing pass.
+    this.description.innerHTML = tooltipDescription ? Locale.stylize(tooltipDescription) : "";
+    this.description.classList.toggle("hidden", !tooltipDescription);
+    // Only show the separator when BOTH descriptions are present.
+    this.descDivider.classList.toggle("hidden", !(focusDescription && tooltipDescription));
     let firstChild = true;
-    let prevChildisList = false;
+    let prevChildIsList = false;
     for (const node of this.description.children) {
       const isList = Boolean(node.innerHTML.match(bulletChar));
       if (isList) node.classList.add("ml-4");
       if (!firstChild) {
-        if (!prevChildisList || !isList) {
-          node.classList.add("mt-2");
-        }
+        if (!prevChildIsList || !isList) node.classList.add("mt-2");
       } else {
         firstChild = false;
       }
-      prevChildisList = isList;
+      prevChildIsList = isList;
     }
     const iconBlp = GetTownFocusBlp(growthType, projectType);
     this.icon.style.backgroundImage = `url(${iconBlp})`;
