@@ -32,6 +32,27 @@ import { buildFactoryModel } from "../etfi-town-focus/factory-town.js";
 
 const DIVIDER_COLOR = "rgba(77, 83, 102, 0.7)";
 
+// Reduce the Town Focus panel width by 5%. The base CSS fixes the panel-town-
+// focus width (via the focus item at 24.611rem). We override the panel to 0.95x
+// and make the focus ITEMS fill 100% of the panel (minus its padding) rather
+// than a fixed rem — otherwise item width + the scrollable's horizontal padding
+// exceeds the panel and the right side gets clipped.
+const ETFI_TOWN_FOCUS_WIDTH = 25;
+(function injectWidthOverride() {
+  try {
+    if (document.getElementById("etfi-width-override")) return;
+    const W = ETFI_TOWN_FOCUS_WIDTH;
+    const style = document.createElement("style");
+    style.id = "etfi-width-override";
+    style.textContent =
+      `panel-town-focus { width: ${W}rem !important; max-width: ${W}rem !important; }` +
+      `panel-town-focus town-focus-chooser-item { width: 100% !important; }`;
+    (document.head || document.documentElement).appendChild(style);
+  } catch (e) {
+    console.error("[ETFI] width override failed", e);
+  }
+})();
+
 const YIELD_COLORS = {
   YIELD_FOOD: "rgba(128,179,77,0.35)",
   YIELD_PRODUCTION: "rgba(163,61,41,0.35)",
@@ -359,6 +380,10 @@ function buildModel(item) {
 function ensureViewHiddenToggle(fromEl) {
   try {
     const panel = fromEl.closest?.("panel-town-focus") || fromEl.getRootNode?.()?.querySelector?.("panel-town-focus");
+    // Constrain the panel width directly (in addition to the injected CSS).
+    if (panel) {
+      try { panel.style.width = `${ETFI_TOWN_FOCUS_WIDTH}rem`; panel.style.maxWidth = `${ETFI_TOWN_FOCUS_WIDTH}rem`; } catch {}
+    }
     const scope = panel || document;
     const cta = scope.querySelector('[data-l10n-id="LOC_UI_TOWN_FOCUS_CTA"]');
     if (!cta || cta.dataset.etfiToggleAttached === "1") return;
@@ -468,10 +493,18 @@ TownFocusChooserItem.prototype.render = function () {
     if (container) {
       const topRow = document.createElement("div");
       topRow.className = "flex flex-row w-full";
+      // Shrink the focus icon (base is size-16 = 4rem) for a more compact card.
+      try {
+        this.projectIconElement.classList.remove("size-16");
+        this.projectIconElement.classList.add("size-12");
+      } catch {}
       topRow.appendChild(this.projectIconElement);
       topRow.appendChild(infoContainer);
       container.classList.remove("flex-row");
       container.classList.add("flex-col", "w-full");
+      // The base container uses p-3 (0.75rem) all sides; trim the horizontal
+      // padding so the focus icon sits closer to the left edge of the card.
+      try { container.style.paddingLeft = "0.35rem"; container.style.paddingRight = "0.35rem"; } catch {}
       container.appendChild(topRow);
       container.appendChild(this.etfiTop);
       container.appendChild(this.etfiDetails);
