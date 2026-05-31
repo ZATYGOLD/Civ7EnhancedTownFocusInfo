@@ -31,9 +31,6 @@
     <Row Tag="LOC_MOD_ETFI_WALLS"><Text>Walls</Text></Row>
     <Row Tag="LOC_MOD_ETFI_FORTIFICATIONS"><Text>Fortifications</Text></Row>
 
-    <!-- Controls -->
-    <Row Tag="LOC_MOD_ETFI_VIEW_HIDDEN"><Text>View Hidden</Text></Row>
-
     <!-- Settings -->
     <Row Tag="LOC_OPTIONS_GROUP_ETFI"><Text>Zatygold's Mods</Text></Row>
     <Row Tag="LOC_MOD_ETFI_YIELDS_OPTION_COLORFUL"><Text>Enhanced Town Focus Info • Color the yield previews</Text></Row>

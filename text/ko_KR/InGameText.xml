@@ -22,7 +22,6 @@
     <Replace Tag="LOC_MOD_ETFI_NATURAL_WONDERS" Language="ko_KR"><Text>자연 불가사의</Text></Replace>
 
     <!-- 컨트롤 -->
-    <Replace Tag="LOC_MOD_ETFI_VIEW_HIDDEN" Language="ko_KR"><Text>숨김 표시</Text></Replace>
 
     <!-- 설정 -->
     <Replace Tag="LOC_OPTIONS_GROUP_ETFI" Language="ko_KR"><Text>Zatygold의 모드</Text></Replace>

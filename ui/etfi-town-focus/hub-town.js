@@ -42,7 +42,6 @@ export function buildHubModel(city) {
     sections.push({
       title: composeWithFallback("LOC_MOD_ETFI_DISCONNECTED", "Disconnected"),
       separatePanel: "bottom",
-      hidden: true,
       rows: settlementRows(disconnected, false),
     });
   }

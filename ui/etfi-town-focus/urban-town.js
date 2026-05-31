@@ -31,8 +31,8 @@ export function buildUrbanModel(city) {
         { yieldType: ETFI_YIELDS.SCIENCE, value: PER_QUARTER },
         { yieldType: ETFI_YIELDS.CULTURE, value: PER_QUARTER },
       ],
-      // Lone Buildings aren't Quarters yet, so they earn nothing and are hidden.
-      hideBuildings: true,
+      // Lone Buildings aren't Quarters yet, so they earn nothing (shown for
+      // reference, no yields).
     }),
     notes: [],
   };

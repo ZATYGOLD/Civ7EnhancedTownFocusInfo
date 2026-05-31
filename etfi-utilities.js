@@ -89,7 +89,6 @@ export function improvedUnimprovedSections({ improved, unimproved, improvedYield
     sections.push({
       title: composeWithFallback("LOC_MOD_ETFI_UNIMPROVED", "Unimproved"),
       separatePanel: "bottom",
-      hidden: true,
       rows: unimproved.map((g) => ({ iconId: g.iconId, name: g.name, count: g.count })),
     });
   }
@@ -102,10 +101,8 @@ export function improvedUnimprovedSections({ improved, unimproved, improvedYield
 // for the yields, supplied via callbacks:
 //   * quarterYields(quarter) -> yield array for a quarter row (all its buildings
 //       are shown together on one line via `items`),
-//   * buildingYields(building) -> yield array for a lone Building row (optional),
-//   * hideBuildings -> when true, the lone Buildings category is flagged `hidden`
-//       (Urban Center only rewards Quarters; Religious Site rewards every building).
-export function quarterSections({ quarters, uniqueQuarters, specialQuarters, buildings }, { quarterYields, buildingYields, hideBuildings = false } = {}) {
+//   * buildingYields(building) -> yield array for a lone Building row (optional).
+export function quarterSections({ quarters, uniqueQuarters, specialQuarters, buildings }, { quarterYields, buildingYields } = {}) {
   const quarterRow = (q) => {
     const row = { items: q.buildings.map((b) => ({ iconId: b.iconId, name: b.name })) };
     if (quarterYields) {
@@ -151,7 +148,6 @@ export function quarterSections({ quarters, uniqueQuarters, specialQuarters, bui
         return row;
       }),
     };
-    if (hideBuildings) section.hidden = true;
     sections.push(section);
   }
   return sections;

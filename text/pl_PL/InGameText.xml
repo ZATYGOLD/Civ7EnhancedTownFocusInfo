@@ -22,7 +22,6 @@
     <Replace Tag="LOC_MOD_ETFI_NATURAL_WONDERS" Language="pl_PL"><Text>Cuda natury</Text></Replace>
 
     <!-- Sterowanie -->
-    <Replace Tag="LOC_MOD_ETFI_VIEW_HIDDEN" Language="pl_PL"><Text>Pokaż ukryte</Text></Replace>
 
     <!-- Ustawienia -->
     <Replace Tag="LOC_OPTIONS_GROUP_ETFI" Language="pl_PL"><Text>Mody Zatygolda</Text></Replace>

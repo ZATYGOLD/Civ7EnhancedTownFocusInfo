@@ -6,7 +6,7 @@ import { TownFocusChooserItem } from "/base-standard/ui/production-chooser/town-
 import { ProductionChooserAccordionSection } from "/base-standard/ui/production-chooser/production-chooser-accordion.js";
 import { Pill } from "/base-standard/ui-next/components/pills.js";
 import { ETFI_Settings } from "../../core/settings.js";
-import { getTownCity, composeWithFallback } from "../../etfi-utilities.js";
+import { getTownCity } from "../../etfi-utilities.js";
 import { ETFI_TOWN_FOCUS_TOOLTIP_STYLE } from "./town-focus-tooltip.js";
 import { buildFoodModel } from "../etfi-town-focus/farm-fish-towns.js";
 import { buildMiningModel } from "../etfi-town-focus/mining-town.js";
@@ -57,10 +57,6 @@ function fmt(v) {
 
 function isColorful() {
   try { return !!(ETFI_Settings && ETFI_Settings.IsColorful); } catch { return false; }
-}
-
-function viewHidden() {
-  try { return !!(ETFI_Settings && ETFI_Settings.ViewHidden); } catch { return false; }
 }
 
 function fxsIcon(iconId, sizeClass) {
@@ -344,57 +340,44 @@ function buildModel(item) {
   }
 }
 
-// --- "View Hidden" checkbox in the Town Focus CTA header -------------------
+// --- panel width constraint ------------------------------------------------
 
-function ensureViewHiddenToggle(fromEl) {
+// Constrain the Town Focus panel width directly (in addition to the injected
+// CSS override) once an item is attached and can reach its host panel.
+function constrainPanelWidth(fromEl) {
   try {
     const panel = fromEl.closest?.("panel-town-focus") || fromEl.getRootNode?.()?.querySelector?.("panel-town-focus");
-    // Constrain the panel width directly (in addition to the injected CSS).
     if (panel) {
       try { panel.style.width = `${ETFI_TOWN_FOCUS_WIDTH}rem`; panel.style.maxWidth = `${ETFI_TOWN_FOCUS_WIDTH}rem`; } catch {}
     }
-    const scope = panel || document;
-    const cta = scope.querySelector('[data-l10n-id="LOC_UI_TOWN_FOCUS_CTA"]');
-    if (!cta || cta.dataset.etfiToggleAttached === "1") return;
-
-    const host = cta.parentElement;
-    if (!host) return;
-    cta.dataset.etfiToggleAttached = "1";
-
-    // Wrap the CTA in a relative, full-width row so the description stays
-    // centered exactly as before; the toggle is positioned absolutely on the
-    // right so it does NOT shift the centered text.
-    const row = document.createElement("div");
-    row.className = "relative flex flex-row items-center justify-center w-full mb-2";
-    host.replaceChild(row, cta);
-
-    cta.classList.remove("mb-2");
-    row.appendChild(cta);
-
-    const toggle = document.createElement("div");
-    toggle.className = "absolute top-1\\/2 flex flex-row items-center";
-    // Nudge in from the right edge so it isn't flush against the frame.
-    toggle.style.right = ".75rem";
-    toggle.style.transform = "translateY(-50%)";
-
-    const label = document.createElement("div");
-    label.className = "text-xs mr-1 whitespace-nowrap text-accent-2";
-    label.textContent = composeWithFallback("LOC_MOD_ETFI_VIEW_HIDDEN", "View Hidden");
-    toggle.appendChild(label);
-
-    const checkbox = document.createElement("fxs-checkbox");
-    checkbox.setAttribute("selected", viewHidden() ? "true" : "false");
-    checkbox.addEventListener("component-value-changed", (e) => {
-      const v = !!(e && e.detail && e.detail.value);
-      try { ETFI_Settings.ViewHidden = v; } catch {}
-      refreshFocusPanel(checkbox);
-    });
-    toggle.appendChild(checkbox);
-
-    row.appendChild(toggle);
   } catch (err) {
-    console.error("[ETFI] view-hidden toggle failed", err);
+    console.error("[ETFI] panel width constraint failed", err);
   }
+}
+
+// Hide the inline focus description and surface it as a hover tooltip on the
+// focus name instead. data-tooltip-style="none" suppresses the item's rich
+// project tooltip for the name element, so hovering the name shows just the
+// description text. Idempotent — safe to call on every render/update (and
+// re-asserted in etfiUpdate because data-description can arrive after the
+// first render, and the summary item is reused across focus changes).
+function applyNameDescriptionTooltip(item) {
+  const nameEl = item.nameElement;
+  if (!nameEl) return;
+  try {
+    if (item.descriptionElement) {
+      item.descriptionElement.classList.add("hidden");
+      // Inline display:none as well — a class alone can be overridden by the
+      // element's other display utilities in some render paths.
+      item.descriptionElement.style.display = "none";
+    }
+    const descKey = item.Root.getAttribute("data-description");
+    if (descKey) {
+      nameEl.setAttribute("data-tooltip-content", Locale.compose(descKey));
+      nameEl.setAttribute("data-tooltip-style", "none");
+      nameEl.classList.add("pointer-events-auto");
+    }
+  } catch {}
 }
 
 // --- prototype patch -------------------------------------------------------
@@ -405,8 +388,8 @@ const baseOnAttach = TownFocusChooserItem.prototype.onAttach;
 
 TownFocusChooserItem.prototype.onAttach = function () {
   if (baseOnAttach) baseOnAttach.call(this);
-  // Now that the item is in the DOM, ensure the panel has the View Hidden toggle.
-  ensureViewHiddenToggle(this.Root);
+  // Now that the item is in the DOM, pin the panel width.
+  constrainPanelWidth(this.Root);
 };
 
 TownFocusChooserItem.prototype.render = function () {
@@ -416,18 +399,12 @@ TownFocusChooserItem.prototype.render = function () {
 
   const growth = isGrowthFocus(this.Root);
 
-  try {
-    if (this.descriptionElement) {
-      this.descriptionElement.classList.toggle("hidden", !growth);
-    }
-  } catch {}
+  // Inline description hidden; shown as a hover tooltip on the focus name.
+  applyNameDescriptionTooltip(this);
 
   // Growing Town keeps the base card layout — no yield pills, detail panels, or
   // name-row restructuring.
   if (growth) return;
-
-  // Back-reference so the View Hidden toggle can re-render every item.
-  this.Root.__etfiItem = this;
 
   const infoContainer = this.nameElement.parentElement;
   if (!infoContainer) return;
@@ -543,11 +520,8 @@ TownFocusChooserItem.prototype.onAttributeChanged = function (name, oldValue, ne
 TownFocusChooserItem.prototype.etfiUpdate = function () {
   const growth = isGrowthFocus(this.Root);
 
-  try {
-    if (this.descriptionElement) {
-      this.descriptionElement.classList.toggle("hidden", !growth);
-    }
-  } catch {}
+  // Inline description hidden; shown as a hover tooltip on the focus name.
+  applyNameDescriptionTooltip(this);
 
   if (!this.etfiYields) return;
 
@@ -586,9 +560,7 @@ TownFocusChooserItem.prototype.etfiUpdate = function () {
 
   if (!this.etfiDetails) return;
 
-  // Drop hidden sections unless "View Hidden" is enabled.
-  const show = viewHidden();
-  const sections = (model.sections || []).filter(Boolean).filter((s) => show || !s.hidden);
+  const sections = (model.sections || []).filter(Boolean);
   const topSecs = sections.filter((s) => s.separatePanel === "top" || s.separatePanel === true);
   const bottomSecs = sections.filter((s) => s.separatePanel === "bottom");
   const midSecs = sections.filter((s) => !s.separatePanel);
