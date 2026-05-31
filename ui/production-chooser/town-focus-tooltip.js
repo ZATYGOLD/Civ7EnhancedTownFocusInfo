@@ -12,13 +12,18 @@
 // ETFI_TOWN_FOCUS_TOOLTIP_STYLE) so this tooltip renders instead of the base one.
 //
 // It currently behaves IDENTICALLY to the base tooltip. It exists so the Town
-// Focus tooltip can be customized later (e.g. injecting the <etfi-details>
-// breakdown) without touching the base game's shared tooltip type.
+// Focus tooltip can be customized later (e.g. injecting the
+// <etfi-tooltip-details> breakdown) without touching the base game's shared
+// tooltip type.
 
 import TooltipManager from "/core/ui/tooltips/tooltip-manager.js";
 import { IsElement } from "/core/ui/utilities/utilities-dom.js";
 import { GetTownFocusBlp } from "/base-standard/ui/production-chooser/production-chooser-helpers.js";
 import { AdvisorUtilities } from "/base-standard/ui/tutorial/advisor-utilities.js";
+import { getConnectedCitiesFood, getConvertedGold, getGrowthSavings, composeWithFallback } from "../../etfi-utilities.js";
+// Imported for its side effect: registers the <etfi-tooltip-details> custom
+// element (also loaded via modinfo) and provides the tag name we instantiate.
+import { ETFI_TOOLTIP_DETAILS_TAG } from "../etfi-details/etfi-tooltip-details.js";
 
 // The unique tooltip style name the town-focus items reference.
 export const ETFI_TOWN_FOCUS_TOOLTIP_STYLE = "etfi-town-focus-tooltip";
@@ -44,8 +49,12 @@ class EtfiTownFocusTooltipType {
   productionCost = document.createElement("div");
   requirementsContainer = document.createElement("div");
   requirementsText = document.createElement("div");
+  details = document.createElement(ETFI_TOOLTIP_DETAILS_TAG);
   gemsContainer = document.createElement("div");
   // #endregion
+  // Re-render counter bumped onto the <etfi-tooltip-details> data-rev attribute
+  // to trigger its render() each time we set a new model.
+  _detailsRev = 0;
   constructor() {
     this.glow.classList.add(
       "h-24",
@@ -68,6 +77,7 @@ class EtfiTownFocusTooltipType {
     this.productionCost.className = "mt-2";
     this.requirementsContainer.className = "flex mt-2 p-2 production-chooser-tooltip__subtext-bg";
     this.requirementsContainer.append(this.requirementsText);
+    this.details.className = "flex flex-col";
     this.gemsContainer.className = "mt-10";
     this.tooltip.append(
       this.glow,
@@ -76,6 +86,7 @@ class EtfiTownFocusTooltipType {
       this.description,
       this.productionCost,
       this.requirementsContainer,
+      this.details,
       this.gemsContainer
     );
   }
@@ -168,6 +179,7 @@ class EtfiTownFocusTooltipType {
     } else {
       this.requirementsContainer.classList.add("hidden");
     }
+    this.updateDetails(city);
     const recommendations = this.target?.dataset.recommendations;
     if (recommendations) {
       const parsedRecommendations = JSON.parse(recommendations);
@@ -176,6 +188,86 @@ class EtfiTownFocusTooltipType {
       this.gemsContainer.appendChild(recommendationTooltipContent);
     }
     this.gemsContainer.classList.toggle("hidden", !recommendations);
+  }
+  // Feed the <etfi-tooltip-details> container its model and trigger a re-render
+  // by bumping data-rev. Builds the default-Town breakdown:
+  //   * Converted Gold: Production (converted) + base Gold = total Gold/turn,
+  //   * Food Sent to Connected Cities: Food/turn sent to each connected City.
+  updateDetails(city) {
+    const sections = [];
+
+    // Total Gold — all of the Town's Production is converted into Gold, so the
+    // total Gold/turn = Production + base Gold. One inline row: Production and
+    // Gold (split by a vertical divider) on the left, the total as a pill right.
+    const { production, gold, total } = getConvertedGold(city);
+    if (production > 0 || gold > 0) {
+      sections.push({
+        title: composeWithFallback("LOC_MOD_ETFI_GOLD_CONVERTED", "Gold Converted"),
+        rows: [
+          {
+            items: [
+              { yieldType: "YIELD_PRODUCTION", value: production },
+              { yieldType: "YIELD_GOLD", value: gold },
+            ],
+            pill: { yieldType: "YIELD_GOLD", value: total },
+          },
+        ],
+      });
+    }
+
+    if (this.isGrowingFocus()) {
+      // Growing Town keeps its Food (NOT sent to Cities); the +50% growth focus
+      // lowers the Food needed to grow. Show the Food and Turns it saves.
+      const sav = getGrowthSavings(city);
+      if (sav && (sav.foodSaved > 0 || (sav.turnsSaved != null && sav.turnsSaved > 0))) {
+        const rows = [];
+        if (sav.foodSaved > 0) {
+          rows.push({
+            name: composeWithFallback("LOC_MOD_ETFI_FOOD_SAVED", "Food Saved"),
+            pill: { yieldType: "YIELD_FOOD", value: sav.foodSaved },
+          });
+        }
+        if (sav.turnsSaved != null && sav.turnsSaved > 0) {
+          rows.push({
+            name: composeWithFallback("LOC_MOD_ETFI_TURNS_SAVED", "Turns Saved"),
+            valueText: String(sav.turnsSaved),
+          });
+        }
+        if (rows.length) {
+          sections.push({ title: composeWithFallback("LOC_MOD_ETFI_GROWTH", "Growth"), rows });
+        }
+      }
+    } else {
+      // Food Sent to Connected Cities — one row per connected City (only when the
+      // Town is actually sending Food, i.e. getSentFoodPerCity() > 0).
+      const foodCities = getConnectedCitiesFood(city)
+        .filter((c) => typeof c.food === "number" && c.food > 0);
+      if (foodCities.length) {
+        sections.push({
+          title: composeWithFallback("LOC_MOD_ETFI_FOOD_TO_CITIES", "Food Sent"),
+          rows: foodCities.map((c) => ({
+            iconId: "CITY_URBAN",
+            name: c.name,
+            pill: { yieldType: "YIELD_FOOD", value: c.food },
+          })),
+        });
+      }
+    }
+
+    this.details.etfiModel = { sections };
+    // Hide the host when there's nothing to show.
+    this.details.classList.toggle("hidden", sections.length === 0);
+    this.details.setAttribute("data-rev", String(++this._detailsRev));
+  }
+  // True when the hovered focus is the Growing Town (EXPAND growth / no project)
+  // — it keeps its Food for growth instead of sending it to connected Cities.
+  isGrowingFocus() {
+    const gt = this.target?.dataset?.growthType;
+    const growthType = gt != null && gt !== "" ? Number(gt) : null;
+    if (typeof GrowthTypes !== "undefined" && growthType === GrowthTypes.EXPAND) return true;
+    const pt = this.getProjectType();
+    if (typeof ProjectTypes !== "undefined" && pt === ProjectTypes.NO_PROJECT) return true;
+    return false;
   }
   getRequirementsText() {
     const projectType = this.getProjectType() ?? -1;

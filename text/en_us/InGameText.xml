@@ -12,6 +12,11 @@
     <Row Tag="LOC_MOD_ETFI_CONNECTED"><Text>Connected</Text></Row>
     <Row Tag="LOC_MOD_ETFI_DISCONNECTED"><Text>Disconnected</Text></Row>
     <Row Tag="LOC_MOD_ETFI_NATURAL_WONDERS"><Text>Natural Wonders</Text></Row>
+    <Row Tag="LOC_MOD_ETFI_FOOD_TO_CITIES"><Text>Food Sent</Text></Row>
+    <Row Tag="LOC_MOD_ETFI_GOLD_CONVERTED"><Text>Gold Converted</Text></Row>
+    <Row Tag="LOC_MOD_ETFI_GROWTH"><Text>Growth</Text></Row>
+    <Row Tag="LOC_MOD_ETFI_FOOD_SAVED"><Text>Food Saved</Text></Row>
+    <Row Tag="LOC_MOD_ETFI_TURNS_SAVED"><Text>Turns Saved</Text></Row>
 
     <!-- Row labels -->
     <Row Tag="LOC_MOD_ETFI_CONNECTED_CITIES"><Text>Cities</Text></Row>

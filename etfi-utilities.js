@@ -364,6 +364,129 @@ export function getSettlementsByConnection(city) {
   return result;
 }
 
+// --- connected cities + food sent (Town -> connected Cities) ---------------
+//
+// Returns the player's Cities (NOT Towns) that this town is connected to, each
+// as { id, name, food }, where `food` is the Food per turn the town sends to
+// that City.
+//
+// Source: base-standard/ui/city-details/model-city-details.js
+// (buildSendingFoodData). A specialized Town distributes its Food equally to
+// every connected City; the engine exposes that per-City amount directly via
+// Town.getSentFoodPerCity(), and the receivers are Town.getConnectedCities()
+// filtered to non-Towns. The same `getConnectedCities()` call backs
+// getSettlementsByConnection().
+//
+// Note: the engine only sends Food while the town's growthType is PROJECT
+// (i.e. it has an active focus, not the default EXPAND/growing mode). When the
+// town is still growing, getSentFoodPerCity() reports 0, so `food` is 0 for
+// every City — that matches the game (an unspecialized town sends nothing).
+export function getConnectedCitiesFood(city) {
+  const cities = [];
+  let ids = [];
+  try {
+    ids = city?.getConnectedCities?.() || [];
+  } catch (e) {
+    console.error("[ETFI] getConnectedCitiesFood: getConnectedCities failed", e);
+    return cities;
+  }
+
+  // Food sent to EACH connected City (the engine splits the town's Food evenly,
+  // so every connected City receives the same amount).
+  let foodPerCity = null;
+  try {
+    const v = city?.getSentFoodPerCity?.();
+    if (typeof v === "number" && isFinite(v)) foodPerCity = v;
+  } catch (e) {
+    console.error("[ETFI] getConnectedCitiesFood: getSentFoodPerCity failed", e);
+  }
+
+  for (const id of ids) {
+    const s = Cities.get(id);
+    if (!s) continue;
+    if (s.isTown) continue; // Cities only — connected Towns do not receive food.
+    cities.push({
+      id,
+      name: Locale.compose(s.name),
+      food: foodPerCity,
+    });
+  }
+  return cities;
+}
+
+// --- converted gold (default Town behavior) --------------------------------
+//
+// The default Town behavior (LOC_PROJECT_DEFAULT_TOOLTIP_DESCRIPTION) converts
+// all of the Town's Production into Gold. This returns the Town's Production and
+// Gold per turn and their sum — the effective Gold/turn the Town yields once the
+// Production conversion is applied.
+//
+// Source: same yield API the base City Details panel uses
+// (base-standard/ui/city-details/model-city-details.js):
+// city.Yields.getNetYield(YieldTypes.YIELD_*).
+export function getConvertedGold(city) {
+  let production = 0;
+  let gold = 0;
+  try {
+    const y = city?.Yields;
+    if (y && typeof YieldTypes !== "undefined") {
+      production = y.getNetYield(YieldTypes.YIELD_PRODUCTION) || 0;
+      gold = y.getNetYield(YieldTypes.YIELD_GOLD) || 0;
+    }
+  } catch (e) {
+    console.error("[ETFI] getConvertedGold failed", e);
+  }
+  return { production, gold, total: production + gold };
+}
+
+// The Growing Town focus grants +50% growth (EFFECT_CITY_ADJUST_GROWTH
+// Percent=50), which the engine applies as a reduction to the Food needed to
+// grow population. It applies only while the town has no project (Growing).
+export const GROWTH_FOCUS_MULTIPLIER = 1.5;
+
+// Food + turns SAVED by using the Growing Town focus, computed per option 1:
+// anchor on the engine's exact live threshold for the town's current state and
+// derive the opposite side via the focus's +50%. Returns null if not derivable.
+//   * Town currently Growing  -> the live threshold already includes the +50%,
+//     so it IS the with-focus value; the without-focus value is threshold*1.5.
+//   * Town currently specialized -> the +50% is inactive, so the live threshold
+//     IS the without-focus value; the with-focus value is threshold/1.5.
+// NOTE: the derived side is exact only when no OTHER growth modifiers stack;
+// the engine-reported side is always exact (see town-focus-tooltip notes).
+export function getGrowthSavings(city) {
+  try {
+    const g = city?.Growth;
+    if (!g) return null;
+    const threshold = g.getNextGrowthFoodThreshold?.()?.value;
+    if (typeof threshold !== "number" || !(threshold > 0)) return null;
+
+    const currentFood = typeof g.currentFood === "number" ? g.currentFood : 0;
+    let foodPerTurn = 0;
+    try {
+      const y = city?.Yields;
+      if (y && typeof YieldTypes !== "undefined") foodPerTurn = y.getNetYield(YieldTypes.YIELD_FOOD) || 0;
+    } catch {}
+
+    const growing = typeof GrowthTypes !== "undefined" && g.growthType === GrowthTypes.EXPAND;
+    const withFocus = growing ? threshold : threshold / GROWTH_FOCUS_MULTIPLIER;
+    const withoutFocus = growing ? threshold * GROWTH_FOCUS_MULTIPLIER : threshold;
+    const foodSaved = withoutFocus - withFocus;
+
+    // Turns saved = difference in turns-to-grow between the two thresholds at the
+    // town's current Food/turn (same currentFood + rate on both sides).
+    let turnsSaved = null;
+    if (foodPerTurn > 0) {
+      const turnsFor = (thr) => Math.max(0, Math.ceil((thr - currentFood) / foodPerTurn));
+      turnsSaved = turnsFor(withoutFocus) - turnsFor(withFocus);
+    }
+
+    return { foodSaved, turnsSaved, withFocus, withoutFocus, foodPerTurn };
+  } catch (e) {
+    console.error("[ETFI] getGrowthSavings failed", e);
+    return null;
+  }
+}
+
 // --- building helpers (Religious Site) -------------------------------------
 
 // Internal helper (not imported directly by builders).

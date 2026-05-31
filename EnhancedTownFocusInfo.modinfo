@@ -57,7 +57,7 @@
 					<Item>ui/etfi-town-focus/fort-town.js</Item>
 					<Item>ui/etfi-town-focus/resort-town.js</Item>
 					<Item>ui/etfi-town-focus/factory-town.js</Item>
-					<Item>ui/etfi-details/etfi-details.js</Item>
+					<Item>ui/etfi-details/etfi-tooltip-details.js</Item>
 					<Item>ui/production-chooser/town-focus-tooltip.js</Item>
 					<Item>ui/production-chooser/etfi-town-focus-section.js</Item>
 				</UIScripts>
