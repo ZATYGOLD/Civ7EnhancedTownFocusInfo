@@ -20,7 +20,8 @@ import TooltipManager from "/core/ui/tooltips/tooltip-manager.js";
 import { IsElement } from "/core/ui/utilities/utilities-dom.js";
 import { GetTownFocusBlp } from "/base-standard/ui/production-chooser/production-chooser-helpers.js";
 import { AdvisorUtilities } from "/base-standard/ui/tutorial/advisor-utilities.js";
-import { getConnectedCitiesFood, getConvertedGold, composeWithFallback } from "../../etfi-utilities.js";
+import { getConnectedCitiesFood, getConvertedGold, composeWithFallback, isTownGrowing } from "../../etfi-utilities.js";
+import { buildFocusModel, focusHeaderYield } from "../etfi-town-focus/focus-models.js";
 // Imported for its side effect: registers the <etfi-tooltip-details> custom
 // element (also loaded via modinfo) and provides the tag name we instantiate.
 import { ETFI_TOOLTIP_DETAILS_TAG } from "../etfi-details/etfi-tooltip-details.js";
@@ -142,6 +143,17 @@ class EtfiTownFocusTooltipType {
     }
     return null;
   }
+  // The hovered focus's ProjectType string (e.g. "PROJECT_TOWN_PRODUCTION"),
+  // used to look up its preview model.
+  getProjectTypeString() {
+    const pt = this.getProjectType();
+    if (pt == null) return null;
+    try {
+      return GameInfo.Projects.lookup(pt)?.ProjectType ?? null;
+    } catch {
+      return null;
+    }
+  }
   getDescription() {
     if (!this.target) return null;
     if (IsElement(this.target, "town-focus-chooser-item")) {
@@ -240,22 +252,37 @@ class EtfiTownFocusTooltipType {
   }
   // Feed the <etfi-tooltip-details> container its model and trigger a re-render
   // by bumping data-rev. Builds the default-Town breakdown:
-  //   * Converted Gold: Production (converted) + base Gold = total Gold/turn,
+  //   * Town's Gold: Production (converted) + base Gold = total Gold/turn,
   //   * Food Sent to Connected Cities: Food/turn sent to each connected City.
+  // While the town is still Growing (no active focus), the hovered focus's
+  // yields are unrealized, so we fold them into the preview: its Production into
+  // Town's Gold (all Production converts to Gold) and its Food into Food Sent
+  // (split evenly across the connected Cities). A specialized town already
+  // realizes its focus, so its live values are shown unchanged.
   updateDetails(city) {
     const sections = [];
 
-    // Total Gold — all of the Town's Production is converted into Gold, so the
-    // total Gold/turn = Production + base Gold. One inline row: Production and
-    // Gold (split by a vertical divider) on the left, the total as a pill right.
-    const { production, gold, total } = getConvertedGold(city);
-    if (production > 0 || gold > 0) {
+    let unrealizedProduction = 0;
+    let unrealizedFood = 0;
+    if (isTownGrowing(city) && !this.isGrowingFocus()) {
+      const model = buildFocusModel(city, this.getProjectTypeString());
+      unrealizedProduction = focusHeaderYield(model, "YIELD_PRODUCTION");
+      unrealizedFood = focusHeaderYield(model, "YIELD_FOOD");
+    }
+
+    // Town's Gold — Production (live + any previewed focus gain) + base Gold.
+    // One inline row: Production and Gold (split by a vertical divider) on the
+    // left, the total as a pill on the right.
+    const { production, gold } = getConvertedGold(city);
+    const totalProduction = production + unrealizedProduction;
+    const total = totalProduction + gold;
+    if (totalProduction > 0 || gold > 0) {
       sections.push({
         title: composeWithFallback("LOC_MOD_ETFI_GOLD_CONVERTED", "Town's Gold"),
         rows: [
           {
             items: [
-              { yieldType: "YIELD_PRODUCTION", value: production, sign: false },
+              { yieldType: "YIELD_PRODUCTION", value: totalProduction, sign: false },
               { yieldType: "YIELD_GOLD", value: gold, sign: false },
             ],
             pill: { yieldType: "YIELD_GOLD", value: total, sign: false },
@@ -264,20 +291,25 @@ class EtfiTownFocusTooltipType {
       });
     }
 
-    // Food Sent to Connected Cities — one row per connected City (only when the
-    // Town is actually sending Food, i.e. getSentFoodPerCity() > 0). The Growing
-    // Town keeps its Food for growth, so it shows no Food-Sent section.
+    // Food Sent to Connected Cities — one row per connected City. While Growing
+    // the town sends nothing (getSentFoodPerCity() is 0), so we preview the
+    // focus's Food split evenly across the Cities. The Growing Town focus keeps
+    // its Food for growth, so it shows no Food-Sent section.
     if (!this.isGrowingFocus()) {
-      const foodCities = getConnectedCitiesFood(city)
-        .filter((c) => typeof c.food === "number" && c.food > 0);
-      if (foodCities.length) {
+      const foodCities = getConnectedCitiesFood(city);
+      const addPerCity = unrealizedFood > 0 && foodCities.length ? unrealizedFood / foodCities.length : 0;
+      const rows = foodCities
+        .map((c) => ({ name: c.name, food: (typeof c.food === "number" ? c.food : 0) + addPerCity }))
+        .filter((c) => c.food > 0)
+        .map((c) => ({
+          iconId: "CITY_URBAN",
+          name: c.name,
+          pill: { yieldType: "YIELD_FOOD", value: c.food },
+        }));
+      if (rows.length) {
         sections.push({
           title: composeWithFallback("LOC_MOD_ETFI_FOOD_TO_CITIES", "Food Sent"),
-          rows: foodCities.map((c) => ({
-            iconId: "CITY_URBAN",
-            name: c.name,
-            pill: { yieldType: "YIELD_FOOD", value: c.food },
-          })),
+          rows,
         });
       }
     }

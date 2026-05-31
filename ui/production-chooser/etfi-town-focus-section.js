@@ -12,15 +12,7 @@ import {
   renderSectionPanels,
   ETFI_SECTION_CFG,
 } from "../etfi-details/etfi-render.js";
-import { buildFoodModel } from "../etfi-town-focus/farm-fish-towns.js";
-import { buildMiningModel } from "../etfi-town-focus/mining-town.js";
-import { buildTradeModel } from "../etfi-town-focus/trade-town.js";
-import { buildHubModel } from "../etfi-town-focus/hub-town.js";
-import { buildTempleModel } from "../etfi-town-focus/temple-town.js";
-import { buildUrbanModel } from "../etfi-town-focus/urban-town.js";
-import { buildFortModel } from "../etfi-town-focus/fort-town.js";
-import { buildResortModel } from "../etfi-town-focus/resort-town.js";
-import { buildFactoryModel } from "../etfi-town-focus/factory-town.js";
+import { buildFocusModel } from "../etfi-town-focus/focus-models.js";
 
 const ETFI_TOWN_FOCUS_WIDTH = 25;
 (function injectWidthOverride() {
@@ -103,31 +95,7 @@ function projectTypeString(root) {
 }
 
 function buildModel(item) {
-  const city = getTownCity();
-  if (!city) return null;
-  switch (projectTypeString(item.Root)) {
-    case "PROJECT_TOWN_GRANARY":
-    case "PROJECT_TOWN_FISHING":
-      return buildFoodModel(city);
-    case "PROJECT_TOWN_PRODUCTION":
-      return buildMiningModel(city);
-    case "PROJECT_TOWN_TRADE":
-      return buildTradeModel(city);
-    case "PROJECT_TOWN_INN":
-      return buildHubModel(city);
-    case "PROJECT_TOWN_TEMPLE":
-      return buildTempleModel(city);
-    case "PROJECT_TOWN_URBAN_CENTER":
-      return buildUrbanModel(city);
-    case "PROJECT_TOWN_FORT":
-      return buildFortModel(city);
-    case "PROJECT_TOWN_RESORT":
-      return buildResortModel(city);
-    case "PROJECT_TOWN_FACTORY":
-      return buildFactoryModel(city);
-    default:
-      return null;
-  }
+  return buildFocusModel(getTownCity(), projectTypeString(item.Root));
 }
 
 // --- panel width constraint ------------------------------------------------
