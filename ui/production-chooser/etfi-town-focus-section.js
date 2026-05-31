@@ -76,7 +76,7 @@ function iconEl(spec) {
 
 function vDivider() {
   const d = document.createElement("div");
-  d.className = "self-stretch shrink-0 mx-2";
+  d.className = "self-stretch shrink-0 mx-1";
   d.style.cssText = `width:0.0625rem; background-color:${DIVIDER_COLOR};`;
   return d;
 }
