@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-3.0-only
+// Copyright (C) 2025-2026 Zatygold
 /**
  * Please, always use ModSettingsManager to save and read settings in your mod.
  * Right now if you try to use **multiple** keys in localStorage, it will break reading
