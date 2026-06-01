@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Mod id="EnhancedTownFocusInfoMod" version="20400" xmlns="ModInfo">
+<Mod id="EnhancedTownFocusInfoMod" version="20302" xmlns="ModInfo">
 	<Properties>
 		<Name>LOC_MOD_ENHANCEDTOWNFOCUSINFO</Name>
 		<Description>LOC_MOD_ENHANCEDTOWNFOCUSINFO_DESCRIPTION</Description>
