@@ -27,5 +27,18 @@
     <Replace Tag="LOC_OPTIONS_GROUP_ETFI" Language="ru_RU"><Text>Моды Zatygold</Text></Replace>
     <Replace Tag="LOC_MOD_ETFI_YIELDS_OPTION_COLORFUL" Language="ru_RU"><Text>Enhanced Town Focus Info • Раскрашивать предпросмотр дохода</Text></Replace>
     <Replace Tag="LOC_MOD_ETFI_YIELDS_OPTION_COLORFUL_DESC" Language="ru_RU"><Text>Раскрашивает предпросмотр дохода по типу, чтобы их было легче различать.</Text></Replace>
+
+    <!-- Добавленные записи -->
+    <Replace Tag="LOC_MOD_ETFI_FOOD_TO_CITIES" Language="ru_RU"><Text>Отправлено пищи</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_GOLD_CONVERTED" Language="ru_RU"><Text>Золото городка</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_EXPAND_DETAILS" Language="ru_RU"><Text>Показать подробности</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_PRODUCTION_TO_GOLD" Language="ru_RU"><Text>Всё [icon:YIELD_PRODUCTION] производство городка конвертируется в [icon:YIELD_GOLD] золото.</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_COMING_SOON" Language="ru_RU"><Text>Скоро</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_GROWTH" Language="ru_RU"><Text>Рост</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_FOOD_SAVED" Language="ru_RU"><Text>Сэкономлено пищи</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_TURNS_SAVED" Language="ru_RU"><Text>Сэкономлено ходов</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_RESOURCES" Language="ru_RU"><Text>Ресурсы</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_WALLS" Language="ru_RU"><Text>Стены</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_FORTIFICATIONS" Language="ru_RU"><Text>Укрепления</Text></Replace>
   </LocalizedText>
 </Database>

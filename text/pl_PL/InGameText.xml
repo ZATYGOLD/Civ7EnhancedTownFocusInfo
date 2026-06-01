@@ -27,5 +27,18 @@
     <Replace Tag="LOC_OPTIONS_GROUP_ETFI" Language="pl_PL"><Text>Mody Zatygolda</Text></Replace>
     <Replace Tag="LOC_MOD_ETFI_YIELDS_OPTION_COLORFUL" Language="pl_PL"><Text>Enhanced Town Focus Info • Koloruj podglądy plonów</Text></Replace>
     <Replace Tag="LOC_MOD_ETFI_YIELDS_OPTION_COLORFUL_DESC" Language="pl_PL"><Text>Koloruje podglądy plonów według ich typu, ułatwiając ich rozróżnianie.</Text></Replace>
+
+    <!-- Dodane wpisy -->
+    <Replace Tag="LOC_MOD_ETFI_FOOD_TO_CITIES" Language="pl_PL"><Text>Wysłana żywność</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_GOLD_CONVERTED" Language="pl_PL"><Text>Złoto miasteczka</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_EXPAND_DETAILS" Language="pl_PL"><Text>Rozwiń szczegóły</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_PRODUCTION_TO_GOLD" Language="pl_PL"><Text>Cała [icon:YIELD_PRODUCTION] produkcja miasteczka jest przekształcana w [icon:YIELD_GOLD] złoto.</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_COMING_SOON" Language="pl_PL"><Text>Wkrótce</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_GROWTH" Language="pl_PL"><Text>Wzrost</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_FOOD_SAVED" Language="pl_PL"><Text>Zaoszczędzona żywność</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_TURNS_SAVED" Language="pl_PL"><Text>Zaoszczędzone tury</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_RESOURCES" Language="pl_PL"><Text>Zasoby</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_WALLS" Language="pl_PL"><Text>Mury</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_FORTIFICATIONS" Language="pl_PL"><Text>Fortyfikacje</Text></Replace>
   </LocalizedText>
 </Database>

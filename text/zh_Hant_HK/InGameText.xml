@@ -27,5 +27,18 @@
     <Replace Tag="LOC_OPTIONS_GROUP_ETFI" Language="zh_Hant_HK"><Text>Zatygold 的模組</Text></Replace>
     <Replace Tag="LOC_MOD_ETFI_YIELDS_OPTION_COLORFUL" Language="zh_Hant_HK"><Text>Enhanced Town Focus Info • 為產出預覽上色</Text></Replace>
     <Replace Tag="LOC_MOD_ETFI_YIELDS_OPTION_COLORFUL_DESC" Language="zh_Hant_HK"><Text>根據類型為產出預覽上色，使其更易於區分。</Text></Replace>
+
+    <!-- 新增條目 -->
+    <Replace Tag="LOC_MOD_ETFI_FOOD_TO_CITIES" Language="zh_Hant_HK"><Text>已送出食物</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_GOLD_CONVERTED" Language="zh_Hant_HK"><Text>城鎮金幣</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_EXPAND_DETAILS" Language="zh_Hant_HK"><Text>展開詳情</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_PRODUCTION_TO_GOLD" Language="zh_Hant_HK"><Text>城鎮所有的[icon:YIELD_PRODUCTION]生產力轉化為[icon:YIELD_GOLD]金幣。</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_COMING_SOON" Language="zh_Hant_HK"><Text>敬請期待</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_GROWTH" Language="zh_Hant_HK"><Text>成長</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_FOOD_SAVED" Language="zh_Hant_HK"><Text>節省的食物</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_TURNS_SAVED" Language="zh_Hant_HK"><Text>節省的回合</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_RESOURCES" Language="zh_Hant_HK"><Text>資源</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_WALLS" Language="zh_Hant_HK"><Text>城牆</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_FORTIFICATIONS" Language="zh_Hant_HK"><Text>防禦工事</Text></Replace>
   </LocalizedText>
 </Database>

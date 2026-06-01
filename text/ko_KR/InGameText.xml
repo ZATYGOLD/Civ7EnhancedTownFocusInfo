@@ -27,5 +27,18 @@
     <Replace Tag="LOC_OPTIONS_GROUP_ETFI" Language="ko_KR"><Text>Zatygold의 모드</Text></Replace>
     <Replace Tag="LOC_MOD_ETFI_YIELDS_OPTION_COLORFUL" Language="ko_KR"><Text>Enhanced Town Focus Info • 산출량 미리보기에 색상 적용</Text></Replace>
     <Replace Tag="LOC_MOD_ETFI_YIELDS_OPTION_COLORFUL_DESC" Language="ko_KR"><Text>산출량 미리보기를 유형별로 색상으로 구분하여 더 쉽게 구별할 수 있게 합니다.</Text></Replace>
+
+    <!-- 추가 항목 -->
+    <Replace Tag="LOC_MOD_ETFI_FOOD_TO_CITIES" Language="ko_KR"><Text>전달된 식량</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_GOLD_CONVERTED" Language="ko_KR"><Text>마을의 금</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_EXPAND_DETAILS" Language="ko_KR"><Text>세부 정보 펼치기</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_PRODUCTION_TO_GOLD" Language="ko_KR"><Text>마을의 모든 [icon:YIELD_PRODUCTION] 생산력이 [icon:YIELD_GOLD] 금으로 전환됩니다.</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_COMING_SOON" Language="ko_KR"><Text>출시 예정</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_GROWTH" Language="ko_KR"><Text>성장</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_FOOD_SAVED" Language="ko_KR"><Text>절약된 식량</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_TURNS_SAVED" Language="ko_KR"><Text>단축된 턴</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_RESOURCES" Language="ko_KR"><Text>자원</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_WALLS" Language="ko_KR"><Text>성벽</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_FORTIFICATIONS" Language="ko_KR"><Text>요새</Text></Replace>
   </LocalizedText>
 </Database>

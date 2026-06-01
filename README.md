@@ -2,6 +2,23 @@
 
 A mod for Civilization VII that enhances the display of town focus yield bonuses, showing detailed breakdowns of improvements, buildings, and trade routes that contribute to specialization bonuses.
 
+## Version 2.3.3
+
+### What's New
+
+- **Expand Details toggle:** a checkbox in the Town Focus panel header switches each focus between showing its full breakdown inline on the card (checked, the default) and a compact card with the breakdown moved into the hover tooltip (unchecked). The choice is remembered per settlement.
+- **Expanded focus tooltip:** when details are moved to the hover, the tooltip widens into two columns split by a divider — the focus description and its categories on the left, the generic Town behavior with **Town's Gold** and **Food Sent** on the right — with the "Requires…" line as a centered footer.
+- **Town's Gold breakdown:** Town's Gold now lists current Production, the town focus's *additional* Production/Gold on its own line, and current Gold — consistently whether you're previewing a focus on a Growing town (added on top) or viewing a specialized town (the active focus's contribution is broken out of the totals).
+- **Growing Town preview:** a Growing town's tooltip shows its "+50% Growth" effect and a **Coming Soon** placeholder for the food/growth breakdown, while still previewing the Production→Gold conversion. Food Sent is previewed (split across connected Cities) when a food focus is considered.
+
+### Maintenance
+
+- Unified the Town's Gold / Food Sent rendering into the shared render kit (removed the separate tooltip-details element), with naming/consistency cleanup and trimmed comments.
+
+### Languages
+
+- Re-synced all supported languages (English, French, Italian, Japanese, Korean, Polish, Russian, Simplified Chinese, Traditional Chinese) to the current strings.
+
 ## Version 2.3.2
 
 ### What's New

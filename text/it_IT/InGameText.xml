@@ -27,5 +27,18 @@
     <Replace Tag="LOC_OPTIONS_GROUP_ETFI" Language="it_IT"><Text>Mod di Zatygold</Text></Replace>
     <Replace Tag="LOC_MOD_ETFI_YIELDS_OPTION_COLORFUL" Language="it_IT"><Text>Enhanced Town Focus Info • Colora le anteprime delle rendite</Text></Replace>
     <Replace Tag="LOC_MOD_ETFI_YIELDS_OPTION_COLORFUL_DESC" Language="it_IT"><Text>Colora le anteprime delle rendite in base al tipo, rendendole più facili da distinguere.</Text></Replace>
+
+    <!-- Voci aggiunte -->
+    <Replace Tag="LOC_MOD_ETFI_FOOD_TO_CITIES" Language="it_IT"><Text>Cibo inviato</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_GOLD_CONVERTED" Language="it_IT"><Text>Oro del centro</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_EXPAND_DETAILS" Language="it_IT"><Text>Espandi dettagli</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_PRODUCTION_TO_GOLD" Language="it_IT"><Text>Tutta la[icon:YIELD_PRODUCTION] Produzione del centro è convertita in[icon:YIELD_GOLD] Oro.</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_COMING_SOON" Language="it_IT"><Text>Prossimamente</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_GROWTH" Language="it_IT"><Text>Crescita</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_FOOD_SAVED" Language="it_IT"><Text>Cibo risparmiato</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_TURNS_SAVED" Language="it_IT"><Text>Turni risparmiati</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_RESOURCES" Language="it_IT"><Text>Risorse</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_WALLS" Language="it_IT"><Text>Mura</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_FORTIFICATIONS" Language="it_IT"><Text>Fortificazioni</Text></Replace>
   </LocalizedText>
 </Database>

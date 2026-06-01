@@ -425,6 +425,19 @@ export function getConvertedGold(city) {
   return { production, gold, total: production + gold };
 }
 
+// True when the town has no active focus (default EXPAND/Growing mode): its
+// Production still converts to Gold, but its Food feeds growth (none is sent).
+// Used to decide whether a hovered focus's yields are unrealized (preview) vs.
+// already live.
+export function isTownGrowing(city) {
+  try {
+    const gt = city?.Growth?.growthType;
+    return typeof GrowthTypes !== "undefined" && gt === GrowthTypes.EXPAND;
+  } catch {
+    return false;
+  }
+}
+
 // The Growing Town focus grants +50% growth (EFFECT_CITY_ADJUST_GROWTH
 // Percent=50), which the engine applies as a reduction to the Food needed to
 // grow population. It applies only while the town has no project (Growing).

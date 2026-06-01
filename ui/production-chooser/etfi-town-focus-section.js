@@ -3,7 +3,8 @@
 // Author: Zatygold
 
 import { TownFocusChooserItem } from "/base-standard/ui/production-chooser/town-focus-section.js";
-import { getTownCity } from "../../etfi-utilities.js";
+import { getTownCity, composeWithFallback } from "../../etfi-utilities.js";
+import { getHideDetails, setHideDetails } from "../etfi-details/etfi-view-state.js";
 import { ETFI_TOWN_FOCUS_TOOLTIP_STYLE } from "./town-focus-tooltip.js";
 import {
   yieldPill,
@@ -12,17 +13,15 @@ import {
   renderSectionPanels,
   ETFI_SECTION_CFG,
 } from "../etfi-details/etfi-render.js";
-import { buildFoodModel } from "../etfi-town-focus/farm-fish-towns.js";
-import { buildMiningModel } from "../etfi-town-focus/mining-town.js";
-import { buildTradeModel } from "../etfi-town-focus/trade-town.js";
-import { buildHubModel } from "../etfi-town-focus/hub-town.js";
-import { buildTempleModel } from "../etfi-town-focus/temple-town.js";
-import { buildUrbanModel } from "../etfi-town-focus/urban-town.js";
-import { buildFortModel } from "../etfi-town-focus/fort-town.js";
-import { buildResortModel } from "../etfi-town-focus/resort-town.js";
-import { buildFactoryModel } from "../etfi-town-focus/factory-town.js";
+import { buildFocusModel } from "../etfi-town-focus/focus-models.js";
 
 const ETFI_TOWN_FOCUS_WIDTH = 25;
+
+// When the panel carries the `etfi-hide-details` class (toggled by the header
+// checkbox), every focus card's detail zones are hidden, leaving just the name
+// + yield pills. The hide state lives in the shared etfi-view-state module so
+// the focus hover tooltip can read it too. Defaults to showing details.
+
 (function injectWidthOverride() {
   try {
     if (document.getElementById("etfi-width-override")) return;
@@ -31,7 +30,8 @@ const ETFI_TOWN_FOCUS_WIDTH = 25;
     style.id = "etfi-width-override";
     style.textContent =
       `panel-town-focus { width: ${W}rem !important; max-width: ${W}rem !important; }` +
-      `panel-town-focus town-focus-chooser-item { width: 100% !important; }`;
+      `panel-town-focus town-focus-chooser-item { width: 100% !important; }` +
+      `panel-town-focus.etfi-hide-details .etfi-detail-zone { display: none !important; }`;
     (document.head || document.documentElement).appendChild(style);
   } catch (e) {
     console.error("[ETFI] width override failed", e);
@@ -103,31 +103,7 @@ function projectTypeString(root) {
 }
 
 function buildModel(item) {
-  const city = getTownCity();
-  if (!city) return null;
-  switch (projectTypeString(item.Root)) {
-    case "PROJECT_TOWN_GRANARY":
-    case "PROJECT_TOWN_FISHING":
-      return buildFoodModel(city);
-    case "PROJECT_TOWN_PRODUCTION":
-      return buildMiningModel(city);
-    case "PROJECT_TOWN_TRADE":
-      return buildTradeModel(city);
-    case "PROJECT_TOWN_INN":
-      return buildHubModel(city);
-    case "PROJECT_TOWN_TEMPLE":
-      return buildTempleModel(city);
-    case "PROJECT_TOWN_URBAN_CENTER":
-      return buildUrbanModel(city);
-    case "PROJECT_TOWN_FORT":
-      return buildFortModel(city);
-    case "PROJECT_TOWN_RESORT":
-      return buildResortModel(city);
-    case "PROJECT_TOWN_FACTORY":
-      return buildFactoryModel(city);
-    default:
-      return null;
-  }
+  return buildFocusModel(getTownCity(), projectTypeString(item.Root));
 }
 
 // --- panel width constraint ------------------------------------------------
@@ -142,6 +118,71 @@ function constrainPanelWidth(fromEl) {
     }
   } catch (err) {
     console.error("[ETFI] panel width constraint failed", err);
+  }
+}
+
+// Static hover label for the details checkbox. Checked expands the details
+// inline on each focus; unchecked moves them into the hover tooltip.
+function expandDetailsLabel() {
+  return composeWithFallback("LOC_MOD_ETFI_EXPAND_DETAILS", "Expand Details");
+}
+
+// Inject the details checkbox into the Town Focus panel header (once) and keep
+// the panel's state in sync on every (re)attach. Checking the box expands the
+// details inline; unchecking adds the `etfi-hide-details` class, which moves
+// each card's detail zones into the hover tooltip instead.
+function ensureHideCheckbox(fromEl) {
+  try {
+    const panel = fromEl?.closest?.("panel-town-focus")
+      || fromEl?.getRootNode?.()?.querySelector?.("panel-town-focus")
+      || document.querySelector("panel-town-focus");
+    if (!panel) return;
+    panel.classList.toggle("etfi-hide-details", getHideDetails());
+
+    // The panel persists while you switch settlements, so re-sync the existing
+    // checkbox to the now-selected town's own state rather than recreating it.
+    const existing = panel.querySelector("#etfi-hide-details-row fxs-checkbox");
+    if (existing) {
+      existing.setAttribute("selected", getHideDetails() ? "false" : "true");
+      return;
+    }
+
+    const checkbox = document.createElement("fxs-checkbox");
+    // Checked = expand Details inline (the default); unchecked moves them to the
+    // hover tooltip.
+    checkbox.setAttribute("selected", getHideDetails() ? "false" : "true");
+    checkbox.setAttribute("data-tooltip-content", expandDetailsLabel());
+    checkbox.addEventListener("component-value-changed", (e) => {
+      const showDetails = !!(e && e.detail && e.detail.value);
+      setHideDetails(!showDetails);
+      panel.classList.toggle("etfi-hide-details", getHideDetails());
+    });
+
+    const row = document.createElement("div");
+    row.id = "etfi-hide-details-row";
+    row.className = "flex flex-row items-center";
+    row.appendChild(checkbox);
+
+    // Place the checkbox OUT of the normal flow so it doesn't add a row that
+    // pushes the focus list down. The panel Root is already position:relative
+    // (and the close button is anchored to it at top-right), so anchor the
+    // checkbox to the Root's top-left corner — mirroring the close button. We do
+    // NOT position the content itself: that would paint the content over the
+    // close button and make it unclickable. Fall back to a header row if needed.
+    const header = panel.querySelector("fxs-header");
+    const content = header?.parentElement;
+    if (content) {
+      row.style.cssText = "position:absolute; top:.7rem; left:1.2rem; z-index:1;";
+      content.appendChild(row);
+    } else {
+      const scrollable = panel.querySelector("fxs-scrollable");
+      const host = scrollable?.parentElement;
+      if (!scrollable || !host) return;
+      row.classList.add("justify-end", "w-full", "mb-1");
+      host.insertBefore(row, scrollable);
+    }
+  } catch (e) {
+    console.error("[ETFI] ensureHideCheckbox failed", e);
   }
 }
 
@@ -165,8 +206,10 @@ const baseOnAttach = TownFocusChooserItem.prototype.onAttach;
 
 TownFocusChooserItem.prototype.onAttach = function () {
   if (baseOnAttach) baseOnAttach.call(this);
-  // Now that the item is in the DOM, pin the panel width.
+  // Now that the item is in the DOM, pin the panel width and ensure the
+  // hide-details checkbox is present.
   constrainPanelWidth(this.Root);
+  ensureHideCheckbox(this.Root);
 };
 
 TownFocusChooserItem.prototype.render = function () {
@@ -224,13 +267,13 @@ TownFocusChooserItem.prototype.render = function () {
   this.etfiBottom = null;
   if (!inSummary) {
     this.etfiTop = document.createElement("div");
-    this.etfiTop.className = "w-full flex flex-col";
+    this.etfiTop.className = "etfi-detail-zone w-full flex flex-col";
     this.etfiDetails = document.createElement("div");
-    this.etfiDetails.className = "img-base-ticket-bg-container w-full flex flex-col mt-2 text-2xs";
+    this.etfiDetails.className = "etfi-detail-zone img-base-ticket-bg-container w-full flex flex-col mt-2 text-2xs";
     this.etfiDetails.style.paddingTop = "0.5rem";
     this.etfiDetails.style.paddingBottom = "0.5rem";
     this.etfiBottom = document.createElement("div");
-    this.etfiBottom.className = "w-full flex flex-col";
+    this.etfiBottom.className = "etfi-detail-zone w-full flex flex-col";
 
     if (container) {
       const topRow = document.createElement("div");
