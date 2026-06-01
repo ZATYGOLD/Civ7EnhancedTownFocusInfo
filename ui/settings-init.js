@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-3.0-only
+// Copyright (C) 2025-2026 Zatygold
 import { O as Options, a as OptionType, d as CategoryData, C as CategoryType } from '/core/ui/options/editors/index.chunk.js';
 import { ETFI_Settings } from '../core/settings.js';
 

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-3.0-only
+// Copyright (C) 2025-2026 Zatygold
 // File Path: ui/production-chooser/etfi-town-focus-section.js
 //
 // Author: Zatygold

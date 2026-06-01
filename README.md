@@ -248,10 +248,18 @@ Current language support:
 
 ## Credits
 
-- Original mod concept by Yamada and Mallek
-- Enhanced and maintained by Zatygold
+- Created and maintained by Zatygold
+- Inspired by earlier Town Focus work from Yamada and Mallek (no original code reused)
 - Thanks to the Civilization VII modding community
+
+This mod is an unofficial add-on for Sid Meier's Civilization VII. It contains only original code and assets; Civilization VII and all related trademarks and game content are the property of Firaxis Games and 2K. The license below applies only to this mod's own code and assets.
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details
+Copyright (C) 2025-2026 Zatygold
+
+This program is free software: you can redistribute it and/or modify it under the terms of version 3 of the GNU General Public License as published by the Free Software Foundation.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License along with this program (see the `LICENSE` file). If not, see <https://www.gnu.org/licenses/>.
