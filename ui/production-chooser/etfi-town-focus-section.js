@@ -4,6 +4,7 @@
 
 import { TownFocusChooserItem } from "/base-standard/ui/production-chooser/town-focus-section.js";
 import { getTownCity, composeWithFallback } from "../../etfi-utilities.js";
+import { getHideDetails, setHideDetails } from "../etfi-details/etfi-view-state.js";
 import { ETFI_TOWN_FOCUS_TOOLTIP_STYLE } from "./town-focus-tooltip.js";
 import {
   yieldPill,
@@ -18,8 +19,8 @@ const ETFI_TOWN_FOCUS_WIDTH = 25;
 
 // When the panel carries the `etfi-hide-details` class (toggled by the header
 // checkbox), every focus card's detail zones are hidden, leaving just the name
-// + yield pills. Session state — defaults to showing details.
-let etfiHideDetails = false;
+// + yield pills. The hide state lives in the shared etfi-view-state module so
+// the focus hover tooltip can read it too. Defaults to showing details.
 
 (function injectWidthOverride() {
   try {
@@ -122,7 +123,7 @@ function constrainPanelWidth(fromEl) {
 
 // Hover text for the hide-details checkbox = the action a click performs.
 function hideDetailsTooltip() {
-  return etfiHideDetails
+  return getHideDetails()
     ? composeWithFallback("LOC_MOD_ETFI_VIEW_DETAILS", "View Details")
     : composeWithFallback("LOC_MOD_ETFI_HIDE_DETAILS", "Hide Details");
 }
@@ -136,17 +137,17 @@ function ensureHideCheckbox(fromEl) {
       || fromEl?.getRootNode?.()?.querySelector?.("panel-town-focus")
       || document.querySelector("panel-town-focus");
     if (!panel) return;
-    panel.classList.toggle("etfi-hide-details", etfiHideDetails);
+    panel.classList.toggle("etfi-hide-details", getHideDetails());
     if (panel.querySelector("#etfi-hide-details-row")) return;
 
     const checkbox = document.createElement("fxs-checkbox");
     // Checked = show Details (the default); unchecked hides them.
-    checkbox.setAttribute("selected", etfiHideDetails ? "false" : "true");
+    checkbox.setAttribute("selected", getHideDetails() ? "false" : "true");
     checkbox.setAttribute("data-tooltip-content", hideDetailsTooltip());
     checkbox.addEventListener("component-value-changed", (e) => {
       const showDetails = !!(e && e.detail && e.detail.value);
-      etfiHideDetails = !showDetails;
-      panel.classList.toggle("etfi-hide-details", etfiHideDetails);
+      setHideDetails(!showDetails);
+      panel.classList.toggle("etfi-hide-details", getHideDetails());
       checkbox.setAttribute("data-tooltip-content", hideDetailsTooltip());
     });
 
