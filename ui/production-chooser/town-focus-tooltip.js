@@ -322,12 +322,23 @@ class EtfiTownFocusTooltipType {
   // by a vertical divider: left = focus description + the focus's detail
   // categories; right = the generic Town description + Town's Gold + Food Sent.
   applyLayout(city) {
-    if (getHideDetails()) {
-      // Left categories: the hovered focus's breakdown (same look as inline).
-      const sections = orderFocusSections(buildFocusModel(city, this.getProjectTypeString()));
-      renderSectionPanels(this.focusDetails, sections, ETFI_SECTION_CFG);
-      this.focusDetails.classList.toggle("hidden", sections.length === 0);
+    const growing = this.isGrowingFocus();
+    // Focus breakdown: the Growing Town has no breakdown yet, so it gets a
+    // "Coming Soon" placeholder (shown in BOTH layouts); other focuses get their
+    // category breakdown (only surfaced in the hidden two-column layout — when
+    // details are shown they appear inline on the card instead).
+    let leftSections;
+    if (growing) {
+      const comingSoon = composeWithFallback("LOC_MOD_ETFI_COMING_SOON", "Coming Soon");
+      leftSections = [{ title: comingSoon, rows: [{ iconId: "YIELD_FOOD", name: comingSoon }] }];
+    } else {
+      leftSections = orderFocusSections(buildFocusModel(city, this.getProjectTypeString()));
+    }
+    renderSectionPanels(this.focusDetails, leftSections, ETFI_SECTION_CFG);
+    const hasLeft = leftSections.length > 0;
 
+    if (getHideDetails()) {
+      this.focusDetails.classList.toggle("hidden", !hasLeft);
       this.tooltip.style.width = "44rem";
       this.descDivider.classList.add("hidden");
       // Center the requirements footer under the wide tooltip.
@@ -351,17 +362,22 @@ class EtfiTownFocusTooltipType {
       setChildren(this.bodyRow, [this.topRow, this.botRow]);
     } else {
       this.tooltip.style.width = "";
-      this.focusDetails.classList.add("hidden");
+      // Coming Soon (Growing) shows in normal mode too; other focuses' breakdowns
+      // stay inline on the card, so they're omitted from the single-column body.
+      const showLeft = growing && hasLeft;
+      this.focusDetails.classList.toggle("hidden", !showLeft);
       this.requirementsContainer.classList.remove("justify-center");
       this.requirementsText.classList.remove("text-center");
-      setChildren(this.bodyRow, [
+      const normal = [
         this.sectionDescription,
         this.descDivider,
         this.description,
         this.productionCost,
         this.details,
-        this.gemsContainer,
-      ]);
+      ];
+      if (showLeft) normal.push(this.focusDetails);
+      normal.push(this.gemsContainer);
+      setChildren(this.bodyRow, normal);
     }
   }
   // Feed the <etfi-tooltip-details> container its model and trigger a re-render
@@ -377,29 +393,43 @@ class EtfiTownFocusTooltipType {
   updateDetails(city) {
     const sections = [];
 
-    let unrealizedProduction = 0;
-    let unrealizedFood = 0;
-    let unrealizedGold = 0;
-    if (isTownGrowing(city) && !this.isGrowingFocus()) {
-      const model = buildFocusModel(city, this.getProjectTypeString());
-      unrealizedProduction = focusHeaderYield(model, "YIELD_PRODUCTION");
-      unrealizedFood = focusHeaderYield(model, "YIELD_FOOD");
-      unrealizedGold = focusHeaderYield(model, "YIELD_GOLD");
-    }
-
-    // Town's Gold — all of the Town's Production converts to Gold, plus any Gold
-    // the focus grants directly (e.g. Fort, Resort). One divided row per source:
-    // left = [icon] │ amount, right = the colored Gold it yields.
-    //   * Current Production   ([production icon])  -> Gold,
-    //   * Potential Production ([focus icon])       -> Gold,   (Growing + focus adds Prod)
-    //   * Current Gold         ([gold icon]),
-    //   * Potential Gold       ([focus icon]).               (Growing + focus adds Gold)
+    // The town focus contributes Production and/or Gold; surface that as its own
+    // line(s) in Town's Gold, consistently:
+    //   * Growing town -> the HOVERED focus (previewed, ADDED on top of the live
+    //     Production/Gold base),
+    //   * Specialized  -> the ACTIVE focus (already realized, BROKEN OUT of the
+    //     live values so current Production/Gold show the base amounts).
     const { production, gold } = getConvertedGold(city);
+    const growingTown = isTownGrowing(city);
+    let cProjStr = null, cProjNum = null, cGrowthNum = null;
+    if (growingTown) {
+      if (!this.isGrowingFocus()) {
+        cProjStr = this.getProjectTypeString();
+        cProjNum = this.getProjectType();
+        cGrowthNum = Number(this.target?.dataset?.growthType);
+      }
+    } else {
+      try {
+        cProjNum = city.Growth?.projectType ?? null;
+        cProjStr = cProjNum != null ? (GameInfo.Projects.lookup(cProjNum)?.ProjectType ?? null) : null;
+        cGrowthNum = typeof GrowthTypes !== "undefined" ? GrowthTypes.PROJECT : null;
+      } catch {}
+    }
+    const cModel = cProjStr ? buildFocusModel(city, cProjStr) : null;
+    const addProd = cModel ? focusHeaderYield(cModel, "YIELD_PRODUCTION") : 0;
+    const addGold = cModel ? focusHeaderYield(cModel, "YIELD_GOLD") : 0;
+    // Food preview applies only to a Growing town previewing a food focus.
+    const addFood = growingTown && cModel ? focusHeaderYield(cModel, "YIELD_FOOD") : 0;
+    // When specialized the additional is already in the live totals, so subtract
+    // it to show the base Production / base Gold on the current lines.
+    const baseProduction = growingTown ? production : Math.max(0, production - addProd);
+    const baseGold = growingTown ? gold : Math.max(0, gold - addGold);
+
     const goldPill = (value) => ({ yieldType: "YIELD_GOLD", value, sign: false });
-    // Focus icon (background image) for the "potential" preview rows.
+    // Focus icon (background image) for the additional line(s).
     let focusIconBlp = "";
-    if (unrealizedProduction > 0 || unrealizedGold > 0) {
-      try { focusIconBlp = GetTownFocusBlp(Number(this.target?.dataset?.growthType), this.getProjectType()); } catch {}
+    if (addProd > 0 || addGold > 0) {
+      try { focusIconBlp = GetTownFocusBlp(cGrowthNum, cProjNum); } catch {}
     }
     const focusGoldRow = (value) => ({
       iconClass: "size-5 bg-contain bg-center bg-no-repeat",
@@ -407,11 +437,13 @@ class EtfiTownFocusTooltipType {
       name: fmt(value),
       pill: goldPill(value),
     });
+    // Order: current Production, the focus's additional Production/Gold, current
+    // Gold — so the "additional" line is always the consistent middle line.
     const goldRows = [];
-    if (production > 0) goldRows.push({ iconId: "YIELD_PRODUCTION", name: fmt(production), pill: goldPill(production) });
-    if (unrealizedProduction > 0) goldRows.push(focusGoldRow(unrealizedProduction));
-    if (gold > 0) goldRows.push({ iconId: "YIELD_GOLD", name: fmt(gold), pill: goldPill(gold) });
-    if (unrealizedGold > 0) goldRows.push(focusGoldRow(unrealizedGold));
+    if (baseProduction > 0) goldRows.push({ iconId: "YIELD_PRODUCTION", name: fmt(baseProduction), pill: goldPill(baseProduction) });
+    if (addProd > 0) goldRows.push(focusGoldRow(addProd));
+    if (addGold > 0) goldRows.push(focusGoldRow(addGold));
+    if (baseGold > 0) goldRows.push({ iconId: "YIELD_GOLD", name: fmt(baseGold), pill: goldPill(baseGold) });
     if (goldRows.length) {
       sections.push({
         title: composeWithFallback("LOC_MOD_ETFI_GOLD_CONVERTED", "Town's Gold"),
@@ -425,7 +457,7 @@ class EtfiTownFocusTooltipType {
     // its Food for growth, so it shows no Food-Sent section.
     if (!this.isGrowingFocus()) {
       const foodCities = getConnectedCitiesFood(city);
-      const addPerCity = unrealizedFood > 0 && foodCities.length ? unrealizedFood / foodCities.length : 0;
+      const addPerCity = addFood > 0 && foodCities.length ? addFood / foodCities.length : 0;
       const rows = foodCities
         .map((c) => ({ name: c.name, food: (typeof c.food === "number" ? c.food : 0) + addPerCity }))
         .filter((c) => c.food > 0)

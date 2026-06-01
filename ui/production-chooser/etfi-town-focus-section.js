@@ -138,7 +138,15 @@ function ensureHideCheckbox(fromEl) {
       || document.querySelector("panel-town-focus");
     if (!panel) return;
     panel.classList.toggle("etfi-hide-details", getHideDetails());
-    if (panel.querySelector("#etfi-hide-details-row")) return;
+
+    // The panel persists while you switch settlements, so re-sync the existing
+    // checkbox to the now-selected town's own state rather than recreating it.
+    const existing = panel.querySelector("#etfi-hide-details-row fxs-checkbox");
+    if (existing) {
+      existing.setAttribute("selected", getHideDetails() ? "false" : "true");
+      existing.setAttribute("data-tooltip-content", hideDetailsTooltip());
+      return;
+    }
 
     const checkbox = document.createElement("fxs-checkbox");
     // Checked = show Details (the default); unchecked hides them.
@@ -157,14 +165,15 @@ function ensureHideCheckbox(fromEl) {
     row.appendChild(checkbox);
 
     // Place the checkbox OUT of the normal flow so it doesn't add a row that
-    // pushes the focus list down. Anchor it to the top-left of the panel content
-    // (the title is centered and the close button sits top-right, so the
-    // top-left corner is clear). Fall back to a header row if needed.
+    // pushes the focus list down. The panel Root is already position:relative
+    // (and the close button is anchored to it at top-right), so anchor the
+    // checkbox to the Root's top-left corner — mirroring the close button. We do
+    // NOT position the content itself: that would paint the content over the
+    // close button and make it unclickable. Fall back to a header row if needed.
     const header = panel.querySelector("fxs-header");
     const content = header?.parentElement;
     if (content) {
-      if (getComputedStyle(content).position === "static") content.style.position = "relative";
-      row.style.cssText = "position:absolute; top:-0.2rem; left:0.4rem; z-index:1;";
+      row.style.cssText = "position:absolute; top:.7rem; left:1.2rem; z-index:1;";
       content.appendChild(row);
     } else {
       const scrollable = panel.querySelector("fxs-scrollable");
