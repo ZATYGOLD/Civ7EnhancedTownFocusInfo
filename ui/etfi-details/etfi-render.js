@@ -4,8 +4,8 @@
 //
 // Shared visual "render kit" for the Town Focus UI. These are the yield pills,
 // dividers, section titles, ticket panels, and row renderer used by BOTH:
-//   * the inline focus list   (ui/production-chooser/etfi-town-focus-section.js)
-//   * the hover-tooltip detail (ui/etfi-details/etfi-tooltip-details.js)
+//   * the inline focus list (ui/production-chooser/etfi-town-focus-section.js)
+//   * the focus hover tooltip (ui/production-chooser/town-focus-tooltip.js)
 // Keeping them in one place guarantees the two stay visually identical — a
 // change to a pill color, divider, or spacing happens once.
 //

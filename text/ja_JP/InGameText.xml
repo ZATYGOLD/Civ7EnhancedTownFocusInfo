@@ -27,5 +27,18 @@
     <Replace Tag="LOC_OPTIONS_GROUP_ETFI" Language="ja_JP"><Text>Zatygoldのモッド</Text></Replace>
     <Replace Tag="LOC_MOD_ETFI_YIELDS_OPTION_COLORFUL" Language="ja_JP"><Text>Enhanced Town Focus Info • 産出プレビューに色を付ける</Text></Replace>
     <Replace Tag="LOC_MOD_ETFI_YIELDS_OPTION_COLORFUL_DESC" Language="ja_JP"><Text>産出プレビューを種類別に色分けし、見分けやすくします。</Text></Replace>
+
+    <!-- 追加項目 -->
+    <Replace Tag="LOC_MOD_ETFI_FOOD_TO_CITIES" Language="ja_JP"><Text>送られた食料</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_GOLD_CONVERTED" Language="ja_JP"><Text>町のゴールド</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_EXPAND_DETAILS" Language="ja_JP"><Text>詳細を表示</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_PRODUCTION_TO_GOLD" Language="ja_JP"><Text>町の [icon:YIELD_PRODUCTION] 生産力はすべて [icon:YIELD_GOLD] ゴールドに変換される。</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_COMING_SOON" Language="ja_JP"><Text>近日公開</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_GROWTH" Language="ja_JP"><Text>成長</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_FOOD_SAVED" Language="ja_JP"><Text>節約された食料</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_TURNS_SAVED" Language="ja_JP"><Text>短縮ターン</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_RESOURCES" Language="ja_JP"><Text>資源</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_WALLS" Language="ja_JP"><Text>城壁</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_FORTIFICATIONS" Language="ja_JP"><Text>要塞化施設</Text></Replace>
   </LocalizedText>
 </Database>

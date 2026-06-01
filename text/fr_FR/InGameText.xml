@@ -27,5 +27,18 @@
     <Replace Tag="LOC_OPTIONS_GROUP_ETFI" Language="fr_FR"><Text>Mods de Zatygold</Text></Replace>
     <Replace Tag="LOC_MOD_ETFI_YIELDS_OPTION_COLORFUL" Language="fr_FR"><Text>Enhanced Town Focus Info • Colorer les aperçus des rendements</Text></Replace>
     <Replace Tag="LOC_MOD_ETFI_YIELDS_OPTION_COLORFUL_DESC" Language="fr_FR"><Text>Colore les aperçus des rendements selon leur type, ce qui les rend plus faciles à distinguer.</Text></Replace>
+
+    <!-- Entrées ajoutées -->
+    <Replace Tag="LOC_MOD_ETFI_FOOD_TO_CITIES" Language="fr_FR"><Text>Nourriture envoyée</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_GOLD_CONVERTED" Language="fr_FR"><Text>Or de la commune</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_EXPAND_DETAILS" Language="fr_FR"><Text>Afficher les détails</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_PRODUCTION_TO_GOLD" Language="fr_FR"><Text>Toute la [icon:YIELD_PRODUCTION] Production de la commune est convertie en [icon:YIELD_GOLD] Or.</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_COMING_SOON" Language="fr_FR"><Text>Bientôt disponible</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_GROWTH" Language="fr_FR"><Text>Croissance</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_FOOD_SAVED" Language="fr_FR"><Text>Nourriture économisée</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_TURNS_SAVED" Language="fr_FR"><Text>Tours gagnés</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_RESOURCES" Language="fr_FR"><Text>Ressources</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_WALLS" Language="fr_FR"><Text>Murs</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_FORTIFICATIONS" Language="fr_FR"><Text>Fortifications</Text></Replace>
   </LocalizedText>
 </Database>

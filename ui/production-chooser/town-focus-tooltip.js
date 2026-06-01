@@ -4,17 +4,11 @@
 //
 // Custom hover tooltip for Town Focus options in the production chooser.
 //
-// This is a copy of the base game's `ProductionProjectTooltipType` (from
-// base-standard/ui/production-chooser/panel-production-tooltips.js), renamed and
-// registered under a UNIQUE tooltip style ("etfi-town-focus-tooltip"). The
-// town-focus chooser items are pointed at this style (see
-// etfi-town-focus-section.js, which sets dataset.tooltipStyle to
-// ETFI_TOWN_FOCUS_TOOLTIP_STYLE) so this tooltip renders instead of the base one.
-//
-// It currently behaves IDENTICALLY to the base tooltip. It exists so the Town
-// Focus tooltip can be customized later (e.g. injecting the
-// <etfi-tooltip-details> breakdown) without touching the base game's shared
-// tooltip type.
+// Adapted from the base game's `ProductionProjectTooltipType` and registered
+// under a unique style ("etfi-town-focus-tooltip") that the chooser items point
+// at (set in etfi-town-focus-section.js), so it renders instead of the base one.
+// Adds the focus descriptions, the Town's Gold / Food Sent breakdown, and a
+// two-column "expanded" layout when the panel's inline details are hidden.
 
 import TooltipManager from "/core/ui/tooltips/tooltip-manager.js";
 import { IsElement } from "/core/ui/utilities/utilities-dom.js";
@@ -22,13 +16,10 @@ import { GetTownFocusBlp } from "/base-standard/ui/production-chooser/production
 import { AdvisorUtilities } from "/base-standard/ui/tutorial/advisor-utilities.js";
 import { getConnectedCitiesFood, getConvertedGold, composeWithFallback, isTownGrowing } from "../../etfi-utilities.js";
 import { buildFocusModel, focusHeaderYield } from "../etfi-town-focus/focus-models.js";
-import { fmt, renderSectionPanels, ETFI_SECTION_CFG } from "../etfi-details/etfi-render.js";
+import { fmt, renderSectionPanels, ETFI_SECTION_CFG, ETFI_DETAILS_CFG } from "../etfi-details/etfi-render.js";
 import { getHideDetails } from "../etfi-details/etfi-view-state.js";
-// Imported for its side effect: registers the <etfi-tooltip-details> custom
-// element (also loaded via modinfo) and provides the tag name we instantiate.
-import { ETFI_TOOLTIP_DETAILS_TAG } from "../etfi-details/etfi-tooltip-details.js";
-// Likewise registers the <etfi-tooltip-section-description> element and provides
-// its tag name (the focus description block shown below the header).
+// Registers the <etfi-tooltip-section-description> element (the focus description
+// block below the header) and provides its tag name.
 import { ETFI_TOWN_FOCUS_SECTION_DESCRIPTION } from "../etfi-details/etfi-tooltip-section-description.js";
 
 // The unique tooltip style name the town-focus items reference.
@@ -75,7 +66,9 @@ class EtfiTownFocusTooltipType {
   productionCost = document.createElement("div");
   requirementsContainer = document.createElement("div");
   requirementsText = document.createElement("div");
-  details = document.createElement(ETFI_TOOLTIP_DETAILS_TAG);
+  // Town's Gold + Food Sent. Re-rendered per layout (see applyLayout): normal =
+  // tooltip cfg, hidden = inline cfg (to align with the left categories).
+  details = document.createElement("div");
   gemsContainer = document.createElement("div");
   // Two-column body used when the panel's details are hidden (see applyLayout):
   //   topRow = [leftDesc | divider | rightDesc]  (focus desc | generic desc)
@@ -92,17 +85,10 @@ class EtfiTownFocusTooltipType {
   colDividerTop = document.createElement("div");
   colDividerBot = document.createElement("div");
   focusDetails = document.createElement("div");
-  // Right-side Town's Gold + Food Sent for the hidden (two-column) layout,
-  // rendered with the SAME cfg as the left categories so the first category on
-  // each side lines up exactly. (Normal mode keeps using the `details` element.)
-  rightDetails = document.createElement("div");
   // #endregion
-  // Re-render counters bumped onto the data-rev attributes of the custom
-  // elements to trigger their render() each time we set new content.
-  _detailsRev = 0;
+  // Bumped onto the section-description element's data-rev to re-render it.
   _descRev = 0;
-  // Cached Town's Gold + Food Sent sections (so the hidden layout can re-render
-  // them with the inline cfg).
+  // Cached Town's Gold + Food Sent sections (re-rendered per layout).
   _goldFoodSections = [];
   constructor() {
     this.glow.classList.add(
@@ -345,23 +331,20 @@ class EtfiTownFocusTooltipType {
       this.requirementsContainer.classList.add("justify-center");
       this.requirementsText.classList.add("text-center");
 
-      // Render the right Town's Gold + Food Sent with the SAME cfg as the left
-      // categories so both sides' panels (margins, padding, spacing) are
-      // identical — that's what makes the first category on each side line up.
-      renderSectionPanels(this.rightDetails, this._goldFoodSections || [], ETFI_SECTION_CFG);
-
-      // Two stacked rows so the first category on each side lines up: the
-      // descriptions share a row (equal height via flex stretch), the categories
-      // share the next. The two divider segments stack into one continuous rule.
+      // Render Town's Gold + Food Sent with the SAME cfg as the left categories
+      // so both sides' panels line up; two stacked rows put the descriptions in
+      // one row (equal height) and the categories in the next.
+      renderSectionPanels(this.details, this._goldFoodSections || [], ETFI_SECTION_CFG);
       setChildren(this.leftDesc, [this.sectionDescription]);
       setChildren(this.rightDesc, [this.description, this.productionCost]);
       setChildren(this.leftCats, [this.focusDetails]);
-      setChildren(this.rightCats, [this.rightDetails, this.gemsContainer]);
+      setChildren(this.rightCats, [this.details, this.gemsContainer]);
       setChildren(this.topRow, [this.leftDesc, this.colDividerTop, this.rightDesc]);
       setChildren(this.botRow, [this.leftCats, this.colDividerBot, this.rightCats]);
       setChildren(this.bodyRow, [this.topRow, this.botRow]);
     } else {
       this.tooltip.style.width = "";
+      renderSectionPanels(this.details, this._goldFoodSections || [], ETFI_DETAILS_CFG);
       // Coming Soon (Growing) shows in normal mode too; other focuses' breakdowns
       // stay inline on the card, so they're omitted from the single-column body.
       const showLeft = growing && hasLeft;
@@ -380,16 +363,10 @@ class EtfiTownFocusTooltipType {
       setChildren(this.bodyRow, normal);
     }
   }
-  // Feed the <etfi-tooltip-details> container its model and trigger a re-render
-  // by bumping data-rev. Builds the default-Town breakdown:
-  //   * Town's Gold: a divided row per source (Current Production, Potential
-  //     Production, Current Gold), each shown as the Gold it yields,
-  //   * Food Sent to Connected Cities: Food/turn sent to each connected City.
-  // While the town is still Growing (no active focus), the hovered focus's
-  // yields are unrealized, so we fold them into the preview: its Production into
-  // Town's Gold (all Production converts to Gold) and its Food into Food Sent
-  // (split evenly across the connected Cities). A specialized town already
-  // realizes its focus, so its live values are shown unchanged.
+  // Build the default-Town breakdown into _goldFoodSections (applyLayout renders
+  // it): Town's Gold (Production converted + base Gold + the focus's added
+  // Production/Gold) and Food Sent per connected City. Growing towns preview the
+  // hovered focus's added yields; specialized towns break out the active focus's.
   updateDetails(city) {
     const sections = [];
 
@@ -474,11 +451,8 @@ class EtfiTownFocusTooltipType {
       }
     }
 
+    // applyLayout renders these into `details` with the layout-appropriate cfg.
     this._goldFoodSections = sections;
-    this.details.etfiModel = { sections };
-    // Hide the host when there's nothing to show.
-    this.details.classList.toggle("hidden", sections.length === 0);
-    this.details.setAttribute("data-rev", String(++this._detailsRev));
   }
   // True when the hovered focus is the Growing Town (EXPAND growth / no project)
   // — it keeps its Food for growth instead of sending it to connected Cities.
