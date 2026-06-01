@@ -14,8 +14,7 @@
     <Row Tag="LOC_MOD_ETFI_NATURAL_WONDERS"><Text>Natural Wonders</Text></Row>
     <Row Tag="LOC_MOD_ETFI_FOOD_TO_CITIES"><Text>Food Sent</Text></Row>
     <Row Tag="LOC_MOD_ETFI_GOLD_CONVERTED"><Text>Town's Gold</Text></Row>
-    <Row Tag="LOC_MOD_ETFI_HIDE_DETAILS"><Text>Hide Details</Text></Row>
-    <Row Tag="LOC_MOD_ETFI_VIEW_DETAILS"><Text>View Details</Text></Row>
+    <Row Tag="LOC_MOD_ETFI_EXPAND_DETAILS"><Text>Expand Details</Text></Row>
     <Row Tag="LOC_MOD_ETFI_PRODUCTION_TO_GOLD"><Text>All of the Town's [icon:YIELD_PRODUCTION] Production is converted into [icon:YIELD_GOLD] Gold.</Text></Row>
     <Row Tag="LOC_MOD_ETFI_COMING_SOON"><Text>Coming Soon</Text></Row>
     <Row Tag="LOC_MOD_ETFI_GROWTH"><Text>Growth</Text></Row>
