@@ -140,10 +140,12 @@ function ensureHideCheckbox(fromEl) {
     if (panel.querySelector("#etfi-hide-details-row")) return;
 
     const checkbox = document.createElement("fxs-checkbox");
-    checkbox.setAttribute("selected", etfiHideDetails ? "true" : "false");
+    // Checked = show Details (the default); unchecked hides them.
+    checkbox.setAttribute("selected", etfiHideDetails ? "false" : "true");
     checkbox.setAttribute("data-tooltip-content", hideDetailsTooltip());
     checkbox.addEventListener("component-value-changed", (e) => {
-      etfiHideDetails = !!(e && e.detail && e.detail.value);
+      const showDetails = !!(e && e.detail && e.detail.value);
+      etfiHideDetails = !showDetails;
       panel.classList.toggle("etfi-hide-details", etfiHideDetails);
       checkbox.setAttribute("data-tooltip-content", hideDetailsTooltip());
     });
