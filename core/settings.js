@@ -1,11 +1,3 @@
-// SPDX-License-Identifier: GPL-3.0-only
-// Copyright (C) 2025-2026 Zatygold
-/**
- * Please, always use ModSettingsManager to save and read settings in your mod.
- * Right now if you try to use **multiple** keys in localStorage, it will break reading
- * from localStorage for **every mod**. This is a workaround to avoid this issue, while
- * keeing a namespace to give each mod its own settings.
- */
 const ModSettingsManager = {
     save(key, data) {
         if (localStorage.length > 1) {

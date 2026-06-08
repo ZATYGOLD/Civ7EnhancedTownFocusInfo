@@ -1,6 +1,5 @@
-// SPDX-License-Identifier: GPL-3.0-only
-// Copyright (C) 2025-2026 Zatygold
-import { O as Options, a as OptionType, d as CategoryData, C as CategoryType } from '/core/ui/options/editors/index.chunk.js';
+import { Options, OptionType, CategoryType } from '/core/ui/options/model-options.js';
+import { CategoryData } from '/core/ui/options/options-helpers.js';
 import { ETFI_Settings } from '../core/settings.js';
 
 // We add a dependency on the Options module to ensure default options are loaded before we add our own
