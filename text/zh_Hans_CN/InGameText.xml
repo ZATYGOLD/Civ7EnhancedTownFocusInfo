@@ -25,8 +25,12 @@
 
     <!-- 设置 -->
     <Replace Tag="LOC_OPTIONS_GROUP_ETFI" Language="zh_Hans_CN"><Text>Zatygold 的模组</Text></Replace>
-    <Replace Tag="LOC_MOD_ETFI_YIELDS_OPTION_COLORFUL" Language="zh_Hans_CN"><Text>Enhanced Town Focus Info • 为产出预览着色</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_YIELDS_OPTION_COLORFUL" Language="zh_Hans_CN"><Text>产出标记颜色</Text></Replace>
     <Replace Tag="LOC_MOD_ETFI_YIELDS_OPTION_COLORFUL_DESC" Language="zh_Hans_CN"><Text>根据类型为产出预览着色，使其更易于区分。</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_TOGGLE_ON" Language="zh_Hans_CN"><Text>开</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_TOGGLE_OFF" Language="zh_Hans_CN"><Text>关</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_EXPAND_DETAILS_DEFAULT" Language="zh_Hans_CN"><Text>展开详情</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_EXPAND_DETAILS_DEFAULT_DESC" Language="zh_Hans_CN"><Text>展开或收起详情的默认视图。</Text></Replace>
 
     <!-- 新增条目 -->
     <Replace Tag="LOC_MOD_ETFI_FOOD_TO_CITIES" Language="zh_Hans_CN"><Text>已送出食物</Text></Replace>

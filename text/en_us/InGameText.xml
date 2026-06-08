@@ -35,8 +35,12 @@
     <Row Tag="LOC_MOD_ETFI_FORTIFICATIONS"><Text>Fortifications</Text></Row>
 
     <!-- Settings -->
-    <Row Tag="LOC_OPTIONS_GROUP_ETFI"><Text>Zatygold's Mods</Text></Row>
-    <Row Tag="LOC_MOD_ETFI_YIELDS_OPTION_COLORFUL"><Text>Enhanced Town Focus Info • Color the yield previews</Text></Row>
+    <Row Tag="LOC_OPTIONS_GROUP_ETFI"><Text>Zatygold's Enhanced Town Focus Info</Text></Row>
+    <Row Tag="LOC_MOD_ETFI_YIELDS_OPTION_COLORFUL"><Text>Yield Pill Colors</Text></Row>
     <Row Tag="LOC_MOD_ETFI_YIELDS_OPTION_COLORFUL_DESC"><Text>Colors the yield previews based on their type, making them easier to distinguish.</Text></Row>
+    <Row Tag="LOC_MOD_ETFI_TOGGLE_ON"><Text>On</Text></Row>
+    <Row Tag="LOC_MOD_ETFI_TOGGLE_OFF"><Text>Off</Text></Row>
+    <Row Tag="LOC_MOD_ETFI_EXPAND_DETAILS_DEFAULT"><Text>Expanded Details</Text></Row>
+    <Row Tag="LOC_MOD_ETFI_EXPAND_DETAILS_DEFAULT_DESC"><Text>Expands or compacts the default view of the details.</Text></Row>
   </EnglishText>
 </Database>

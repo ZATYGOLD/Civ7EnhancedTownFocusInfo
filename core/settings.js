@@ -1,11 +1,3 @@
-// SPDX-License-Identifier: GPL-3.0-only
-// Copyright (C) 2025-2026 Zatygold
-/**
- * Please, always use ModSettingsManager to save and read settings in your mod.
- * Right now if you try to use **multiple** keys in localStorage, it will break reading
- * from localStorage for **every mod**. This is a workaround to avoid this issue, while
- * keeing a namespace to give each mod its own settings.
- */
 const ModSettingsManager = {
     save(key, data) {
         if (localStorage.length > 1) {
@@ -36,27 +28,40 @@ const ModSettingsManager = {
 
 export const ETFI_Settings = new class {
     _data = {
-        IsColorful: true
+        IsColorful: true,
+        // When true, each town's focus details start expanded; when false they
+        // start collapsed. The in-panel checkbox still overrides per settlement.
+        ExpandDetailsByDefault: true
     };
 
     constructor() {
         const modSettings = ModSettingsManager.read("ETFI_Settings");
         if (modSettings) {
-            this._data = modSettings;
+            // Merge (not replace) so newly-added settings keep their defaults for
+            // players whose saved data predates them.
+            this._data = { ...this._data, ...modSettings };
         }
     }
 
     save() {
-        console.warn("[ETFI_Settings] saving..", JSON.stringify(this._data));
         ModSettingsManager.save("ETFI_Settings", this._data);
     }
 
     get IsColorful() {
-        return this._data.IsColorful;
+        return this._data.IsColorful !== false;
     }
 
     set IsColorful(value) {
         this._data.IsColorful = value;
+        this.save();
+    }
+
+    get ExpandDetailsByDefault() {
+        return this._data.ExpandDetailsByDefault !== false;
+    }
+
+    set ExpandDetailsByDefault(value) {
+        this._data.ExpandDetailsByDefault = !!value;
         this.save();
     }
 }

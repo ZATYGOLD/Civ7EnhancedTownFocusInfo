@@ -25,8 +25,12 @@
 
     <!-- 설정 -->
     <Replace Tag="LOC_OPTIONS_GROUP_ETFI" Language="ko_KR"><Text>Zatygold의 모드</Text></Replace>
-    <Replace Tag="LOC_MOD_ETFI_YIELDS_OPTION_COLORFUL" Language="ko_KR"><Text>Enhanced Town Focus Info • 산출량 미리보기에 색상 적용</Text></Replace>
-    <Replace Tag="LOC_MOD_ETFI_YIELDS_OPTION_COLORFUL_DESC" Language="ko_KR"><Text>산출량 미리보기를 유형별로 색상으로 구분하여 더 쉽게 구별할 수 있게 합니다.</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_YIELDS_OPTION_COLORFUL" Language="ko_KR"><Text>산출량 배지 색상</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_YIELDS_OPTION_COLORFUL_DESC" Language="ko_KR"><Text>산출량 미리보기를 유형별로 색칠하여 더 쉽게 구별할 수 있게 합니다.</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_TOGGLE_ON" Language="ko_KR"><Text>켜기</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_TOGGLE_OFF" Language="ko_KR"><Text>끄기</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_EXPAND_DETAILS_DEFAULT" Language="ko_KR"><Text>세부 정보 펼침</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_EXPAND_DETAILS_DEFAULT_DESC" Language="ko_KR"><Text>세부 정보의 기본 보기를 펼치거나 접습니다.</Text></Replace>
 
     <!-- 추가 항목 -->
     <Replace Tag="LOC_MOD_ETFI_FOOD_TO_CITIES" Language="ko_KR"><Text>전달된 식량</Text></Replace>

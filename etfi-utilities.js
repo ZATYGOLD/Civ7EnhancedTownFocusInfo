@@ -440,6 +440,21 @@ export function isTownGrowing(city) {
   }
 }
 
+// True when a town-focus card element represents the Growing Town focus — either
+// EXPAND growth or the NO_PROJECT project. Reads the card's data-growth-type /
+// data-project-type attributes (works for both the inline list card and the
+// hover tooltip's target element).
+export function isGrowthFocusEl(el) {
+  if (!el) return false;
+  const gt = el.dataset?.growthType;
+  const growthType = gt != null && gt !== "" ? Number(gt) : null;
+  if (typeof GrowthTypes !== "undefined" && growthType === GrowthTypes.EXPAND) return true;
+  const pt = el.dataset?.projectType;
+  const projectType = pt != null && pt !== "" ? Number(pt) : null;
+  if (typeof ProjectTypes !== "undefined" && projectType === ProjectTypes.NO_PROJECT) return true;
+  return false;
+}
+
 // The Growing Town focus grants +50% growth (EFFECT_CITY_ADJUST_GROWTH
 // Percent=50), which the engine applies as a reduction to the Food needed to
 // grow population. It applies only while the town has no project (Growing).
@@ -850,66 +865,64 @@ export function getResortData(city) {
       const key = `${x},${y}`;
       let isNW = false;
       try { isNW = !!GameplayMap.isNaturalWonder(x, y); } catch {}
+      let nwName = null;
       if (isNW) {
-        const wname = naturalWonderName(x, y) || "Natural Wonder";
+        nwName = naturalWonderName(x, y) || "Natural Wonder";
         if (impMap.has(key)) {
-          // IMPROVED Natural Wonder tile (carries an Expedition Base). Natural
-          // Wonder is its own appeal category, so the Resort grants +50% of the
-          // tile's raw yields (no +1 Happiness / +1 Gold appealing bonus here).
-          let entry = nwByName.get(wname);
-          if (!entry) { entry = { name: wname, count: 0, yieldMap: new Map() }; nwByName.set(wname, entry); }
+          // Improved Natural Wonder (Expedition Base). It earns the Resort's
+          // +50% raw-yield bonus (Natural Wonders category) AND — because the
+          // tile is Appealing — the +1 Happiness / +1 Gold and Breathtaking
+          // Tourism below. Record the +50% here, then fall through.
+          let entry = nwByName.get(nwName);
+          if (!entry) { entry = { name: nwName, count: 0, yieldMap: new Map() }; nwByName.set(nwName, entry); }
           entry.count++;
           addNaturalWonderYields(entry.yieldMap, idx, resortActive);
         } else {
-          // Unimproved Natural Wonder tile: an eligible tile (can take an
-          // Expedition Base) that isn't earning the bonus yet — list it under
-          // the Unimproved category with the Expedition Base icon.
-          if (!unimp.has(wname)) unimp.set(wname, { name: wname, iconId: "IMPROVEMENT_EXPEDITION_BASE", count: 0 });
-          unimp.get(wname).count++;
+          // Unimproved Natural Wonder: eligible but not earning yet -> Unimproved.
+          if (!unimp.has(nwName)) unimp.set(nwName, { name: nwName, iconId: "IMPROVEMENT_EXPEDITION_BASE", count: 0 });
+          unimp.get(nwName).count++;
+          continue;
         }
-        continue;
       }
       let water = false;
       try { water = !!GameplayMap.isWater(x, y); } catch {}
-      if (water) continue;
+      if (water && !isNW) continue;
       let appeal = 0;
       try { appeal = GameplayMap.getAppeal(x, y); } catch {}
       const impAtTile = impMap.get(key);
       // A non-improved tile that has completed building(s) is a District. Query
-      // its buildings per-plot so a Quarter (2 buildings on one tile, e.g. City
-      // Hall + Altar on the city center) lists BOTH of them.
+      // its buildings per-plot so a Quarter (2 buildings on one tile) lists both.
       const tileBuildings = impAtTile ? [] : tileBuildingsAt(x, y);
       const isDistrict = tileBuildings.length > 0;
       const resInfo = resourceAt(x, y);
+      // Label for an improved tile: the Natural Wonder, else the resource, else
+      // the improvement itself.
+      const impName = nwName
+        ? nwName
+        : resInfo ? (resInfo.Name ? Locale.compose(resInfo.Name) : resInfo.ResourceType) : impAtTile?.name;
+      const impIcon = nwName
+        ? "IMPROVEMENT_EXPEDITION_BASE"
+        : resInfo ? resInfo.ResourceType : impAtTile?.iconId;
 
       if (appeal >= breathtaking) {
         result.breathtakingTotal++;
         if (impAtTile) {
           result.breathtakingImprovements++;
-          // Group breathtaking improved tiles by improvement / resource name.
-          const bn = resInfo ? (resInfo.Name ? Locale.compose(resInfo.Name) : resInfo.ResourceType) : impAtTile.name;
-          const bi = resInfo ? resInfo.ResourceType : impAtTile.iconId;
-          if (!btImp.has(bn)) btImp.set(bn, { name: bn, iconId: bi, count: 0 });
-          btImp.get(bn).count++;
+          if (!btImp.has(impName)) btImp.set(impName, { name: impName, iconId: impIcon, count: 0 });
+          btImp.get(impName).count++;
         } else if (isDistrict) {
           result.breathtakingDistricts++;
-          // Record this District tile's building(s) so the hover can list them
-          // together on one line (a 2-building tile is a Quarter).
           btDistTiles.push(tileBuildings);
         }
       }
 
       // Appealing tiles are Charming OR Breathtaking. Use the lower of the two
-      // thresholds as the cutoff so BOTH levels are always counted, regardless
-      // of how the (age-specific) appeal parameters come back.
+      // thresholds as the cutoff so BOTH levels are always counted.
       if (appeal < Math.min(charming, breathtaking)) continue;
       if (impAtTile) {
-        // Appealing improved tile -> +1 Happiness / +1 Gold (grouped by
-        // resource/improvement name).
-        const name = resInfo ? (resInfo.Name ? Locale.compose(resInfo.Name) : resInfo.ResourceType) : impAtTile.name;
-        const iconId = resInfo ? resInfo.ResourceType : impAtTile.iconId;
-        if (!imp.has(name)) imp.set(name, { name, iconId, count: 0 });
-        imp.get(name).count++;
+        // Appealing improved tile -> +1 Happiness / +1 Gold.
+        if (!imp.has(impName)) imp.set(impName, { name: impName, iconId: impIcon, count: 0 });
+        imp.get(impName).count++;
       } else if (isDistrict) {
         // Appealing District tile (urban tile with a building) also counts as a
         // developed appealing tile and earns the +1 Happiness / +1 Gold. Track

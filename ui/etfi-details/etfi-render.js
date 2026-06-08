@@ -80,6 +80,50 @@ export function fmt(v) {
   return Number.isInteger(n) ? String(n) : (Math.round(n * 10) / 10).toFixed(1);
 }
 
+// The bullet glyph the game uses to mark list items in stylized LOC text.
+export const BULLET_CHAR = String.fromCodePoint(8226);
+
+// Empty a container (GameFace lacks Element.replaceChildren).
+export function clearChildren(parent) {
+  while (parent.firstChild) parent.removeChild(parent.firstChild);
+}
+
+// Replace a container's children with the given nodes (nulls skipped).
+export function setChildren(parent, nodes) {
+  clearChildren(parent);
+  for (const n of nodes) if (n) parent.appendChild(n);
+}
+
+// Split a model's sections into the three layout zones by their separatePanel
+// flag: top (true/"top"), middle (unset), and bottom ("bottom"). The inline card
+// renders each zone into its own container; the hover tooltip flattens them.
+export function splitSectionsByPanel(sections) {
+  const list = (sections || []).filter(Boolean);
+  return {
+    top: list.filter((s) => s.separatePanel === "top" || s.separatePanel === true),
+    mid: list.filter((s) => !s.separatePanel),
+    bottom: list.filter((s) => s.separatePanel === "bottom"),
+  };
+}
+
+// Apply the base project tooltip's paragraph/list spacing pass to a container of
+// stylized LOC text: indent bullet lines, and add top spacing between blocks
+// (but not between consecutive bullet lines).
+export function applyListSpacing(container) {
+  let firstChild = true;
+  let prevChildIsList = false;
+  for (const node of container.children) {
+    const isList = Boolean(node.innerHTML.match(BULLET_CHAR));
+    if (isList) node.classList.add("ml-4");
+    if (!firstChild) {
+      if (!prevChildIsList || !isList) node.classList.add("mt-2");
+    } else {
+      firstChild = false;
+    }
+    prevChildIsList = isList;
+  }
+}
+
 export function isColorful() {
   try { return !!(ETFI_Settings && ETFI_Settings.IsColorful); } catch { return false; }
 }
@@ -157,6 +201,20 @@ export function yieldValue(entry) {
   return cell;
 }
 
+// Lay yield-pill elements into `container` (a flex-col) as right-aligned rows of
+// at most `max` (default 3), with a little vertical gap, so a long cluster wraps
+// to a new line instead of crowding / overlapping one line.
+export function appendPillRows(container, els, max = 3) {
+  const items = (els || []).filter(Boolean);
+  for (let i = 0; i < items.length; i += max) {
+    const row = document.createElement("div");
+    row.className = "flex flex-row items-center justify-end";
+    if (i > 0) row.style.marginTop = "0.25rem";
+    for (const el of items.slice(i, i + max)) row.appendChild(el);
+    container.appendChild(row);
+  }
+}
+
 export function noteLine(text) {
   const p = document.createElement("p");
   p.className = "mt-1 opacity-80";
@@ -215,9 +273,10 @@ export function appendNameItem(left, spec, cfg = {}) {
     nm.classList.add("pointer-events-auto");
     if (cfg.nameLinkCue) {
       // Darker than the (secondary/gold) category title, so the two read distinctly.
+      // GameFace rejects the "underline dotted" textDecoration shorthand, so draw
+      // the dotted "link" underline with a bottom border instead.
       nm.style.color = "rgb(168, 133, 78)";
-      nm.style.textDecoration = "underline dotted";
-      nm.style.textUnderlineOffset = "0.2rem";
+      nm.style.borderBottom = "0.0625rem dotted rgb(168, 133, 78)";
     }
   }
   left.appendChild(nm);
@@ -269,12 +328,14 @@ export function detailRow(row, cfg = {}) {
   }
 
   const right = document.createElement("div");
-  right.className = "flex items-center justify-end flex-wrap shrink-0";
-  if (row.pill && typeof row.pill.value === "number") right.appendChild(yieldPill(row.pill, cfg.compactPills));
+  right.className = "flex flex-col items-end shrink-0";
+  const rightPills = [];
+  if (row.pill && typeof row.pill.value === "number") rightPills.push(yieldPill(row.pill, cfg.compactPills));
   for (const y of row.yields || []) {
     if (!y || typeof y.value !== "number") continue;
-    right.appendChild(cfg.yieldsAsPills ? yieldPill(y, cfg.compactPills) : yieldValue(y));
+    rightPills.push(cfg.yieldsAsPills ? yieldPill(y, cfg.compactPills) : yieldValue(y));
   }
+  appendPillRows(right, rightPills);
   if (row.valueText != null) {
     const span = document.createElement("span");
     span.className = "font-semibold text-xs ml-1";
@@ -326,7 +387,7 @@ export function newPanel(cfg = {}) {
 // notes. Returns the last panel created (or null). Toggles `container` hidden
 // when nothing was rendered.
 export function renderSectionPanels(container, sections, cfg = {}) {
-  while (container.firstChild) container.removeChild(container.firstChild);
+  clearChildren(container);
   let last = null;
   for (const section of sections) {
     const srows = (section.rows || []).filter(Boolean);

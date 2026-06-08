@@ -25,8 +25,12 @@
 
     <!-- Настройки -->
     <Replace Tag="LOC_OPTIONS_GROUP_ETFI" Language="ru_RU"><Text>Моды Zatygold</Text></Replace>
-    <Replace Tag="LOC_MOD_ETFI_YIELDS_OPTION_COLORFUL" Language="ru_RU"><Text>Enhanced Town Focus Info • Раскрашивать предпросмотр дохода</Text></Replace>
-    <Replace Tag="LOC_MOD_ETFI_YIELDS_OPTION_COLORFUL_DESC" Language="ru_RU"><Text>Раскрашивает предпросмотр дохода по типу, чтобы их было легче различать.</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_YIELDS_OPTION_COLORFUL" Language="ru_RU"><Text>Цвета значков дохода</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_YIELDS_OPTION_COLORFUL_DESC" Language="ru_RU"><Text>Окрашивает предпросмотр дохода по его типу, чтобы его было легче различать.</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_TOGGLE_ON" Language="ru_RU"><Text>Вкл.</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_TOGGLE_OFF" Language="ru_RU"><Text>Выкл.</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_EXPAND_DETAILS_DEFAULT" Language="ru_RU"><Text>Развёрнутые подробности</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_EXPAND_DETAILS_DEFAULT_DESC" Language="ru_RU"><Text>Разворачивает или сворачивает подробности по умолчанию.</Text></Replace>
 
     <!-- Добавленные записи -->
     <Replace Tag="LOC_MOD_ETFI_FOOD_TO_CITIES" Language="ru_RU"><Text>Отправлено пищи</Text></Replace>
