@@ -2,6 +2,28 @@
 
 A mod for Civilization VII that enhances the display of town focus yield bonuses, showing detailed breakdowns of improvements, buildings, and trade routes that contribute to specialization bonuses.
 
+## Version 2.4.0
+
+### What's New
+
+- **New framed tooltip + Inspect:** the Town Focus hover tooltip has been rebuilt on the game's new tooltip system, so it now draws in the native framed style (filigree border) and shows the game's **INSPECT [key]** hint along the bottom. Press the inspect key to lock the tooltip open, then move the mouse into it to hover the concept-link rows inside.
+- **Settings are now dropdowns:** in Options → Mods, **Yield Pill Colors** is now an On/Off dropdown, and a new **Expanded Details** dropdown sets whether each town's focus details start expanded or collapsed by default. The in-panel checkbox still overrides the choice per settlement.
+- **Resort Town accuracy:** Natural Wonder tiles now count as appealing for the +1 Happiness / +1 Gold, and are included in the Breathtaking tile count used for the Tourism calculation.
+- **Yield pill layout:** yield pills are limited to three per line and wrap beyond that, with tidier alignment and vertical spacing — applied to the category rows as well as the header.
+
+### Fixes
+
+- Fixed the mod's options not appearing in the menu after a recent game update: the options screen module moved, so the settings import path was corrected. Settings now register reliably and sit alongside other mods that use the same shared settings system.
+- Fixed a missing dotted "link" underline on hoverable row names (the game's UI rejected the CSS shorthand it was using).
+
+### Maintenance
+
+- Consolidated shared DOM helpers (clearing/replacing children, list spacing, section ordering) and unified the Growing-Town detection into a single helper; removed dead code and trimmed comments. Saved settings now load by merging, so newly added options keep their defaults for existing players.
+
+### Languages
+
+- Updated all supported languages (English, French, Italian, Japanese, Korean, Polish, Russian, Simplified Chinese, Traditional Chinese) for the new settings strings.
+
 ## Version 2.3.3
 
 ### What's New
