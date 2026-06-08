@@ -15,9 +15,9 @@
 // observed `data-rev` attribute to trigger a re-render. render() resolves the
 // text (a LOC key or composed string) and stylizes it into `contentDiv`.
 
-const ETFI_TOWN_FOCUS_SECTION_DESCRIPTION = "etfi-tooltip-section-description";
+import { applyListSpacing } from "./etfi-render.js";
 
-const bulletChar = String.fromCodePoint(8226);
+const ETFI_TOWN_FOCUS_SECTION_DESCRIPTION = "etfi-tooltip-section-description";
 
 class EtfiTooltipSectionDescription extends Component {
   // Single content node so a re-render can wipe and rebuild cleanly.
@@ -56,18 +56,7 @@ class EtfiTooltipSectionDescription extends Component {
     this.contentDiv.innerHTML = Locale.stylize(Locale.compose(text));
 
     // Same paragraph/list spacing pass the base project tooltip uses.
-    let firstChild = true;
-    let prevChildIsList = false;
-    for (const node of this.contentDiv.children) {
-      const isList = Boolean(node.innerHTML.match(bulletChar));
-      if (isList) node.classList.add("ml-4");
-      if (!firstChild) {
-        if (!prevChildIsList || !isList) node.classList.add("mt-2");
-      } else {
-        firstChild = false;
-      }
-      prevChildIsList = isList;
-    }
+    applyListSpacing(this.contentDiv);
   }
 }
 

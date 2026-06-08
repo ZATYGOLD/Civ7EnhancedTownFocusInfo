@@ -80,6 +80,50 @@ export function fmt(v) {
   return Number.isInteger(n) ? String(n) : (Math.round(n * 10) / 10).toFixed(1);
 }
 
+// The bullet glyph the game uses to mark list items in stylized LOC text.
+export const BULLET_CHAR = String.fromCodePoint(8226);
+
+// Empty a container (GameFace lacks Element.replaceChildren).
+export function clearChildren(parent) {
+  while (parent.firstChild) parent.removeChild(parent.firstChild);
+}
+
+// Replace a container's children with the given nodes (nulls skipped).
+export function setChildren(parent, nodes) {
+  clearChildren(parent);
+  for (const n of nodes) if (n) parent.appendChild(n);
+}
+
+// Split a model's sections into the three layout zones by their separatePanel
+// flag: top (true/"top"), middle (unset), and bottom ("bottom"). The inline card
+// renders each zone into its own container; the hover tooltip flattens them.
+export function splitSectionsByPanel(sections) {
+  const list = (sections || []).filter(Boolean);
+  return {
+    top: list.filter((s) => s.separatePanel === "top" || s.separatePanel === true),
+    mid: list.filter((s) => !s.separatePanel),
+    bottom: list.filter((s) => s.separatePanel === "bottom"),
+  };
+}
+
+// Apply the base project tooltip's paragraph/list spacing pass to a container of
+// stylized LOC text: indent bullet lines, and add top spacing between blocks
+// (but not between consecutive bullet lines).
+export function applyListSpacing(container) {
+  let firstChild = true;
+  let prevChildIsList = false;
+  for (const node of container.children) {
+    const isList = Boolean(node.innerHTML.match(BULLET_CHAR));
+    if (isList) node.classList.add("ml-4");
+    if (!firstChild) {
+      if (!prevChildIsList || !isList) node.classList.add("mt-2");
+    } else {
+      firstChild = false;
+    }
+    prevChildIsList = isList;
+  }
+}
+
 export function isColorful() {
   try { return !!(ETFI_Settings && ETFI_Settings.IsColorful); } catch { return false; }
 }
@@ -343,7 +387,7 @@ export function newPanel(cfg = {}) {
 // notes. Returns the last panel created (or null). Toggles `container` hidden
 // when nothing was rendered.
 export function renderSectionPanels(container, sections, cfg = {}) {
-  while (container.firstChild) container.removeChild(container.firstChild);
+  clearChildren(container);
   let last = null;
   for (const section of sections) {
     const srows = (section.rows || []).filter(Boolean);

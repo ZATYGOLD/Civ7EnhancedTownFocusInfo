@@ -5,7 +5,7 @@
 // Author: Zatygold
 
 import { TownFocusChooserItem } from "/base-standard/ui/production-chooser/town-focus-section.js";
-import { getTownCity, composeWithFallback } from "../../etfi-utilities.js";
+import { getTownCity, composeWithFallback, isGrowthFocusEl } from "../../etfi-utilities.js";
 import { getHideDetails, setHideDetails } from "../etfi-details/etfi-view-state.js";
 import { ETFI_TOWN_FOCUS_TOOLTIP_STYLE } from "./town-focus-tooltip.js";
 import {
@@ -14,6 +14,8 @@ import {
   appendRows,
   appendPillRows,
   renderSectionPanels,
+  splitSectionsByPanel,
+  clearChildren,
   ETFI_SECTION_CFG,
 } from "../etfi-details/etfi-render.js";
 import { buildFocusModel } from "../etfi-town-focus/focus-models.js";
@@ -40,16 +42,6 @@ const ETFI_TOWN_FOCUS_WIDTH = 25;
     console.error("[ETFI] width override failed", e);
   }
 })();
-
-function isGrowthFocus(root) {
-  const gt = root.getAttribute("data-growth-type");
-  const growthType = gt != null && gt !== "" ? parseInt(gt) : null;
-  if (typeof GrowthTypes !== "undefined" && growthType === GrowthTypes.EXPAND) return true;
-  const pt = root.getAttribute("data-project-type");
-  const projectType = pt != null && pt !== "" ? parseInt(pt) : null;
-  if (typeof ProjectTypes !== "undefined" && projectType === ProjectTypes.NO_PROJECT) return true;
-  return false;
-}
 
 // Fully rebuild the focus list. We reuse the base game's own refresh event (the
 // same path used when the panel reopens), which rebuilds every
@@ -220,7 +212,7 @@ TownFocusChooserItem.prototype.render = function () {
 
   try { this.Root.dataset.tooltipStyle = ETFI_TOWN_FOCUS_TOOLTIP_STYLE; } catch {}
 
-  const growth = isGrowthFocus(this.Root);
+  const growth = isGrowthFocusEl(this.Root);
 
   // Hide the inline focus description for every focus.
   hideDescription(this);
@@ -316,7 +308,7 @@ TownFocusChooserItem.prototype.onAttributeChanged = function (name, oldValue, ne
 };
 
 TownFocusChooserItem.prototype.etfiUpdate = function () {
-  const growth = isGrowthFocus(this.Root);
+  const growth = isGrowthFocusEl(this.Root);
 
   // Keep the inline description hidden (re-asserted here since the summary item
   // is reused across focus changes).
@@ -326,9 +318,9 @@ TownFocusChooserItem.prototype.etfiUpdate = function () {
 
   if (growth) {
     this.etfiYields.classList.add("hidden");
-    while (this.etfiYields.firstChild) this.etfiYields.removeChild(this.etfiYields.firstChild);
+    clearChildren(this.etfiYields);
     for (const el of [this.etfiTop, this.etfiDetails, this.etfiBottom]) {
-      if (el) { el.classList.add("hidden"); while (el.firstChild) el.removeChild(el.firstChild); }
+      if (el) { el.classList.add("hidden"); clearChildren(el); }
     }
     return;
   }
@@ -337,7 +329,7 @@ TownFocusChooserItem.prototype.etfiUpdate = function () {
 
   // Header pills next to the focus name. Merge duplicate yield types into one
   // pill by summing their values (first-seen order is preserved).
-  while (this.etfiYields.firstChild) this.etfiYields.removeChild(this.etfiYields.firstChild);
+  clearChildren(this.etfiYields);
   const headerMerged = [];
   const headerByType = new Map();
   for (const y of model.header || []) {
@@ -359,10 +351,7 @@ TownFocusChooserItem.prototype.etfiUpdate = function () {
 
   if (!this.etfiDetails) return;
 
-  const sections = (model.sections || []).filter(Boolean);
-  const topSecs = sections.filter((s) => s.separatePanel === "top" || s.separatePanel === true);
-  const bottomSecs = sections.filter((s) => s.separatePanel === "bottom");
-  const midSecs = sections.filter((s) => !s.separatePanel);
+  const { top: topSecs, mid: midSecs, bottom: bottomSecs } = splitSectionsByPanel(model.sections);
   const flat = (model.rows || []).filter(Boolean);
   const notes = (model.notes || []).filter(Boolean);
 
@@ -371,7 +360,7 @@ TownFocusChooserItem.prototype.etfiUpdate = function () {
 
   // Base panel: any flat (untitled) rows.
   const base = this.etfiDetails;
-  while (base.firstChild) base.removeChild(base.firstChild);
+  clearChildren(base);
   if (flat.length) appendRows(base, flat, ETFI_SECTION_CFG);
   base.classList.toggle("hidden", base.childElementCount === 0);
 
@@ -386,5 +375,3 @@ TownFocusChooserItem.prototype.etfiUpdate = function () {
     host.classList.remove("hidden");
   }
 };
-
-export {};

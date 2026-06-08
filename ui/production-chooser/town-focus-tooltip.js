@@ -31,9 +31,9 @@ import { createComponent, useContext, createEffect } from "/core/vendor/solid-js
 import { Tooltip, TooltipContext, TooltipHorizontalPosition } from "/core/ui-next/components/tooltip.js";
 import { TooltipModel } from "/core/ui-next/components/tooltip-model.js";
 import { TriggerType } from "/core/ui-next/components/trigger.js";
-import { getConnectedCitiesFood, getConvertedGold, composeWithFallback, isTownGrowing } from "../../etfi-utilities.js";
+import { getConnectedCitiesFood, getConvertedGold, composeWithFallback, isTownGrowing, isGrowthFocusEl } from "../../etfi-utilities.js";
 import { buildFocusModel, focusHeaderYield } from "../etfi-town-focus/focus-models.js";
-import { fmt, renderSectionPanels, ETFI_SECTION_CFG, ETFI_DETAILS_CFG } from "../etfi-details/etfi-render.js";
+import { fmt, renderSectionPanels, setChildren, applyListSpacing, splitSectionsByPanel, ETFI_SECTION_CFG, ETFI_DETAILS_CFG } from "../etfi-details/etfi-render.js";
 import { getHideDetails } from "../etfi-details/etfi-view-state.js";
 // Registers the <etfi-tooltip-section-description> element (the focus description
 // block below the header) and provides its tag name.
@@ -47,21 +47,10 @@ export const ETFI_TOWN_FOCUS_TOOLTIP_STYLE = "etfi-town-focus-tooltip";
 // now drive triggering ourselves, so we must NOT fire on generic production items.
 const CARD_SELECTOR = "town-focus-chooser-item";
 
-const bulletChar = String.fromCodePoint(8226);
-
-// Replace a container's children (GameFace lacks Element.replaceChildren).
-function setChildren(parent, nodes) {
-  while (parent.firstChild) parent.removeChild(parent.firstChild);
-  for (const n of nodes) if (n) parent.appendChild(n);
-}
-
 // Order a focus model's sections the same way the inline card does: top zone,
 // then default, then bottom. Returns a flat list for renderSectionPanels.
 function orderFocusSections(model) {
-  const sections = (model && Array.isArray(model.sections) ? model.sections : []).filter(Boolean);
-  const top = sections.filter((s) => s.separatePanel === "top" || s.separatePanel === true);
-  const mid = sections.filter((s) => !s.separatePanel);
-  const bottom = sections.filter((s) => s.separatePanel === "bottom");
+  const { top, mid, bottom } = splitSectionsByPanel(model?.sections);
   return [...top, ...mid, ...bottom];
 }
 
@@ -238,18 +227,7 @@ class EtfiTownFocusTooltipContent {
     this.description.classList.toggle("hidden", !tooltipDescription);
     // Only show the separator when BOTH descriptions are present.
     this.descDivider.classList.toggle("hidden", !(focusDescription && tooltipDescription));
-    let firstChild = true;
-    let prevChildIsList = false;
-    for (const node of this.description.children) {
-      const isList = Boolean(node.innerHTML.match(bulletChar));
-      if (isList) node.classList.add("ml-4");
-      if (!firstChild) {
-        if (!prevChildIsList || !isList) node.classList.add("mt-2");
-      } else {
-        firstChild = false;
-      }
-      prevChildIsList = isList;
-    }
+    applyListSpacing(this.description);
     const iconBlp = GetTownFocusBlp(growthType, projectType);
     this.icon.style.backgroundImage = `url(${iconBlp})`;
     if (productionCost !== void 0 && productionCost > 0) {
@@ -407,12 +385,7 @@ class EtfiTownFocusTooltipContent {
   }
   // True when the hovered focus is the Growing Town (EXPAND growth / no project).
   isGrowingFocus() {
-    const gt = this.target?.dataset?.growthType;
-    const growthType = gt != null && gt !== "" ? Number(gt) : null;
-    if (typeof GrowthTypes !== "undefined" && growthType === GrowthTypes.EXPAND) return true;
-    const pt = this.getProjectType();
-    if (typeof ProjectTypes !== "undefined" && pt === ProjectTypes.NO_PROJECT) return true;
-    return false;
+    return isGrowthFocusEl(this.target);
   }
   getRequirementsText() {
     const projectType = this.getProjectType() ?? -1;

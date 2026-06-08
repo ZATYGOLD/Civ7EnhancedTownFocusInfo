@@ -440,6 +440,21 @@ export function isTownGrowing(city) {
   }
 }
 
+// True when a town-focus card element represents the Growing Town focus — either
+// EXPAND growth or the NO_PROJECT project. Reads the card's data-growth-type /
+// data-project-type attributes (works for both the inline list card and the
+// hover tooltip's target element).
+export function isGrowthFocusEl(el) {
+  if (!el) return false;
+  const gt = el.dataset?.growthType;
+  const growthType = gt != null && gt !== "" ? Number(gt) : null;
+  if (typeof GrowthTypes !== "undefined" && growthType === GrowthTypes.EXPAND) return true;
+  const pt = el.dataset?.projectType;
+  const projectType = pt != null && pt !== "" ? Number(pt) : null;
+  if (typeof ProjectTypes !== "undefined" && projectType === ProjectTypes.NO_PROJECT) return true;
+  return false;
+}
+
 // The Growing Town focus grants +50% growth (EFFECT_CITY_ADJUST_GROWTH
 // Percent=50), which the engine applies as a reduction to the Food needed to
 // grow population. It applies only while the town has no project (Growing).

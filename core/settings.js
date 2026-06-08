@@ -47,7 +47,6 @@ export const ETFI_Settings = new class {
     }
 
     save() {
-        console.warn("[ETFI_Settings] saving..", JSON.stringify(this._data));
         ModSettingsManager.save("ETFI_Settings", this._data);
     }
 
