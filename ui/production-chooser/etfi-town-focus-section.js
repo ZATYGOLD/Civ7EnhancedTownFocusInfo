@@ -12,6 +12,7 @@ import {
   yieldPill,
   noteLine,
   appendRows,
+  appendPillRows,
   renderSectionPanels,
   ETFI_SECTION_CFG,
 } from "../etfi-details/etfi-render.js";
@@ -258,7 +259,8 @@ TownFocusChooserItem.prototype.render = function () {
   this.nameElement.style.whiteSpace = "nowrap";
 
   this.etfiYields = document.createElement("div");
-  this.etfiYields.className = "flex flex-row flex-wrap items-center justify-end shrink-0";
+  // Pills stack in rows of at most 3 (see etfiUpdate), right-aligned.
+  this.etfiYields.className = "flex flex-col items-end shrink-0";
   // Nudge the name-row pills away from the right edge of the card a little.
   this.etfiYields.style.marginRight = "0.4rem";
 
@@ -350,9 +352,9 @@ TownFocusChooserItem.prototype.etfiUpdate = function () {
       headerMerged.push(entry);
     }
   }
-  for (const y of headerMerged) {
-    this.etfiYields.appendChild(yieldPill(y));
-  }
+  // Lay the pills out in rows of at most 3 so they don't crowd / overlap the
+  // focus name; a 4th+ pill wraps to a new line.
+  appendPillRows(this.etfiYields, headerMerged.map((y) => yieldPill(y)));
   this.etfiYields.classList.toggle("hidden", this.etfiYields.childElementCount === 0);
 
   if (!this.etfiDetails) return;

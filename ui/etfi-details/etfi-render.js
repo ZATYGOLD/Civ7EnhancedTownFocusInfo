@@ -157,6 +157,20 @@ export function yieldValue(entry) {
   return cell;
 }
 
+// Lay yield-pill elements into `container` (a flex-col) as right-aligned rows of
+// at most `max` (default 3), with a little vertical gap, so a long cluster wraps
+// to a new line instead of crowding / overlapping one line.
+export function appendPillRows(container, els, max = 3) {
+  const items = (els || []).filter(Boolean);
+  for (let i = 0; i < items.length; i += max) {
+    const row = document.createElement("div");
+    row.className = "flex flex-row items-center justify-end";
+    if (i > 0) row.style.marginTop = "0.25rem";
+    for (const el of items.slice(i, i + max)) row.appendChild(el);
+    container.appendChild(row);
+  }
+}
+
 export function noteLine(text) {
   const p = document.createElement("p");
   p.className = "mt-1 opacity-80";
@@ -269,12 +283,14 @@ export function detailRow(row, cfg = {}) {
   }
 
   const right = document.createElement("div");
-  right.className = "flex items-center justify-end flex-wrap shrink-0";
-  if (row.pill && typeof row.pill.value === "number") right.appendChild(yieldPill(row.pill, cfg.compactPills));
+  right.className = "flex flex-col items-end shrink-0";
+  const rightPills = [];
+  if (row.pill && typeof row.pill.value === "number") rightPills.push(yieldPill(row.pill, cfg.compactPills));
   for (const y of row.yields || []) {
     if (!y || typeof y.value !== "number") continue;
-    right.appendChild(cfg.yieldsAsPills ? yieldPill(y, cfg.compactPills) : yieldValue(y));
+    rightPills.push(cfg.yieldsAsPills ? yieldPill(y, cfg.compactPills) : yieldValue(y));
   }
+  appendPillRows(right, rightPills);
   if (row.valueText != null) {
     const span = document.createElement("span");
     span.className = "font-semibold text-xs ml-1";
