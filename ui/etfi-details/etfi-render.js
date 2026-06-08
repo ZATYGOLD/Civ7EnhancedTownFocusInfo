@@ -229,9 +229,10 @@ export function appendNameItem(left, spec, cfg = {}) {
     nm.classList.add("pointer-events-auto");
     if (cfg.nameLinkCue) {
       // Darker than the (secondary/gold) category title, so the two read distinctly.
+      // GameFace rejects the "underline dotted" textDecoration shorthand, so draw
+      // the dotted "link" underline with a bottom border instead.
       nm.style.color = "rgb(168, 133, 78)";
-      nm.style.textDecoration = "underline dotted";
-      nm.style.textUnderlineOffset = "0.2rem";
+      nm.style.borderBottom = "0.0625rem dotted rgb(168, 133, 78)";
     }
   }
   left.appendChild(nm);
