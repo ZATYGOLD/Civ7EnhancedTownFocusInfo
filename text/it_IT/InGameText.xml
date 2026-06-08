@@ -25,8 +25,12 @@
 
     <!-- Impostazioni -->
     <Replace Tag="LOC_OPTIONS_GROUP_ETFI" Language="it_IT"><Text>Mod di Zatygold</Text></Replace>
-    <Replace Tag="LOC_MOD_ETFI_YIELDS_OPTION_COLORFUL" Language="it_IT"><Text>Enhanced Town Focus Info • Colora le anteprime delle rendite</Text></Replace>
-    <Replace Tag="LOC_MOD_ETFI_YIELDS_OPTION_COLORFUL_DESC" Language="it_IT"><Text>Colora le anteprime delle rendite in base al tipo, rendendole più facili da distinguere.</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_YIELDS_OPTION_COLORFUL" Language="it_IT"><Text>Colori delle pastiglie delle rendite</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_YIELDS_OPTION_COLORFUL_DESC" Language="it_IT"><Text>Colora le anteprime delle rendite in base al loro tipo, rendendole più facili da distinguere.</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_TOGGLE_ON" Language="it_IT"><Text>Attivo</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_TOGGLE_OFF" Language="it_IT"><Text>Disattivo</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_EXPAND_DETAILS_DEFAULT" Language="it_IT"><Text>Dettagli espansi</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_EXPAND_DETAILS_DEFAULT_DESC" Language="it_IT"><Text>Espande o comprime la visualizzazione predefinita dei dettagli.</Text></Replace>
 
     <!-- Voci aggiunte -->
     <Replace Tag="LOC_MOD_ETFI_FOOD_TO_CITIES" Language="it_IT"><Text>Cibo inviato</Text></Replace>

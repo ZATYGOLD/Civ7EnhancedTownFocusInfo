@@ -25,8 +25,12 @@
 
     <!-- 設定 -->
     <Replace Tag="LOC_OPTIONS_GROUP_ETFI" Language="ja_JP"><Text>Zatygoldのモッド</Text></Replace>
-    <Replace Tag="LOC_MOD_ETFI_YIELDS_OPTION_COLORFUL" Language="ja_JP"><Text>Enhanced Town Focus Info • 産出プレビューに色を付ける</Text></Replace>
-    <Replace Tag="LOC_MOD_ETFI_YIELDS_OPTION_COLORFUL_DESC" Language="ja_JP"><Text>産出プレビューを種類別に色分けし、見分けやすくします。</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_YIELDS_OPTION_COLORFUL" Language="ja_JP"><Text>産出バッジの色</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_YIELDS_OPTION_COLORFUL_DESC" Language="ja_JP"><Text>産出プレビューを種類別に色分けして、見分けやすくします。</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_TOGGLE_ON" Language="ja_JP"><Text>オン</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_TOGGLE_OFF" Language="ja_JP"><Text>オフ</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_EXPAND_DETAILS_DEFAULT" Language="ja_JP"><Text>詳細を展開</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_EXPAND_DETAILS_DEFAULT_DESC" Language="ja_JP"><Text>詳細の初期表示を展開するか、折りたたむかを切り替えます。</Text></Replace>
 
     <!-- 追加項目 -->
     <Replace Tag="LOC_MOD_ETFI_FOOD_TO_CITIES" Language="ja_JP"><Text>送られた食料</Text></Replace>

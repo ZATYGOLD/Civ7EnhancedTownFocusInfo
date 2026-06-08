@@ -28,13 +28,18 @@ const ModSettingsManager = {
 
 export const ETFI_Settings = new class {
     _data = {
-        IsColorful: true
+        IsColorful: true,
+        // When true, each town's focus details start expanded; when false they
+        // start collapsed. The in-panel checkbox still overrides per settlement.
+        ExpandDetailsByDefault: true
     };
 
     constructor() {
         const modSettings = ModSettingsManager.read("ETFI_Settings");
         if (modSettings) {
-            this._data = modSettings;
+            // Merge (not replace) so newly-added settings keep their defaults for
+            // players whose saved data predates them.
+            this._data = { ...this._data, ...modSettings };
         }
     }
 
@@ -43,11 +48,20 @@ export const ETFI_Settings = new class {
     }
 
     get IsColorful() {
-        return this._data.IsColorful;
+        return this._data.IsColorful !== false;
     }
 
     set IsColorful(value) {
         this._data.IsColorful = value;
+        this.save();
+    }
+
+    get ExpandDetailsByDefault() {
+        return this._data.ExpandDetailsByDefault !== false;
+    }
+
+    set ExpandDetailsByDefault(value) {
+        this._data.ExpandDetailsByDefault = !!value;
         this.save();
     }
 }

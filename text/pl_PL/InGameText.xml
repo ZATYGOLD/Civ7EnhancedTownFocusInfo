@@ -25,8 +25,12 @@
 
     <!-- Ustawienia -->
     <Replace Tag="LOC_OPTIONS_GROUP_ETFI" Language="pl_PL"><Text>Mody Zatygolda</Text></Replace>
-    <Replace Tag="LOC_MOD_ETFI_YIELDS_OPTION_COLORFUL" Language="pl_PL"><Text>Enhanced Town Focus Info • Koloruj podglądy plonów</Text></Replace>
-    <Replace Tag="LOC_MOD_ETFI_YIELDS_OPTION_COLORFUL_DESC" Language="pl_PL"><Text>Koloruje podglądy plonów według ich typu, ułatwiając ich rozróżnianie.</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_YIELDS_OPTION_COLORFUL" Language="pl_PL"><Text>Kolory plakietek plonów</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_YIELDS_OPTION_COLORFUL_DESC" Language="pl_PL"><Text>Barwi podglądy plonów według ich typu, ułatwiając ich rozróżnianie.</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_TOGGLE_ON" Language="pl_PL"><Text>Wł.</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_TOGGLE_OFF" Language="pl_PL"><Text>Wył.</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_EXPAND_DETAILS_DEFAULT" Language="pl_PL"><Text>Rozwinięte szczegóły</Text></Replace>
+    <Replace Tag="LOC_MOD_ETFI_EXPAND_DETAILS_DEFAULT_DESC" Language="pl_PL"><Text>Rozwija lub zwija domyślny widok szczegółów.</Text></Replace>
 
     <!-- Dodane wpisy -->
     <Replace Tag="LOC_MOD_ETFI_FOOD_TO_CITIES" Language="pl_PL"><Text>Wysłana żywność</Text></Replace>
