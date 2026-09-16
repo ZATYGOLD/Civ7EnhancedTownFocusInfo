@@ -452,12 +452,15 @@ function TownFocusTooltipTree() {
         createComponent(NameCapture, {}),
         createComponent(LegacyLayerLift, {}),
         // Registration-only nested tooltip. It has no trigger/content so it never
-        // displays, but mounting a nested <Tooltip> root bumps OUR root's
-        // childTooltipCount to 1. Both the INSPECT hint (Tooltip.Frame ->
-        // Tooltip.InspectHint, gated on childTooltipCount > 0) and the model's
-        // lock()/auto-lock (same gate) require that count to be > 0. With it set,
-        // the tooltip can be inspected/locked, after which the mouse can move into
-        // it to hover the concept-link rows inside.
+        // displays, but mounting a nested <Tooltip> root registers it on OUR root.
+        // Both the INSPECT hint (Tooltip.Frame -> Tooltip.InspectHint) and the
+        // model's lock()/auto-lock are gated on the root having at least one
+        // registered child tooltip, so this is what makes the tooltip
+        // inspectable/lockable — after which the mouse can move into it to hover
+        // the concept-link rows inside.
+        // NOTE: game 1.5.0 renamed this from a `childTooltipCount` counter to a
+        // `childTooltipList` array (gate is now `childTooltipList().length`), but
+        // registering a nested root still satisfies it, so the trick is unchanged.
         createComponent(Tooltip, { get children() { return null; } }),
         createComponent(Tooltip.Content, {
           get children() {
@@ -477,14 +480,29 @@ function mountTownFocusTooltip() {
   const root = document.body || document.documentElement;
   if (!root) { setTimeout(mountTownFocusTooltip, 200); return; }
 
+  // ModelRegistry only resolves models once the engine is ready; touching
+  // TooltipModel before then throws. This runs at module load, so an unguarded
+  // throw would abort the entire module — including the ETFI_TOWN_FOCUS_TOOLTIP_STYLE
+  // export that etfi-town-focus-section.js imports. Retry instead of dying.
+  let model;
+  try {
+    model = TooltipModel.get();
+  } catch {
+    setTimeout(mountTownFocusTooltip, 250);
+    return;
+  }
+
   // Hidden host — Tooltip.Content portals itself into #uinext-tooltips, so the
   // host's position in the DOM is irrelevant.
   const host = document.createElement("div");
   host.style.display = "none";
   root.appendChild(host);
-  render(() => createComponent(TownFocusTooltipTree, {}), host);
-
-  const model = TooltipModel.get();
+  try {
+    render(() => createComponent(TownFocusTooltipTree, {}), host);
+  } catch (e) {
+    console.error("[ETFI] town-focus tooltip mount failed", e);
+    return;
+  }
   // The card whose content is currently built/shown. Guards against rebuilding on
   // every bubbled mouseover (which reloaded icons and caused visible flicker) —
   // we only re-run update() when the hovered card actually changes.

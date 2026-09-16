@@ -564,10 +564,15 @@ export function countTemples(city) {
 // --- fortifications (Fort) -------------------------------------------------
 
 // Fortifications in the town, grouped by type with a count and split into:
-//   * walls          - those tagged DISTRICT_WALL (Ancient/Medieval Walls, ...),
-//   * fortifications  - everything else tagged FORTIFICATION (Bailey, Great Wall,
-//                       Kasbah, Hillfort, Shore Battery, wonders, ...).
-// Each group is { name, iconId, type, count }. `total` is the combined count.
+//   * walls          - those tagged DISTRICT_WALL (Ancient Walls, Medieval Walls,
+//                      Defensive Fortifications). These are what make a District
+//                      "Fortified", so ONLY these earn the Fort Town's +1 Gold.
+//   * fortifications - everything else tagged FORTIFICATION (Bailey, Motte, Great
+//                      Wall, Kasbah, Hillfort, Shore Battery, wonders, ...).
+//                      These are Fortifications but NOT Fortified Districts, so
+//                      they earn the +25 Health only — no Gold.
+// Each group is { name, iconId, type, count }. `total` is the combined count
+// (every fortification earns the Health bonus).
 export function getFortifications(city) {
   const wallMap = new Map();
   const fortMap = new Map();
@@ -919,6 +924,12 @@ export function getResortData(city) {
       // Appealing tiles are Charming OR Breathtaking. Use the lower of the two
       // thresholds as the cutoff so BOTH levels are always counted.
       if (appeal < Math.min(charming, breathtaking)) continue;
+      // An improved Natural Wonder already contributes its appealing +1 Happiness
+      // / +1 Gold inside the NATURAL WONDERS category: addNaturalWonderYields
+      // folds the flat bonus in (boosted by the +50%, so 1.5 each). Counting the
+      // tile again here would double-count Happiness and Gold. It still counted
+      // toward the Breathtaking tally above (that drives Tourism).
+      if (nwName && impAtTile) continue;
       if (impAtTile) {
         // Appealing improved tile -> +1 Happiness / +1 Gold.
         if (!imp.has(impName)) imp.set(impName, { name: impName, iconId: impIcon, count: 0 });
