@@ -27,13 +27,13 @@ import TooltipManager from "/core/ui/tooltips/tooltip-manager.js";
 import { GetTownFocusBlp } from "/base-standard/ui/production-chooser/production-chooser-helpers.js";
 import { AdvisorUtilities } from "/base-standard/ui/tutorial/advisor-utilities.js";
 import { render } from "/core/vendor/solid-js/web/dist/web.js";
-import { createComponent, useContext, createEffect } from "/core/vendor/solid-js/dist/solid.js";
+import { createComponent, useContext, createEffect, createSignal } from "/core/vendor/solid-js/dist/solid.js";
 import { Tooltip, TooltipContext, TooltipHorizontalPosition } from "/core/ui-next/components/tooltip.js";
 import { TooltipModel } from "/core/ui-next/components/tooltip-model.js";
 import { TriggerType } from "/core/ui-next/components/trigger.js";
 import { getConnectedCitiesFood, getConvertedGold, composeWithFallback, isTownGrowing, isGrowthFocusEl } from "../../etfi-utilities.js";
 import { buildFocusModel, focusHeaderYield } from "../etfi-town-focus/focus-models.js";
-import { fmt, renderSectionPanels, setChildren, applyListSpacing, splitSectionsByPanel, ETFI_SECTION_CFG, ETFI_DETAILS_CFG } from "../etfi-details/etfi-render.js";
+import { fmt, renderSectionPanels, setChildren, applyListSpacing, splitSectionsByPanel, DIVIDER_COLOR, ETFI_SECTION_CFG, ETFI_DETAILS_CFG } from "../etfi-details/etfi-render.js";
 import { getHideDetails } from "../etfi-details/etfi-view-state.js";
 // Registers the <etfi-tooltip-section-description> element (the focus description
 // block below the header) and provides its tag name.
@@ -127,7 +127,7 @@ class EtfiTownFocusTooltipContent {
     this.sectionDescription.className = "flex flex-col";
     this.descDivider.className = "w-full self-center shrink-0";
     this.descDivider.style.cssText =
-      "height:0.0625rem; margin-top:0.4rem; margin-bottom:0.4rem; background-color:rgba(77, 83, 102, 0.7);";
+      `height:0.0625rem; margin-top:0.4rem; margin-bottom:0.4rem; background-color:${DIVIDER_COLOR};`;
     this.description.className = "text-2xs";
     this.bodyRow.className = "flex flex-col w-full";
     this.topRow.className = "flex flex-row w-full";
@@ -135,7 +135,7 @@ class EtfiTownFocusTooltipContent {
     for (const cell of [this.leftDesc, this.rightDesc, this.leftCats, this.rightCats]) {
       cell.className = "flex flex-col flex-1 min-w-0";
     }
-    const colDivStyle = "width:0.0625rem; background-color:rgba(77, 83, 102, 0.7);";
+    const colDivStyle = `width:0.0625rem; background-color:${DIVIDER_COLOR};`;
     this.colDividerTop.className = "self-stretch shrink-0 mx-3";
     this.colDividerTop.style.cssText = colDivStyle;
     this.colDividerBot.className = "self-stretch shrink-0 mx-3";
@@ -202,12 +202,14 @@ class EtfiTownFocusTooltipContent {
     if (growing) {
       focusDescription = hidden ? (this.target.dataset.description || "") : "";
     } else {
-      focusDescription = this.target.dataset.description || this.target.__etfiDescription || "";
+      focusDescription = this.target.dataset.description || "";
       if (!focusDescription) {
         try {
           const def = projectType ? GameInfo.Projects.lookup(projectType) : null;
           if (def?.Description) focusDescription = def.Description;
-        } catch {}
+        } catch (e) {
+          console.error("[ETFI] project description lookup failed", e);
+        }
       }
     }
     let tooltipDescription = this.target.dataset.tooltipDescription || "";
@@ -261,6 +263,23 @@ class EtfiTownFocusTooltipContent {
     this.gemsContainer.classList.toggle("hidden", !recommendations);
     this.applyLayout(city);
   }
+  // Widen (or restore) the Solid Tooltip.Frame that hosts this content.
+  //
+  // Tooltip.Frame renders `img-tooltip-border`, which default.css defines as
+  // `width: max-content; max-width: 30rem`. Our two-column layout is 44rem, so
+  // without this the frame stops at 30rem and the right-hand column (Town's Gold
+  // / Food Sent) spills outside the tooltip and draws over the map. The game's
+  // own `img-tooltip-border--wide` raises the cap to 60rem; declared after the
+  // base rule, it wins when both classes are present.
+  //
+  // This MUST go through a Solid signal rather than touching the DOM: applyLayout
+  // runs from update(), which happens BEFORE triggerTooltip() mounts the tooltip,
+  // so at that moment our content root is still detached and has no frame parent
+  // to poke. The signal is read by Tooltip.Frame's `class` prop whenever it
+  // renders, so the width is correct the first time the tooltip appears.
+  setWideFrame(wide) {
+    setWideFrameSignal(!!wide);
+  }
   // Arrange the body. Normally everything stacks in one column. When the panel's
   // details are hidden, widen into two rows (descriptions, then categories) split
   // by a vertical divider.
@@ -279,6 +298,11 @@ class EtfiTownFocusTooltipContent {
     if (getHideDetails()) {
       this.focusDetails.classList.toggle("hidden", !hasLeft);
       this.root.style.width = "44rem";
+      // Tooltip.Frame carries `img-tooltip-border`, which the game's stylesheet
+      // caps at max-width 30rem — narrower than our 44rem two-column layout, so
+      // the right column would overflow and render outside the frame. The game
+      // ships an opt-in wide variant (max-width 60rem) for exactly this.
+      this.setWideFrame(true);
       this.descDivider.classList.add("hidden");
       this.requirementsContainer.classList.add("justify-center");
       this.requirementsText.classList.add("text-center");
@@ -293,6 +317,7 @@ class EtfiTownFocusTooltipContent {
       setChildren(this.bodyRow, [this.topRow, this.botRow]);
     } else {
       this.root.style.width = "";
+      this.setWideFrame(false);
       renderSectionPanels(this.details, this._goldFoodSections || [], ETFI_DETAILS_CFG);
       const showLeft = growing && hasLeft;
       this.focusDetails.classList.toggle("hidden", !showLeft);
@@ -410,6 +435,12 @@ class EtfiTownFocusTooltipContent {
 // New-tooltip wiring
 // ----------------------------------------------------------------------------
 
+// Whether the frame must use the game's wide variant (60rem) instead of the
+// default 30rem cap — true while the panel's details are collapsed and this
+// tooltip renders its 44rem two-column layout. Read reactively by Tooltip.Frame
+// below, so it applies on the very first render of the tooltip.
+const [isWideFrame, setWideFrameSignal] = createSignal(false);
+
 // The single persistent content instance shown inside the Solid Tooltip.Frame.
 const CONTENT = new EtfiTownFocusTooltipContent();
 
@@ -465,6 +496,11 @@ function TownFocusTooltipTree() {
         createComponent(Tooltip.Content, {
           get children() {
             return createComponent(Tooltip.Frame, {
+              // Tooltip.Frame merges this into its own class list, so the wide
+              // variant lifts the 30rem cap to 60rem for the two-column layout.
+              get ["class"]() {
+                return isWideFrame() ? "img-tooltip-border--wide" : "";
+              },
               get children() {
                 return CONTENT.root;
               },

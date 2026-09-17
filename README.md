@@ -2,6 +2,29 @@
 
 A mod for Civilization VII that enhances the display of town focus yield bonuses, showing detailed breakdowns of improvements, buildings, and trade routes that contribute to specialization bonuses.
 
+## Version 2.5.0
+
+### Compatibility
+
+- **Updated for Game Patch 1.5.0.** Every game module and API the mod relies on was re-verified against the new build — the Solid tooltip system, the Options screen, the Town Focus panel, and all of its DOM/event hooks. Also hardened the tooltip's startup so a slow engine load can no longer take the whole tooltip offline.
+
+### Fixes
+
+- **Resort Town counted Natural Wonders twice.** A worked Natural Wonder tile earned its "+1 Happiness / +1 Gold on Appealing tiles" bonus *twice* — once inside the Natural Wonders category and again as an Appealing tile — reporting 2.5 of each per tile instead of 1.5, and listing the tile in two places. Natural Wonder tiles still count toward the Breathtaking total for Tourism.
+- **Fort Town gave Gold to the wrong fortifications.** The Fort Town's Gold applies to *Fortified Districts* — Ancient Walls, Medieval Walls and Defensive Fortifications. Great Walls, Baileys, Mottes, Hillforts, Kasbahs, Shore Batteries and the fortification wonders are Fortifications, not Fortified Districts: they earn the +25 Health but no Gold. The Walls and Fortifications categories now reflect that.
+- **The wide focus tooltip spilled outside its frame.** With inline details collapsed, the two-column tooltip is wider than the game's default tooltip limit, so Town's Gold and Food Sent were drawn past the edge and over the map. It now uses the game's wide-tooltip frame.
+- **Resort previews could be wildly inflated.** If the game ever renamed an appeal parameter, the Resort's Appealing and Breathtaking thresholds silently fell back to an invalid value that made *every* tile qualify. The fallback now works and reports itself.
+
+### Maintenance
+
+- Every Town Focus now builds its preview from a single list of contributions, with the header totals folded from the exact same data that produces the breakdown rows. The header is therefore always the sum of the rows shown beneath it — the class of mismatch behind both yield bugs above is no longer possible.
+- Fort Town reads its Gold, Health and Healing values from the game's own data instead of hard-coded numbers, so a balance change flows through automatically.
+- Removed dead code and a redundant patch of a core game Options function, and switched the focus-list refresh to the game's own published event.
+
+### Languages
+
+- Fixed the French entry in the mod manifest, which used the wrong capitalisation and would not have resolved on a case-sensitive file system.
+
 ## Version 2.4.0
 
 ### What's New

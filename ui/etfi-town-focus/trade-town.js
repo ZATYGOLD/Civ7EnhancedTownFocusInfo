@@ -6,28 +6,25 @@
 //
 // Trade Outpost (PROJECT_TOWN_TRADE): +1 Happiness per Resource tile in the
 // town, plus +5 Trade Route range (shown as a pill next to the focus name).
-// Resource tiles use the shared Improved (worked, earn the Happiness) and
-// Unimproved (no yield) categories.
+// Only the Improved (worked) Resource tiles are listed — they are the ones that
+// earn the Happiness.
 
-import { ETFI_YIELDS, countResourceTiles, improvedUnimprovedSections, tradeRangePill } from "../../etfi-utilities.js";
+import { ETFI_YIELDS, countResourceTiles, tradeRangePill, composeWithFallback } from "../../etfi-utilities.js";
+import { fromGroups, foldByYield, sectionFrom } from "./contributions.js";
 
 const HAPPINESS_PER_RESOURCE = 1;
 
 export function buildTradeModel(city) {
-  const { improved, unimproved } = countResourceTiles(city);
-  const improvedTotal = improved.reduce((s, g) => s + g.count, 0);
+  const { improved } = countResourceTiles(city);
+  // One contribution list; the header and the rows are both folds over it.
+  const contributions = fromGroups(improved, ETFI_YIELDS.HAPPINESS, HAPPINESS_PER_RESOURCE);
 
   return {
-    header: [
-      { yieldType: ETFI_YIELDS.HAPPINESS, value: improvedTotal * HAPPINESS_PER_RESOURCE },
-      tradeRangePill(),
-    ],
+    // The trade-range pill is a static range indicator, not a summed yield, so
+    // it is appended rather than folded.
+    header: [...foldByYield(contributions), tradeRangePill()],
     rows: [],
-    sections: improvedUnimprovedSections({
-      improved,
-      unimproved,
-      improvedYields: (g) => [{ yieldType: ETFI_YIELDS.HAPPINESS, value: g.count * HAPPINESS_PER_RESOURCE }],
-    }),
+    sections: sectionFrom(composeWithFallback("LOC_MOD_ETFI_IMPROVED", "Improved"), contributions),
     notes: [],
   };
 }

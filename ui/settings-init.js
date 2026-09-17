@@ -35,14 +35,12 @@ const onOptionExpandDetailsUpdate = (optionInfo, value) => {
     ETFI_Settings.ExpandDetailsByDefault = value === 0;
 }
 
-// fix Options initialization
-Options.addInitCallback = function(callback) {
-    if (this.optionsReInitCallbacks.length && !this.optionsInitCallbacks.length) {
-        throw new Error("Options already initialized, cannot add init callback");
-    }
-    this.optionsInitCallbacks.push(callback);
-    this.optionsReInitCallbacks.push(callback);
-}
+// NOTE: earlier versions monkey-patched Options.addInitCallback here to "fix
+// Options initialization". As of game 1.5.0 that replacement is byte-identical
+// to the stock implementation in /core/ui/options/model-options.js, so it fixed
+// nothing and merely froze a core singleton's method at our copy of it for every
+// other mod in the session. Removed deliberately — do not reinstate without
+// checking the current stock implementation first.
 
 Options.addInitCallback(() => {
     Options.addOption({

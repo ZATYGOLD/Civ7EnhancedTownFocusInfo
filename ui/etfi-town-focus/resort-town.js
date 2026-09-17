@@ -13,10 +13,13 @@
 //     name when met. A "Requires Globalism's Mastery" note shows until met.
 //   * NATURAL WONDERS (below Tourism, above Improved): one row per wonder, with
 //     the tile count (x#) and +50% of the wonder's accumulated tile yields.
-//   * APPEALING tiles split into Improved (+1 Happiness / +1 Gold) and
-//     Unimproved (no yield).
+//   * APPEALING tiles: only the Improved (worked) ones are listed, each earning
+//     +1 Happiness / +1 Gold. Improved Natural Wonder tiles are deliberately
+//     excluded here — their appealing bonus is already folded into the Natural
+//     Wonders rows above (see addNaturalWonderYields).
 
-import { ETFI_YIELDS, TOURISM_ICON, getResortData, getCurrentAgeType, hasGlobalismMastery, composeWithFallback, improvedUnimprovedSections } from "../../etfi-utilities.js";
+import { ETFI_YIELDS, TOURISM_ICON, getResortData, getCurrentAgeType, hasGlobalismMastery, composeWithFallback } from "../../etfi-utilities.js";
+import { contribution, fromGroups, foldByYield, sectionFrom } from "./contributions.js";
 
 const PER_TILE = 1;
 const TOURISM_PER = 4;
@@ -38,6 +41,9 @@ export function buildResortModel(city) {
     hasGlobalismMastery();
 
   const sections = [];
+  // Empty in non-Modern ages, so Tourism simply drops out of both the section
+  // list and the header.
+  let tourismContributions = [];
 
   // Tourism — Modern-Age-only, so the category is omitted in other ages.
   if (isModern) {
@@ -72,65 +78,72 @@ export function buildResortModel(city) {
       ],
     };
 
-    sections.push({
-      title: composeWithFallback("LOC_MOD_ETFI_TOURISM", "Tourism"),
-      separatePanel: "top",
-      rows: [{
+    // One row: `developed` Breathtaking tiles each worth TOURISM_PER. The pill
+    // stays uncoloured until the town meets every requirement.
+    tourismContributions = [contribution(
+      TOURISM_ICON,
+      TOURISM_PER,
+      developed,
+      {
+        key: "breathtaking",
         iconClass: HEX_ICON_CLASS,
         iconStyle: HEX_ICON_STYLE,
         name: composeWithFallback("LOC_MOD_ETFI_BREATHTAKING", "Breathtaking"),
         tipModel: breakdownModel,
         countText: `${developed}/${BREATHTAKING_MIN}`,
-        yields: [{ yieldType: TOURISM_ICON, value: TOURISM_PER * developed, colored: reqsMet }],
-      }],
-      notes: reqsMet ? [] : [composeWithFallback("LOC_MOD_ETFI_REQUIRES_GLOBALISM", "Requires Globalism's Mastery")],
-    });
+      },
+      undefined,
+      { colored: reqsMet }
+    )];
+
+    sections.push(...sectionFrom(
+      composeWithFallback("LOC_MOD_ETFI_TOURISM", "Tourism"),
+      tourismContributions,
+      {
+        separatePanel: "top",
+        notes: reqsMet ? [] : [composeWithFallback("LOC_MOD_ETFI_REQUIRES_GLOBALISM", "Requires Globalism's Mastery")],
+      }
+    ));
   }
 
   // Natural Wonders — own panel below Tourism, above Improved. One row per
-  // wonder, with the tile count (x#) and +50% of its accumulated yields.
-  if (d.naturalWonders.length) {
-    sections.push({
-      title: composeWithFallback("LOC_MOD_ETFI_NATURAL_WONDERS", "Natural Wonders"),
-      separatePanel: "top",
-      rows: d.naturalWonders.map((w) => ({
-        iconId: NATURAL_WONDER_ICON,
-        name: w.name,
-        count: w.count,
-        yields: w.yields,
-      })),
-    });
-  }
-
-  // Appealing tiles — shared Improved (+1 Happiness / +1 Gold) / Unimproved.
-  for (const s of improvedUnimprovedSections({
-    improved: d.appealingImproved,
-    unimproved: d.appealingUnimproved,
-    improvedYields: (g) => [
-      { yieldType: ETFI_YIELDS.HAPPINESS, value: g.count * PER_TILE },
-      { yieldType: ETFI_YIELDS.GOLD, value: g.count * PER_TILE },
-    ],
-  })) {
-    sections.push(s);
-  }
-
-  const appealingTotal = d.appealingImproved.reduce((s, g) => s + g.count, 0);
-  const header = [
-    { yieldType: ETFI_YIELDS.HAPPINESS, value: appealingTotal * PER_TILE },
-    { yieldType: ETFI_YIELDS.GOLD, value: appealingTotal * PER_TILE },
-  ];
-  if (reqsMet) {
-    header.push({ yieldType: TOURISM_ICON, value: TOURISM_PER * developed });
-  }
-
-  // Add the Natural Wonder bonus (+50% yields) to the header. The section
-  // renderer merges duplicate yield types into one pill, so we can push each
-  // wonder's yields directly (they'll fold in with the appealing Happiness/Gold).
+  // wonder, with the tile count (x#) and its accumulated Resort contribution
+  // (+50% of the tile's yields, and the appealing +1/+1 already folded in by
+  // addNaturalWonderYields — which is why these tiles are deliberately NOT also
+  // counted in the Appealing category below).
+  const nwContributions = [];
   for (const w of d.naturalWonders) {
-    for (const y of w.yields) {
-      if (y.value > 0) header.push({ yieldType: y.yieldType, value: y.value });
+    const source = { name: w.name, iconId: NATURAL_WONDER_ICON, count: w.count };
+    for (const y of w.yields || []) {
+      nwContributions.push(contribution(y.yieldType, y.value, 1, source));
     }
   }
+
+  // Appealing improved tiles — each earns +1 Happiness / +1 Gold. Two passes over
+  // the same groups layer both yields onto one row per group.
+  const appealing = [
+    ...fromGroups(d.appealingImproved, ETFI_YIELDS.HAPPINESS, PER_TILE),
+    ...fromGroups(d.appealingImproved, ETFI_YIELDS.GOLD, PER_TILE),
+  ];
+
+  sections.push(
+    ...sectionFrom(
+      composeWithFallback("LOC_MOD_ETFI_NATURAL_WONDERS", "Natural Wonders"),
+      nwContributions,
+      { separatePanel: "top" }
+    ),
+    ...sectionFrom(composeWithFallback("LOC_MOD_ETFI_IMPROVED", "Improved"), appealing)
+  );
+
+  // Header folds the SAME contributions that built the rows, so it is always
+  // their sum. Tourism is the one deliberate exception: the row always renders
+  // (so the breakdown hover works before the town qualifies) but the pill by the
+  // focus name only appears once the requirements are met.
+  const header = foldByYield([
+    ...appealing,
+    ...(reqsMet ? tourismContributions : []),
+    ...nwContributions,
+  ]);
 
   return { header, rows: [], sections, notes: [] };
 }

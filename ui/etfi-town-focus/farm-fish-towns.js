@@ -5,10 +5,11 @@
 // Author: Zatygold
 //
 // Farming Town (PROJECT_TOWN_GRANARY) and Fishing Town (PROJECT_TOWN_FISHING):
-// +1 Food on Farms, Pastures, Plantations, and Fishing Boats. Eligible tiles
-// are split into the shared Improved (earn the Food) and Unimproved categories.
+// +1 Food on Farms, Pastures, Plantations, and Fishing Boats. Only the Improved
+// (worked) tiles are listed — they are the ones that earn the Food.
 
-import { ETFI_YIELDS, getFocusImprovements, improvedUnimprovedSections } from "../../etfi-utilities.js";
+import { ETFI_YIELDS, getFocusImprovements, composeWithFallback } from "../../etfi-utilities.js";
+import { fromGroups, foldByYield, sectionFrom } from "./contributions.js";
 
 const FOOD_PER = 1;
 const FOOD_IMPROVEMENTS = new Set([
@@ -20,17 +21,14 @@ const FOOD_IMPROVEMENTS = new Set([
 ]);
 
 export function buildFoodModel(city) {
-  const { improved, unimproved } = getFocusImprovements(city, FOOD_IMPROVEMENTS);
-  const improvedTotal = improved.reduce((s, g) => s + g.count, 0);
+  const { improved } = getFocusImprovements(city, FOOD_IMPROVEMENTS);
+  // One contribution list; the header and the rows are both folds over it.
+  const contributions = fromGroups(improved, ETFI_YIELDS.FOOD, FOOD_PER);
 
   return {
-    header: [{ yieldType: ETFI_YIELDS.FOOD, value: improvedTotal * FOOD_PER }],
+    header: foldByYield(contributions),
     rows: [],
-    sections: improvedUnimprovedSections({
-      improved,
-      unimproved,
-      improvedYields: (g) => [{ yieldType: ETFI_YIELDS.FOOD, value: g.count * FOOD_PER }],
-    }),
+    sections: sectionFrom(composeWithFallback("LOC_MOD_ETFI_IMPROVED", "Improved"), contributions),
     notes: [],
   };
 }

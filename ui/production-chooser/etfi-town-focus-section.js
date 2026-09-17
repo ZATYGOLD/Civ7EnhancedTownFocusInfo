@@ -5,6 +5,7 @@
 // Author: Zatygold
 
 import { TownFocusChooserItem } from "/base-standard/ui/production-chooser/town-focus-section.js";
+import { TownFocusRefreshEvent } from "/base-standard/ui/production-chooser/panel-town-focus.js";
 import { getTownCity, composeWithFallback, isGrowthFocusEl } from "../../etfi-utilities.js";
 import { getHideDetails, setHideDetails } from "../etfi-details/etfi-view-state.js";
 import { ETFI_TOWN_FOCUS_TOOLTIP_STYLE } from "./town-focus-tooltip.js";
@@ -52,7 +53,9 @@ function refreshFocusPanel(fromEl) {
     const panel = (fromEl && (fromEl.closest?.("panel-town-focus") || fromEl.getRootNode?.()?.querySelector?.("panel-town-focus")))
       || document.querySelector("panel-town-focus");
     if (panel) {
-      panel.dispatchEvent(new CustomEvent("panel-town-focus-refresh", { bubbles: false, cancelable: true }));
+      // Use the game's own exported event class rather than re-typing its name
+      // and option flags — it stays correct if Firaxis renames either.
+      panel.dispatchEvent(new TownFocusRefreshEvent());
     }
   } catch (e) {
     console.error("[ETFI] refreshFocusPanel failed", e);

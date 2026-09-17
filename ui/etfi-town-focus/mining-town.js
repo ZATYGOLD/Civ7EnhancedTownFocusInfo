@@ -5,10 +5,11 @@
 // Author: Zatygold
 //
 // Mining Town (PROJECT_TOWN_PRODUCTION): +2 Production on Camps, Woodcutters,
-// Clay Pits, Mines, Quarries (Modern: Oil Rigs). Split into the shared Improved
-// (earn the Production) and Unimproved categories.
+// Clay Pits, Mines, Quarries (Modern: Oil Rigs). Only the Improved (worked)
+// tiles are listed — they are the ones that earn the Production.
 
-import { ETFI_YIELDS, getFocusImprovements, improvedUnimprovedSections } from "../../etfi-utilities.js";
+import { ETFI_YIELDS, getFocusImprovements, composeWithFallback } from "../../etfi-utilities.js";
+import { fromGroups, foldByYield, sectionFrom } from "./contributions.js";
 
 const PRODUCTION_PER = 2;
 const PRODUCTION_IMPROVEMENTS = new Set([
@@ -24,17 +25,14 @@ const PRODUCTION_IMPROVEMENTS = new Set([
 ]);
 
 export function buildMiningModel(city) {
-  const { improved, unimproved } = getFocusImprovements(city, PRODUCTION_IMPROVEMENTS);
-  const improvedTotal = improved.reduce((s, g) => s + g.count, 0);
+  const { improved } = getFocusImprovements(city, PRODUCTION_IMPROVEMENTS);
+  // One contribution list; the header and the rows are both folds over it.
+  const contributions = fromGroups(improved, ETFI_YIELDS.PRODUCTION, PRODUCTION_PER);
 
   return {
-    header: [{ yieldType: ETFI_YIELDS.PRODUCTION, value: improvedTotal * PRODUCTION_PER }],
+    header: foldByYield(contributions),
     rows: [],
-    sections: improvedUnimprovedSections({
-      improved,
-      unimproved,
-      improvedYields: (g) => [{ yieldType: ETFI_YIELDS.PRODUCTION, value: g.count * PRODUCTION_PER }],
-    }),
+    sections: sectionFrom(composeWithFallback("LOC_MOD_ETFI_IMPROVED", "Improved"), contributions),
     notes: [],
   };
 }

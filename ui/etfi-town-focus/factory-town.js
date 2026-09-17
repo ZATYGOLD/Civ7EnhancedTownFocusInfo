@@ -5,24 +5,29 @@
 // Author: Zatygold
 //
 // Factory Town (PROJECT_TOWN_FACTORY, Modern): +1 Resource Slot and +5 Trade
-// Route range (pills by the name). Lists the town's Factory Resources, split by
-// the shared Improved / Unimproved categories. (The +100% purchase discount is
-// already in the project description, so it's not repeated here.)
+// Route range (pills by the name). Lists the town's Improved (worked) Factory
+// Resources for reference; the rows carry no yields of their own. (The +100%
+// purchase discount is already in the project description, so it's not repeated
+// here.)
 
-import { RESOURCE_ICON, getFactoryResources, improvedUnimprovedSections, tradeRangePill } from "../../etfi-utilities.js";
+import { RESOURCE_ICON, getFactoryResources, tradeRangePill, composeWithFallback } from "../../etfi-utilities.js";
+import { contribution, fromGroups, foldByYield, sectionFrom } from "./contributions.js";
 
 const RESOURCE_SLOT = 1;
 
 export function buildFactoryModel(city) {
-  const { improved, unimproved } = getFactoryResources(city);
+  const { improved } = getFactoryResources(city);
+  // The resource rows are informational — they list the town's Factory Resources
+  // but grant no per-row yield, hence a null yield type.
+  const contributions = fromGroups(improved, null, 0);
+  // Town-wide: the extra Resource Slot. No breakdown row.
+  const townContributions = [contribution(RESOURCE_ICON, RESOURCE_SLOT, 1, null)];
 
   return {
-    header: [
-      { yieldType: RESOURCE_ICON, value: RESOURCE_SLOT },
-      tradeRangePill(),
-    ],
+    // The trade-range pill is a static range indicator, not a summed yield.
+    header: [...foldByYield(townContributions), tradeRangePill()],
     rows: [],
-    sections: improvedUnimprovedSections({ improved, unimproved }),
+    sections: sectionFrom(composeWithFallback("LOC_MOD_ETFI_IMPROVED", "Improved"), contributions),
     notes: [],
   };
 }

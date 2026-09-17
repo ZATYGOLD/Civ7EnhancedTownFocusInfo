@@ -51,100 +51,6 @@ export function composeWithFallback(key, fallback) {
   }
 }
 
-// Build the standardized "Improved" category section shared by every focus that
-// classifies tiles this way (Farming/Fishing, Mining, Trade, Factory, Resort).
-// Only the Improved tiles are shown — the Unimproved category is intentionally
-// not rendered. (`unimproved` is still accepted for call-site compatibility.)
-//   * improved: array of { name, iconId, count },
-//   * improvedYields(group) -> yield array for an Improved row (omit for none).
-export function improvedUnimprovedSections({ improved, improvedYields }) {
-  const sections = [];
-  if (improved && improved.length) {
-    sections.push({
-      title: composeWithFallback("LOC_MOD_ETFI_IMPROVED", "Improved"),
-      rows: improved.map((g) => {
-        const row = { iconId: g.iconId, name: g.name, count: g.count };
-        if (improvedYields) {
-          const y = improvedYields(g);
-          if (y && y.length) row.yields = y;
-        }
-        // Optional hover tooltip: a group may carry `tiles` (an array of
-        // per-tile { name, iconId } building arrays, e.g. Districts). Each tile
-        // becomes a divided row listing its buildings as [icon] │ name items.
-        if (Array.isArray(g.tiles) && g.tiles.length) {
-          row.tipModel = {
-            sections: [{
-              rows: g.tiles.map((tile) => ({
-                items: (tile || []).map((b) => ({ iconId: b.iconId, name: b.name })),
-              })),
-            }],
-          };
-        }
-        return row;
-      }),
-    });
-  }
-  return sections;
-}
-
-// Build the standardized Quarter category sections (Quarters / Unique Quarters /
-// Special Quarters + a lone Buildings category) shared by Urban Center and
-// Religious Site from a getTownBuildings() result. Behavior is identical except
-// for the yields, supplied via callbacks:
-//   * quarterYields(quarter) -> yield array for a quarter row (all its buildings
-//       are shown together on one line via `items`),
-//   * buildingYields(building) -> yield array for a lone Building row (optional).
-export function quarterSections({ quarters, uniqueQuarters, specialQuarters, buildings }, { quarterYields, buildingYields, buildingsTitle } = {}) {
-  const quarterRow = (q) => {
-    const row = { items: q.buildings.map((b) => ({ iconId: b.iconId, name: b.name })) };
-    if (quarterYields) {
-      const y = quarterYields(q);
-      if (y && y.length) row.yields = y;
-    }
-    if (q.name) row.subText = q.name;
-    return row;
-  };
-
-  const sections = [];
-  if (quarters && quarters.length) {
-    sections.push({
-      title: composeWithFallback("LOC_MOD_ETFI_QUARTERS", "Quarters"),
-      separatePanel: true,
-      rows: quarters.map(quarterRow),
-    });
-  }
-  if (uniqueQuarters && uniqueQuarters.length) {
-    sections.push({
-      title: composeWithFallback("LOC_MOD_ETFI_UNIQUE_QUARTERS", "Unique Quarters"),
-      separatePanel: true,
-      rows: uniqueQuarters.map(quarterRow),
-    });
-  }
-  if (specialQuarters && specialQuarters.length) {
-    sections.push({
-      title: composeWithFallback("LOC_MOD_ETFI_SPECIAL_QUARTERS", "Special Quarters"),
-      separatePanel: true,
-      rows: specialQuarters.map(quarterRow),
-    });
-  }
-  if (buildings && buildings.length) {
-    const section = {
-      title: buildingsTitle || composeWithFallback("LOC_MOD_ETFI_BUILDINGS", "Buildings"),
-      separatePanel: "bottom",
-      rows: buildings.map((b) => {
-        const row = { iconId: b.iconId, name: b.name };
-        if (buildingYields) {
-          const y = buildingYields(b);
-          if (y && y.length) row.yields = y;
-        }
-        return row;
-      }),
-    };
-    sections.push(section);
-  }
-  return sections;
-}
-
 export function getCurrentAgeType() {
   try {
     return (GameInfo?.Ages?.lookup?.(Game.age)?.AgeType || "").trim();
@@ -455,53 +361,6 @@ export function isGrowthFocusEl(el) {
   return false;
 }
 
-// The Growing Town focus grants +50% growth (EFFECT_CITY_ADJUST_GROWTH
-// Percent=50), which the engine applies as a reduction to the Food needed to
-// grow population. It applies only while the town has no project (Growing).
-export const GROWTH_FOCUS_MULTIPLIER = 1.5;
-
-// Food + turns SAVED by using the Growing Town focus, computed per option 1:
-// anchor on the engine's exact live threshold for the town's current state and
-// derive the opposite side via the focus's +50%. Returns null if not derivable.
-//   * Town currently Growing  -> the live threshold already includes the +50%,
-//     so it IS the with-focus value; the without-focus value is threshold*1.5.
-//   * Town currently specialized -> the +50% is inactive, so the live threshold
-//     IS the without-focus value; the with-focus value is threshold/1.5.
-// NOTE: the derived side is exact only when no OTHER growth modifiers stack;
-// the engine-reported side is always exact (see town-focus-tooltip notes).
-export function getGrowthSavings(city) {
-  try {
-    const g = city?.Growth;
-    if (!g) return null;
-    const threshold = g.getNextGrowthFoodThreshold?.()?.value;
-    if (typeof threshold !== "number" || !(threshold > 0)) return null;
-
-    const currentFood = typeof g.currentFood === "number" ? g.currentFood : 0;
-    let foodPerTurn = 0;
-    try {
-      const y = city?.Yields;
-      if (y && typeof YieldTypes !== "undefined") foodPerTurn = y.getNetYield(YieldTypes.YIELD_FOOD) || 0;
-    } catch {}
-
-    const growing = typeof GrowthTypes !== "undefined" && g.growthType === GrowthTypes.EXPAND;
-    const withFocus = growing ? threshold : threshold / GROWTH_FOCUS_MULTIPLIER;
-    const withoutFocus = growing ? threshold * GROWTH_FOCUS_MULTIPLIER : threshold;
-    const foodSaved = withoutFocus - withFocus;
-
-    // Turns saved = difference in turns-to-grow between the two thresholds at the
-    // town's current Food/turn (same currentFood + rate on both sides).
-    let turnsSaved = null;
-    if (foodPerTurn > 0) {
-      const turnsFor = (thr) => Math.max(0, Math.ceil((thr - currentFood) / foodPerTurn));
-      turnsSaved = turnsFor(withoutFocus) - turnsFor(withFocus);
-    }
-
-    return { foodSaved, turnsSaved, withFocus, withoutFocus, foodPerTurn };
-  } catch (e) {
-    console.error("[ETFI] getGrowthSavings failed", e);
-    return null;
-  }
-}
 
 // --- building helpers (Religious Site) -------------------------------------
 
@@ -559,6 +418,33 @@ export function countTemples(city) {
     console.error("[ETFI] countTemples failed", e);
   }
   return n;
+}
+
+// --- game data: modifier arguments -----------------------------------------
+
+// Town Focus effects are defined as Modifiers in the game's own data (see
+// base-standard/data/projects-gameeffects.xml), e.g. the Fort Town's Gold:
+//
+//   <Modifier id="ATTACH_FORT_WALLS_GOLD_FROM_PROJECT"
+//             collection="COLLECTION_CITY_PLOT_YIELDS" effect="EFFECT_PLOT_ADJUST_YIELD">
+//     <Argument name="YieldType">YIELD_GOLD</Argument>
+//     <Argument name="Amount">1</Argument>
+//
+// Reading the number out of GameInfo instead of hardcoding it means a balance
+// patch (or another mod's data change) updates our preview automatically.
+// `fallback` is returned when the row is missing, so an unexpected game build
+// degrades to the last-known-good value rather than showing 0.
+export function getModifierAmount(modifierId, argName = "Amount", fallback = 0) {
+  try {
+    const rows = GameInfo?.ModifierArguments;
+    const row = rows?.find?.((r) => r?.ModifierId === modifierId && r?.Name === argName);
+    if (!row) return fallback;
+    const n = Number(row.Value);
+    return Number.isFinite(n) ? n : fallback;
+  } catch (e) {
+    console.error("[ETFI] getModifierAmount failed", modifierId, argName, e);
+    return fallback;
+  }
 }
 
 // --- fortifications (Fort) -------------------------------------------------
@@ -853,12 +739,23 @@ export function getResortData(city) {
   const btDistTiles = [];    // one entry per breathtaking district tile: its buildings
   const nwByName = new Map();
   const resortActive = isResortActive(city);
+  // Appeal thresholds. getGlobalParamNumber() returns -1 for an unknown
+  // parameter rather than throwing, so a bare try/catch gives no protection at
+  // all: a renamed parameter would silently set these to -1, which makes EVERY
+  // tile pass both `appeal >= breathtaking` and the appealing cutoff below and
+  // inflates the whole preview. Only accept a sane positive number.
   let charming = 3;
   let breathtaking = 5;
   try {
-    charming = getGlobalParamNumber("APPEAL_FOR_HAPPINESS_TILE_YIELD");
-    breathtaking = getGlobalParamNumber("APPEAL_FOR_DOUBLE_HAPPINESS_TILE_YIELD");
-  } catch {}
+    const c = getGlobalParamNumber("APPEAL_FOR_HAPPINESS_TILE_YIELD");
+    const b = getGlobalParamNumber("APPEAL_FOR_DOUBLE_HAPPINESS_TILE_YIELD");
+    if (Number.isFinite(c) && c > 0) charming = c;
+    else console.error("[ETFI] APPEAL_FOR_HAPPINESS_TILE_YIELD unavailable; using default", charming);
+    if (Number.isFinite(b) && b > 0) breathtaking = b;
+    else console.error("[ETFI] APPEAL_FOR_DOUBLE_HAPPINESS_TILE_YIELD unavailable; using default", breathtaking);
+  } catch (e) {
+    console.error("[ETFI] appeal threshold lookup failed; using defaults", e);
+  }
   try {
     const impMap = buildImprovementTileMap(city);
     const indices = city?.getPurchasedPlots?.() || [];
