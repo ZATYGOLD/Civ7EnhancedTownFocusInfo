@@ -3,14 +3,12 @@
   <LocalizedText>
     <!-- Tytuły kategorii -->
     <Replace Tag="LOC_MOD_ETFI_IMPROVED" Language="pl_PL"><Text>Ulepszone</Text></Replace>
-    <Replace Tag="LOC_MOD_ETFI_UNIMPROVED" Language="pl_PL"><Text>Nieulepszone</Text></Replace>
     <Replace Tag="LOC_MOD_ETFI_QUARTERS" Language="pl_PL"><Text>Dzielnice</Text></Replace>
     <Replace Tag="LOC_MOD_ETFI_UNIQUE_QUARTERS" Language="pl_PL"><Text>Unikalne dzielnice</Text></Replace>
     <Replace Tag="LOC_MOD_ETFI_SPECIAL_QUARTERS" Language="pl_PL"><Text>Dzielnice specjalne</Text></Replace>
     <Replace Tag="LOC_MOD_ETFI_BUILDINGS" Language="pl_PL"><Text>Budynki</Text></Replace>
     <Replace Tag="LOC_MOD_ETFI_TOURISM" Language="pl_PL"><Text>Turystyka</Text></Replace>
     <Replace Tag="LOC_MOD_ETFI_CONNECTED" Language="pl_PL"><Text>Połączone</Text></Replace>
-    <Replace Tag="LOC_MOD_ETFI_DISCONNECTED" Language="pl_PL"><Text>Niepołączone</Text></Replace>
 
     <!-- Etykiety wierszy -->
     <Replace Tag="LOC_MOD_ETFI_CONNECTED_CITIES" Language="pl_PL"><Text>Miasta</Text></Replace>
@@ -27,8 +25,6 @@
     <Replace Tag="LOC_OPTIONS_GROUP_ETFI" Language="pl_PL"><Text>Mody Zatygolda</Text></Replace>
     <Replace Tag="LOC_MOD_ETFI_YIELDS_OPTION_COLORFUL" Language="pl_PL"><Text>Kolory plakietek plonów</Text></Replace>
     <Replace Tag="LOC_MOD_ETFI_YIELDS_OPTION_COLORFUL_DESC" Language="pl_PL"><Text>Barwi podglądy plonów według ich typu, ułatwiając ich rozróżnianie.</Text></Replace>
-    <Replace Tag="LOC_MOD_ETFI_TOGGLE_ON" Language="pl_PL"><Text>Wł.</Text></Replace>
-    <Replace Tag="LOC_MOD_ETFI_TOGGLE_OFF" Language="pl_PL"><Text>Wył.</Text></Replace>
     <Replace Tag="LOC_MOD_ETFI_EXPAND_DETAILS_DEFAULT" Language="pl_PL"><Text>Rozwinięte szczegóły</Text></Replace>
     <Replace Tag="LOC_MOD_ETFI_EXPAND_DETAILS_DEFAULT_DESC" Language="pl_PL"><Text>Rozwija lub zwija domyślny widok szczegółów.</Text></Replace>
 
@@ -38,10 +34,6 @@
     <Replace Tag="LOC_MOD_ETFI_EXPAND_DETAILS" Language="pl_PL"><Text>Rozwiń szczegóły</Text></Replace>
     <Replace Tag="LOC_MOD_ETFI_PRODUCTION_TO_GOLD" Language="pl_PL"><Text>Cała [icon:YIELD_PRODUCTION] produkcja miasteczka jest przekształcana w [icon:YIELD_GOLD] złoto.</Text></Replace>
     <Replace Tag="LOC_MOD_ETFI_COMING_SOON" Language="pl_PL"><Text>Wkrótce</Text></Replace>
-    <Replace Tag="LOC_MOD_ETFI_GROWTH" Language="pl_PL"><Text>Wzrost</Text></Replace>
-    <Replace Tag="LOC_MOD_ETFI_FOOD_SAVED" Language="pl_PL"><Text>Zaoszczędzona żywność</Text></Replace>
-    <Replace Tag="LOC_MOD_ETFI_TURNS_SAVED" Language="pl_PL"><Text>Zaoszczędzone tury</Text></Replace>
-    <Replace Tag="LOC_MOD_ETFI_RESOURCES" Language="pl_PL"><Text>Zasoby</Text></Replace>
     <Replace Tag="LOC_MOD_ETFI_WALLS" Language="pl_PL"><Text>Mury</Text></Replace>
     <Replace Tag="LOC_MOD_ETFI_FORTIFICATIONS" Language="pl_PL"><Text>Fortyfikacje</Text></Replace>
   </LocalizedText>

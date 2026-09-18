@@ -14,7 +14,7 @@
 //     (no bonus, hidden by default since Urban Center only rewards Quarters).
 // Each quarter row lists its building(s) with the +1 Science / +1 Culture pills.
 
-import { ETFI_YIELDS, getTownBuildings, composeWithFallback } from "../../etfi-utilities.js";
+import { ETFI_YIELDS, getTownBuildings, composeWithFallback } from "../utilities/etfi-utilities.js";
 import { contribution, fromQuarters, foldByYield, sectionFrom } from "./contributions.js";
 
 const PER_QUARTER = 1;

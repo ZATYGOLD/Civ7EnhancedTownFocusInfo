@@ -6,7 +6,7 @@
 
 import { TownFocusChooserItem } from "/base-standard/ui/production-chooser/town-focus-section.js";
 import { TownFocusRefreshEvent } from "/base-standard/ui/production-chooser/panel-town-focus.js";
-import { getTownCity, composeWithFallback, isGrowthFocusEl } from "../../etfi-utilities.js";
+import { getTownCity, composeWithFallback, isGrowthFocusEl } from "../utilities/etfi-utilities.js";
 import { getHideDetails, setHideDetails } from "../etfi-details/etfi-view-state.js";
 import { ETFI_TOWN_FOCUS_TOOLTIP_STYLE } from "./town-focus-tooltip.js";
 import {
@@ -28,19 +28,41 @@ const ETFI_TOWN_FOCUS_WIDTH = 25;
 // + yield pills. The hide state lives in the shared etfi-view-state module so
 // the focus hover tooltip can read it too. Defaults to showing details.
 
-(function injectWidthOverride() {
+// fxs-switch renders itself at a fixed h-8 w-20 (2rem x 5rem) with px-2 and a
+// size-4 (1rem) ball. That is sized for the Options screen and too heavy for a
+// panel header, so the Expand Details switch is scaled to 75% below.
+//
+// This has to be a stylesheet rather than inline styles applied after creation:
+// the component positions its ball from measured offsetWidths
+// (`left = switchWidth - ballWidth * 2`), driven by a ResizeObserver on its
+// root only. Resizing the ball after first layout would not re-trigger that
+// observer, leaving the ON state half a ball off until the next toggle. A CSS
+// rule is in effect before the component's first measurement, so the maths is
+// right the first time.
+//
+// The formula assumes horizontal padding is HALF the ball width (stock: 1rem
+// ball, .5rem padding). Keep these four values in proportion if you retune it.
+const SWITCH_SCALE = { height: "1.5rem", width: "3.75rem", padding: "0.375rem", ball: "0.75rem" };
+
+(function injectStyleOverrides() {
   try {
     if (document.getElementById("etfi-width-override")) return;
     const W = ETFI_TOWN_FOCUS_WIDTH;
+    const S = SWITCH_SCALE;
     const style = document.createElement("style");
     style.id = "etfi-width-override";
     style.textContent =
       `panel-town-focus { width: ${W}rem !important; max-width: ${W}rem !important; }` +
       `panel-town-focus town-focus-chooser-item { width: 100% !important; }` +
-      `panel-town-focus.etfi-hide-details .etfi-detail-zone { display: none !important; }`;
+      `panel-town-focus.etfi-hide-details .etfi-detail-zone { display: none !important; }` +
+      `#etfi-hide-details-row fxs-switch {` +
+        ` height: ${S.height} !important; width: ${S.width} !important;` +
+        ` padding-left: ${S.padding} !important; padding-right: ${S.padding} !important; }` +
+      `#etfi-hide-details-row fxs-switch .img-radio-button-ball {` +
+        ` width: ${S.ball} !important; height: ${S.ball} !important; }`;
     (document.head || document.documentElement).appendChild(style);
   } catch (e) {
-    console.error("[ETFI] width override failed", e);
+    console.error("[ETFI] style overrides failed", e);
   }
 })();
 
@@ -129,7 +151,7 @@ function expandDetailsLabel() {
 // the panel's state in sync on every (re)attach. Checking the box expands the
 // details inline; unchecking adds the `etfi-hide-details` class, which moves
 // each card's detail zones into the hover tooltip instead.
-function ensureHideCheckbox(fromEl) {
+function ensureHideToggle(fromEl) {
   try {
     const panel = fromEl?.closest?.("panel-town-focus")
       || fromEl?.getRootNode?.()?.querySelector?.("panel-town-focus")
@@ -138,19 +160,22 @@ function ensureHideCheckbox(fromEl) {
     panel.classList.toggle("etfi-hide-details", getHideDetails());
 
     // The panel persists while you switch settlements, so re-sync the existing
-    // checkbox to the now-selected town's own state rather than recreating it.
-    const existing = panel.querySelector("#etfi-hide-details-row fxs-checkbox");
+    // toggle to the now-selected town's own state rather than recreating it.
+    const existing = panel.querySelector("#etfi-hide-details-row fxs-switch");
     if (existing) {
       existing.setAttribute("selected", getHideDetails() ? "false" : "true");
       return;
     }
 
-    const checkbox = document.createElement("fxs-checkbox");
-    // Checked = expand Details inline (the default); unchecked moves them to the
-    // hover tooltip.
-    checkbox.setAttribute("selected", getHideDetails() ? "false" : "true");
-    checkbox.setAttribute("data-tooltip-content", expandDetailsLabel());
-    checkbox.addEventListener("component-value-changed", (e) => {
+    // fxs-switch takes the same `selected` attribute and emits the same
+    // component-value-changed event as fxs-checkbox, so this is a drop-in swap —
+    // it just reads as a toggle, matching the mod's Options entries.
+    const toggle = document.createElement("fxs-switch");
+    // On = expand Details inline (the default); off moves them to the hover
+    // tooltip.
+    toggle.setAttribute("selected", getHideDetails() ? "false" : "true");
+    toggle.setAttribute("data-tooltip-content", expandDetailsLabel());
+    toggle.addEventListener("component-value-changed", (e) => {
       const showDetails = !!(e && e.detail && e.detail.value);
       setHideDetails(!showDetails);
       panel.classList.toggle("etfi-hide-details", getHideDetails());
@@ -159,7 +184,7 @@ function ensureHideCheckbox(fromEl) {
     const row = document.createElement("div");
     row.id = "etfi-hide-details-row";
     row.className = "flex flex-row items-center";
-    row.appendChild(checkbox);
+    row.appendChild(toggle);
 
     // Place the checkbox OUT of the normal flow so it doesn't add a row that
     // pushes the focus list down. The panel Root is already position:relative
@@ -180,7 +205,7 @@ function ensureHideCheckbox(fromEl) {
       host.insertBefore(row, scrollable);
     }
   } catch (e) {
-    console.error("[ETFI] ensureHideCheckbox failed", e);
+    console.error("[ETFI] ensureHideToggle failed", e);
   }
 }
 
@@ -207,7 +232,7 @@ TownFocusChooserItem.prototype.onAttach = function () {
   // Now that the item is in the DOM, pin the panel width and ensure the
   // hide-details checkbox is present.
   constrainPanelWidth(this.Root);
-  ensureHideCheckbox(this.Root);
+  ensureHideToggle(this.Root);
 };
 
 TownFocusChooserItem.prototype.render = function () {

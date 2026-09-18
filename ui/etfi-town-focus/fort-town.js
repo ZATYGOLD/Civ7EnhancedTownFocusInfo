@@ -36,7 +36,7 @@
 // SAME contribution list that produces the breakdown rows, so the header total
 // is always the sum of the rows. See ./contributions.js.
 
-import { ETFI_YIELDS, HEAL_ICON, FORTIFY_ICON, getFortifications, getModifierAmount, composeWithFallback } from "../../etfi-utilities.js";
+import { ETFI_YIELDS, HEAL_ICON, FORTIFY_ICON, getFortifications, getModifierAmount, composeWithFallback } from "../utilities/etfi-utilities.js";
 import { contribution, foldByYield, sectionFrom } from "./contributions.js";
 
 // Modifier ids from base-standard/data/projects-gameeffects.xml.

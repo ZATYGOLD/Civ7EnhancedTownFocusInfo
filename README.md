@@ -2,6 +2,23 @@
 
 A mod for Civilization VII that enhances the display of town focus yield bonuses, showing detailed breakdowns of improvements, buildings, and trade routes that contribute to specialization bonuses.
 
+## Version 2.5.1
+
+### What's New
+
+- **Settings are now toggle switches.** Both mod options — **Yield Pill Colors** and **Expanded Details** — are on/off switches in Options → Mods instead of dropdowns, which reads better for a simple yes/no choice. Your existing saved preferences carry over unchanged.
+- **The Expand Details control in the panel is a switch too.** The checkbox above the focus list is now the same switch used in Options, so the in-panel control and the setting that backs it look and behave alike.
+
+### Fixes
+
+- **Resort Town's Natural Wonder yields are now correct.** Three problems fed into the same rows: a Natural Wonder tile was credited the "+1 Happiness / +1 Gold on Appealing tiles" bonus whether or not the tile actually met the appeal threshold; a tile that did *not* meet it could report a Gold bonus it never earned; and the wonder's +50% was applied to yield types the bonus does not cover. Each is now checked against the tile's real appeal and the exact set of yields the bonus applies to.
+
+### Maintenance
+
+- The shared query layer moved to `ui/utilities/`, so every script the mod loads now lives under `ui/` in the folder that matches its job.
+- Removed leftover code that nothing used any more: two unused result fields, a scan of every settlement in the empire that was computed and thrown away on each refresh, six translation keys retired in earlier versions (across all nine languages), and sixteen internal render helpers that were exported but only ever used inside their own file.
+- Failures in the data layer that would quietly produce wrong numbers now report themselves in the log instead of being swallowed. Per-tile probes that legitimately fail on ordinary tiles stay silent so the log is still readable.
+
 ## Version 2.5.0
 
 ### Compatibility

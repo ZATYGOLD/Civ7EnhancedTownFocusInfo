@@ -11,7 +11,7 @@
 // Each lists Cities and Towns with their totals; hovering "Cities" / "Towns"
 // reveals the settlement names.
 
-import { ETFI_YIELDS, getSettlementsByConnection, composeWithFallback } from "../../etfi-utilities.js";
+import { ETFI_YIELDS, getConnectedSettlements, composeWithFallback } from "../utilities/etfi-utilities.js";
 import { contribution, foldByYield, sectionFrom } from "./contributions.js";
 
 const INFLUENCE_PER = 1;
@@ -28,10 +28,8 @@ function settlementContribution(iconId, label, names) {
 }
 
 export function buildHubModel(city) {
-  const { connected } = getSettlementsByConnection(city);
+  const connected = getConnectedSettlements(city);
 
-  // Only the Connected settlements are shown; the Disconnected category is
-  // intentionally not rendered.
   const contributions = [
     settlementContribution(HUB_ICONS.CITY, composeWithFallback("LOC_MOD_ETFI_CONNECTED_CITIES", "Cities"), connected.cities),
     settlementContribution(HUB_ICONS.TOWN, composeWithFallback("LOC_MOD_ETFI_CONNECTED_TOWNS", "Towns"), connected.towns),

@@ -8,7 +8,7 @@
 // Clay Pits, Mines, Quarries (Modern: Oil Rigs). Only the Improved (worked)
 // tiles are listed — they are the ones that earn the Production.
 
-import { ETFI_YIELDS, getFocusImprovements, composeWithFallback } from "../../etfi-utilities.js";
+import { ETFI_YIELDS, getFocusImprovements, composeWithFallback } from "../utilities/etfi-utilities.js";
 import { fromGroups, foldByYield, sectionFrom } from "./contributions.js";
 
 const PRODUCTION_PER = 2;

@@ -9,7 +9,7 @@
 // Only the Improved (worked) Resource tiles are listed — they are the ones that
 // earn the Happiness.
 
-import { ETFI_YIELDS, countResourceTiles, tradeRangePill, composeWithFallback } from "../../etfi-utilities.js";
+import { ETFI_YIELDS, countResourceTiles, tradeRangePill, composeWithFallback } from "../utilities/etfi-utilities.js";
 import { fromGroups, foldByYield, sectionFrom } from "./contributions.js";
 
 const HAPPINESS_PER_RESOURCE = 1;

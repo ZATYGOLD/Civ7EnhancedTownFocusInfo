@@ -14,7 +14,7 @@
 // Unlike Urban Center, lone Buildings still earn the bonus, so that category is
 // NOT hidden. Header pills: total Happiness and a +2 Relic Slots pill (relic icon).
 
-import { ETFI_YIELDS, RELIC_ICON, getTownBuildings, countTemples, composeWithFallback } from "../../etfi-utilities.js";
+import { ETFI_YIELDS, RELIC_ICON, getTownBuildings, countTemples, composeWithFallback } from "../utilities/etfi-utilities.js";
 import { contribution, fromQuarters, foldByYield, sectionFrom } from "./contributions.js";
 
 const HAPPINESS_PER_BUILDING = 2;

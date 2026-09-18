@@ -10,7 +10,7 @@
 // purchase discount is already in the project description, so it's not repeated
 // here.)
 
-import { RESOURCE_ICON, getFactoryResources, tradeRangePill, composeWithFallback } from "../../etfi-utilities.js";
+import { RESOURCE_ICON, getFactoryResources, tradeRangePill, composeWithFallback } from "../utilities/etfi-utilities.js";
 import { contribution, fromGroups, foldByYield, sectionFrom } from "./contributions.js";
 
 const RESOURCE_SLOT = 1;

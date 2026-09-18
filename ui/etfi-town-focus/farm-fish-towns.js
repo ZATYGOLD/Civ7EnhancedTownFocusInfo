@@ -8,7 +8,7 @@
 // +1 Food on Farms, Pastures, Plantations, and Fishing Boats. Only the Improved
 // (worked) tiles are listed — they are the ones that earn the Food.
 
-import { ETFI_YIELDS, getFocusImprovements, composeWithFallback } from "../../etfi-utilities.js";
+import { ETFI_YIELDS, getFocusImprovements, composeWithFallback } from "../utilities/etfi-utilities.js";
 import { fromGroups, foldByYield, sectionFrom } from "./contributions.js";
 
 const FOOD_PER = 1;

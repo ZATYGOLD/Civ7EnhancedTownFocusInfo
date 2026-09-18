@@ -3,14 +3,12 @@
   <LocalizedText>
     <!-- Заголовки категорий -->
     <Replace Tag="LOC_MOD_ETFI_IMPROVED" Language="ru_RU"><Text>Улучшенные</Text></Replace>
-    <Replace Tag="LOC_MOD_ETFI_UNIMPROVED" Language="ru_RU"><Text>Неулучшенные</Text></Replace>
     <Replace Tag="LOC_MOD_ETFI_QUARTERS" Language="ru_RU"><Text>Кварталы</Text></Replace>
     <Replace Tag="LOC_MOD_ETFI_UNIQUE_QUARTERS" Language="ru_RU"><Text>Уникальные кварталы</Text></Replace>
     <Replace Tag="LOC_MOD_ETFI_SPECIAL_QUARTERS" Language="ru_RU"><Text>Особые кварталы</Text></Replace>
     <Replace Tag="LOC_MOD_ETFI_BUILDINGS" Language="ru_RU"><Text>Здания</Text></Replace>
     <Replace Tag="LOC_MOD_ETFI_TOURISM" Language="ru_RU"><Text>Туризм</Text></Replace>
     <Replace Tag="LOC_MOD_ETFI_CONNECTED" Language="ru_RU"><Text>Связанные</Text></Replace>
-    <Replace Tag="LOC_MOD_ETFI_DISCONNECTED" Language="ru_RU"><Text>Несвязанные</Text></Replace>
 
     <!-- Подписи строк -->
     <Replace Tag="LOC_MOD_ETFI_CONNECTED_CITIES" Language="ru_RU"><Text>Города</Text></Replace>
@@ -27,8 +25,6 @@
     <Replace Tag="LOC_OPTIONS_GROUP_ETFI" Language="ru_RU"><Text>Моды Zatygold</Text></Replace>
     <Replace Tag="LOC_MOD_ETFI_YIELDS_OPTION_COLORFUL" Language="ru_RU"><Text>Цвета значков дохода</Text></Replace>
     <Replace Tag="LOC_MOD_ETFI_YIELDS_OPTION_COLORFUL_DESC" Language="ru_RU"><Text>Окрашивает предпросмотр дохода по его типу, чтобы его было легче различать.</Text></Replace>
-    <Replace Tag="LOC_MOD_ETFI_TOGGLE_ON" Language="ru_RU"><Text>Вкл.</Text></Replace>
-    <Replace Tag="LOC_MOD_ETFI_TOGGLE_OFF" Language="ru_RU"><Text>Выкл.</Text></Replace>
     <Replace Tag="LOC_MOD_ETFI_EXPAND_DETAILS_DEFAULT" Language="ru_RU"><Text>Развёрнутые подробности</Text></Replace>
     <Replace Tag="LOC_MOD_ETFI_EXPAND_DETAILS_DEFAULT_DESC" Language="ru_RU"><Text>Разворачивает или сворачивает подробности по умолчанию.</Text></Replace>
 
@@ -38,10 +34,6 @@
     <Replace Tag="LOC_MOD_ETFI_EXPAND_DETAILS" Language="ru_RU"><Text>Показать подробности</Text></Replace>
     <Replace Tag="LOC_MOD_ETFI_PRODUCTION_TO_GOLD" Language="ru_RU"><Text>Всё [icon:YIELD_PRODUCTION] производство городка конвертируется в [icon:YIELD_GOLD] золото.</Text></Replace>
     <Replace Tag="LOC_MOD_ETFI_COMING_SOON" Language="ru_RU"><Text>Скоро</Text></Replace>
-    <Replace Tag="LOC_MOD_ETFI_GROWTH" Language="ru_RU"><Text>Рост</Text></Replace>
-    <Replace Tag="LOC_MOD_ETFI_FOOD_SAVED" Language="ru_RU"><Text>Сэкономлено пищи</Text></Replace>
-    <Replace Tag="LOC_MOD_ETFI_TURNS_SAVED" Language="ru_RU"><Text>Сэкономлено ходов</Text></Replace>
-    <Replace Tag="LOC_MOD_ETFI_RESOURCES" Language="ru_RU"><Text>Ресурсы</Text></Replace>
     <Replace Tag="LOC_MOD_ETFI_WALLS" Language="ru_RU"><Text>Стены</Text></Replace>
     <Replace Tag="LOC_MOD_ETFI_FORTIFICATIONS" Language="ru_RU"><Text>Укрепления</Text></Replace>
   </LocalizedText>

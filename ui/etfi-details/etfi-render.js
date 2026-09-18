@@ -43,7 +43,7 @@ import TooltipManager from "/core/ui/tooltips/tooltip-manager.js";
 
 // Divider color + per-yield pill background colors.
 export const DIVIDER_COLOR = "rgba(77, 83, 102, 0.7)";
-export const YIELD_COLORS = {
+const YIELD_COLORS = {
   YIELD_FOOD: "rgba(128,179,77,0.35)",
   YIELD_PRODUCTION: "rgba(163,61,41,0.35)",
   YIELD_GOLD: "rgba(246,206,85,0.35)",
@@ -81,7 +81,7 @@ export function fmt(v) {
 }
 
 // The bullet glyph the game uses to mark list items in stylized LOC text.
-export const BULLET_CHAR = String.fromCodePoint(8226);
+const BULLET_CHAR = String.fromCodePoint(8226);
 
 // Empty a container (GameFace lacks Element.replaceChildren).
 export function clearChildren(parent) {
@@ -124,11 +124,11 @@ export function applyListSpacing(container) {
   }
 }
 
-export function isColorful() {
+function isColorful() {
   try { return !!(ETFI_Settings && ETFI_Settings.IsColorful); } catch { return false; }
 }
 
-export function fxsIcon(iconId, sizeClass) {
+function fxsIcon(iconId, sizeClass) {
   const icon = document.createElement("fxs-icon");
   icon.setAttribute("data-icon-id", iconId);
   icon.className = `${sizeClass} shrink-0`;
@@ -137,7 +137,7 @@ export function fxsIcon(iconId, sizeClass) {
 
 // Icon for a row's left label: a custom class-based icon (iconClass/iconStyle)
 // or an fxs-icon by id (size-5). Returns null when the spec has no icon.
-export function iconEl(spec) {
+function iconEl(spec) {
   if (spec && spec.iconClass) {
     const d = document.createElement("div");
     d.className = `${spec.iconClass} shrink-0`;
@@ -149,7 +149,7 @@ export function iconEl(spec) {
 }
 
 // Thin vertical divider between inline items on a single row.
-export function vDivider() {
+function vDivider() {
   const d = document.createElement("div");
   d.className = "self-stretch shrink-0 mx-1";
   d.style.cssText = `width:0.0625rem; background-color:${DIVIDER_COLOR};`;
@@ -157,7 +157,7 @@ export function vDivider() {
 }
 
 // Thin horizontal divider between rows. marginYRem controls top/bottom spacing.
-export function hDivider(marginYRem = 0.125) {
+function hDivider(marginYRem = 0.125) {
   const d = document.createElement("div");
   d.className = "w-full shrink-0";
   d.style.cssText = `height:0.0625rem; margin-top:${marginYRem}rem; margin-bottom:${marginYRem}rem; background-color:${DIVIDER_COLOR};`;
@@ -190,7 +190,7 @@ export function yieldPill(entry, compact = false) {
 }
 
 // A plain "[yield icon] +N" value (no pill background) for individual rows.
-export function yieldValue(entry) {
+function yieldValue(entry) {
   const cell = document.createElement("div");
   cell.className = "flex items-center shrink-0";
   cell.appendChild(fxsIcon(entry.yieldType, "size-4"));
@@ -225,7 +225,7 @@ export function noteLine(text) {
 
 // Uppercase title (left) + optional total yield pill (right) + shell-line
 // underline. lineMarginYRem controls the underline's top/bottom margin.
-export function sectionTitle(label, { total, lineMarginYRem = 0.0625, compactPills = false } = {}) {
+function sectionTitle(label, { total, lineMarginYRem = 0.0625, compactPills = false } = {}) {
   const wrap = document.createElement("div");
   wrap.className = "w-full flex flex-col";
 
@@ -248,7 +248,7 @@ export function sectionTitle(label, { total, lineMarginYRem = 0.0625, compactPil
 // Append an icon (optional) + name label to a row's left container. When the
 // spec carries a tooltip, the name gets a hover tooltip; cfg.nameLinkCue adds a
 // dotted "link" cue (used by the inline list, not the tooltip).
-export function appendNameItem(left, spec, cfg = {}) {
+function appendNameItem(left, spec, cfg = {}) {
   const ic = iconEl(spec);
   if (ic) {
     left.appendChild(ic);
@@ -287,7 +287,7 @@ export function appendNameItem(left, spec, cfg = {}) {
 // a single icon+name. Right side: an optional pill, yields (pills or values per
 // cfg.yieldsAsPills), and/or a plain valueText. An optional subText renders on a
 // line beneath.
-export function detailRow(row, cfg = {}) {
+function detailRow(row, cfg = {}) {
   const line = document.createElement("div");
   line.className = "flex justify-between items-center w-full";
   line.style.marginTop = `${cfg.rowMarginTopRem ?? 0.0625}rem`;
@@ -369,7 +369,7 @@ export function appendRows(panel, rows, cfg = {}) {
 
 // A "ticket" background panel. Padding/margins come from cfg so each consumer
 // keeps its current spacing.
-export function newPanel(cfg = {}) {
+function newPanel(cfg = {}) {
   const p = document.createElement("div");
   // text-2xs makes the panel contents (row names, counts, notes) compact.
   p.className = `img-base-ticket-bg-container w-full flex flex-col ${cfg.panelMarginTopClass ?? "mt-1"} text-2xs`;
@@ -420,10 +420,10 @@ export function renderSectionPanels(container, sections, cfg = {}) {
 //   data-etfi-tip-model  = JSON.stringify({ sections: [...] })   (preferred)  OR
 //   data-etfi-tip        = "[N]-separated stylize markup"        (fallback)
 //   data-etfi-tip-title  = optional header text
-export const ETFI_TEXT_TOOLTIP_STYLE = "etfi-text-tooltip";
-export const ETFI_TIP_ATTR = "data-etfi-tip";
-export const ETFI_TIP_TITLE_ATTR = "data-etfi-tip-title";
-export const ETFI_TIP_MODEL_ATTR = "data-etfi-tip-model";
+const ETFI_TEXT_TOOLTIP_STYLE = "etfi-text-tooltip";
+const ETFI_TIP_ATTR = "data-etfi-tip";
+const ETFI_TIP_TITLE_ATTR = "data-etfi-tip-title";
+const ETFI_TIP_MODEL_ATTR = "data-etfi-tip-model";
 
 const ETFI_TIP_WIDTH = "15rem"; // fixed: every hover tooltip is the same width
 

@@ -31,7 +31,7 @@ import { createComponent, useContext, createEffect, createSignal } from "/core/v
 import { Tooltip, TooltipContext, TooltipHorizontalPosition } from "/core/ui-next/components/tooltip.js";
 import { TooltipModel } from "/core/ui-next/components/tooltip-model.js";
 import { TriggerType } from "/core/ui-next/components/trigger.js";
-import { getConnectedCitiesFood, getConvertedGold, composeWithFallback, isTownGrowing, isGrowthFocusEl } from "../../etfi-utilities.js";
+import { getConnectedCitiesFood, getConvertedGold, composeWithFallback, isTownGrowing, isGrowthFocusEl } from "../utilities/etfi-utilities.js";
 import { buildFocusModel, focusHeaderYield } from "../etfi-town-focus/focus-models.js";
 import { fmt, renderSectionPanels, setChildren, applyListSpacing, splitSectionsByPanel, DIVIDER_COLOR, ETFI_SECTION_CFG, ETFI_DETAILS_CFG } from "../etfi-details/etfi-render.js";
 import { getHideDetails } from "../etfi-details/etfi-view-state.js";

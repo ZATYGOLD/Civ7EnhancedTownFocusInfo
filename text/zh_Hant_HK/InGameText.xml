@@ -3,14 +3,12 @@
   <LocalizedText>
     <!-- 類別標題 -->
     <Replace Tag="LOC_MOD_ETFI_IMPROVED" Language="zh_Hant_HK"><Text>已開發</Text></Replace>
-    <Replace Tag="LOC_MOD_ETFI_UNIMPROVED" Language="zh_Hant_HK"><Text>未開發</Text></Replace>
     <Replace Tag="LOC_MOD_ETFI_QUARTERS" Language="zh_Hant_HK"><Text>區域</Text></Replace>
     <Replace Tag="LOC_MOD_ETFI_UNIQUE_QUARTERS" Language="zh_Hant_HK"><Text>特色區域</Text></Replace>
     <Replace Tag="LOC_MOD_ETFI_SPECIAL_QUARTERS" Language="zh_Hant_HK"><Text>特殊區域</Text></Replace>
     <Replace Tag="LOC_MOD_ETFI_BUILDINGS" Language="zh_Hant_HK"><Text>建築</Text></Replace>
     <Replace Tag="LOC_MOD_ETFI_TOURISM" Language="zh_Hant_HK"><Text>旅遊業</Text></Replace>
     <Replace Tag="LOC_MOD_ETFI_CONNECTED" Language="zh_Hant_HK"><Text>已連接</Text></Replace>
-    <Replace Tag="LOC_MOD_ETFI_DISCONNECTED" Language="zh_Hant_HK"><Text>未連接</Text></Replace>
 
     <!-- 行標籤 -->
     <Replace Tag="LOC_MOD_ETFI_CONNECTED_CITIES" Language="zh_Hant_HK"><Text>城市</Text></Replace>
@@ -27,8 +25,6 @@
     <Replace Tag="LOC_OPTIONS_GROUP_ETFI" Language="zh_Hant_HK"><Text>Zatygold 的模組</Text></Replace>
     <Replace Tag="LOC_MOD_ETFI_YIELDS_OPTION_COLORFUL" Language="zh_Hant_HK"><Text>產出標記顏色</Text></Replace>
     <Replace Tag="LOC_MOD_ETFI_YIELDS_OPTION_COLORFUL_DESC" Language="zh_Hant_HK"><Text>根據類型為產出預覽上色，使其更易於區分。</Text></Replace>
-    <Replace Tag="LOC_MOD_ETFI_TOGGLE_ON" Language="zh_Hant_HK"><Text>開</Text></Replace>
-    <Replace Tag="LOC_MOD_ETFI_TOGGLE_OFF" Language="zh_Hant_HK"><Text>關</Text></Replace>
     <Replace Tag="LOC_MOD_ETFI_EXPAND_DETAILS_DEFAULT" Language="zh_Hant_HK"><Text>展開詳情</Text></Replace>
     <Replace Tag="LOC_MOD_ETFI_EXPAND_DETAILS_DEFAULT_DESC" Language="zh_Hant_HK"><Text>展開或收合詳情的預設檢視。</Text></Replace>
 
@@ -38,10 +34,6 @@
     <Replace Tag="LOC_MOD_ETFI_EXPAND_DETAILS" Language="zh_Hant_HK"><Text>展開詳情</Text></Replace>
     <Replace Tag="LOC_MOD_ETFI_PRODUCTION_TO_GOLD" Language="zh_Hant_HK"><Text>城鎮所有的[icon:YIELD_PRODUCTION]生產力轉化為[icon:YIELD_GOLD]金幣。</Text></Replace>
     <Replace Tag="LOC_MOD_ETFI_COMING_SOON" Language="zh_Hant_HK"><Text>敬請期待</Text></Replace>
-    <Replace Tag="LOC_MOD_ETFI_GROWTH" Language="zh_Hant_HK"><Text>成長</Text></Replace>
-    <Replace Tag="LOC_MOD_ETFI_FOOD_SAVED" Language="zh_Hant_HK"><Text>節省的食物</Text></Replace>
-    <Replace Tag="LOC_MOD_ETFI_TURNS_SAVED" Language="zh_Hant_HK"><Text>節省的回合</Text></Replace>
-    <Replace Tag="LOC_MOD_ETFI_RESOURCES" Language="zh_Hant_HK"><Text>資源</Text></Replace>
     <Replace Tag="LOC_MOD_ETFI_WALLS" Language="zh_Hant_HK"><Text>城牆</Text></Replace>
     <Replace Tag="LOC_MOD_ETFI_FORTIFICATIONS" Language="zh_Hant_HK"><Text>防禦工事</Text></Replace>
   </LocalizedText>

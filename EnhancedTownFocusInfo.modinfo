@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Mod id="EnhancedTownFocusInfoMod" version="20500" xmlns="ModInfo">
+<Mod id="EnhancedTownFocusInfoMod" version="20501" xmlns="ModInfo">
 	<Properties>
 		<Name>LOC_MOD_ENHANCEDTOWNFOCUSINFO</Name>
 		<Description>LOC_MOD_ENHANCEDTOWNFOCUSINFO_DESCRIPTION</Description>
 		<Authors>Zatygold</Authors>
 		<Package>Mod</Package>
 		<AffectsSavedGames>0</AffectsSavedGames>
-		<Version>2.5.0</Version>
-		<LastUpdated>2026-09-17</LastUpdated>
+		<Version>2.5.1</Version>
+		<LastUpdated>2026-09-18</LastUpdated>
 	</Properties>
 	<Dependencies>
 		<Mod id="base-standard" title="LOC_MODULE_BASE_STANDARD_NAME" />
@@ -47,7 +47,7 @@
 				<UIScripts>
 					<Item>core/settings.js</Item>
 					<Item>ui/settings-init.js</Item>
-					<Item>etfi-utilities.js</Item>
+					<Item>ui/utilities/etfi-utilities.js</Item>
 					<Item>ui/etfi-town-focus/contributions.js</Item>
 					<Item>ui/etfi-town-focus/farm-fish-towns.js</Item>
 					<Item>ui/etfi-town-focus/mining-town.js</Item>

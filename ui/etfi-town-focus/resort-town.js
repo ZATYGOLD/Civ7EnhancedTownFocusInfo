@@ -18,7 +18,7 @@
 //     excluded here — their appealing bonus is already folded into the Natural
 //     Wonders rows above (see addNaturalWonderYields).
 
-import { ETFI_YIELDS, TOURISM_ICON, getResortData, getCurrentAgeType, hasGlobalismMastery, composeWithFallback } from "../../etfi-utilities.js";
+import { ETFI_YIELDS, TOURISM_ICON, getResortData, getCurrentAgeType, hasGlobalismMastery, composeWithFallback } from "../utilities/etfi-utilities.js";
 import { contribution, fromGroups, foldByYield, sectionFrom } from "./contributions.js";
 
 const PER_TILE = 1;

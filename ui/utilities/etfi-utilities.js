@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-only
 // Copyright (C) 2025-2026 Zatygold
-// File Path: etfi-utilities.js
+// File Path: ui/utilities/etfi-utilities.js
 //
 // Author: Zatygold
 //
@@ -9,7 +9,6 @@
 
 import { ConstructibleHasTagType } from "/base-standard/ui/utilities/utilities-tags.js";
 import { getGlobalParamNumber } from "/core/ui/utilities/utilities-data.js";
-import { ComponentID } from "/core/ui/utilities/utilities-component-id.js";
 
 export const ETFI_YIELDS = Object.freeze({
   FOOD: "YIELD_FOOD",
@@ -21,7 +20,7 @@ export const ETFI_YIELDS = Object.freeze({
   INFLUENCE: "YIELD_DIPLOMACY",
 });
 
-export const TRADE_ROUTE_ICON = "TRADE_ROUTE";
+const TRADE_ROUTE_ICON = "TRADE_ROUTE";
 export const HEAL_ICON = "ACTION_HEAL";
 export const FORTIFY_ICON = "ACTION_FORTIFY";
 export const TOURISM_ICON = "CULTURE_VP";
@@ -29,7 +28,7 @@ export const RESOURCE_ICON = "RADIAL_RESOURCES";
 export const RELIC_ICON = "NAR_REW_GREATWORK";
 
 // Shared: the +5 Trade Route range bonus, used by Trade Outpost and Factory Town.
-export const TRADE_RANGE = 5;
+const TRADE_RANGE = 5;
 export function tradeRangePill() {
   return { yieldType: TRADE_ROUTE_ICON, value: TRADE_RANGE };
 }
@@ -54,7 +53,8 @@ export function composeWithFallback(key, fallback) {
 export function getCurrentAgeType() {
   try {
     return (GameInfo?.Ages?.lookup?.(Game.age)?.AgeType || "").trim();
-  } catch {
+  } catch (e) {
+    console.error("[ETFI] getCurrentAgeType failed; age gating will be skipped", e);
     return "";
   }
 }
@@ -63,7 +63,8 @@ export function getTownCity() {
   try {
     const id = UI.Player?.getHeadSelectedCity?.();
     return id ? Cities.get(id) : null;
-  } catch {
+  } catch (e) {
+    console.error("[ETFI] getTownCity failed; no settlement selected", e);
     return null;
   }
 }
@@ -180,16 +181,19 @@ export function getFocusImprovements(city, typeSet) {
 
 // --- resource tile counting (Trade) ----------------------------------------
 
+// Resource tiles inside the town's borders, split by whether the tile carries
+// an improvement. Each entry is a display row: { name, iconId, count }.
 export function countResourceTiles(city) {
   const impMap = buildImprovementTileMap(city);
   const imp = new Map();
   const unimp = new Map();
-  let total = 0;
   let indices = [];
-  try { indices = city?.getPurchasedPlots?.() || []; } catch { indices = []; }
+  try { indices = city?.getPurchasedPlots?.() || []; }
+  catch (e) { console.error("[ETFI] getPurchasedPlots failed; no resource tiles counted", e); }
   for (const idx of indices) {
     let loc;
-    try { loc = GameplayMap.getLocationFromIndex(idx); } catch { continue; }
+    try { loc = GameplayMap.getLocationFromIndex(idx); }
+    catch (e) { console.error("[ETFI] getLocationFromIndex failed for plot", idx, e); continue; }
     if (!loc) continue;
     const info = resourceAt(loc.x, loc.y);
     if (!info) continue;
@@ -197,19 +201,15 @@ export function countResourceTiles(city) {
     const target = impMap.has(`${loc.x},${loc.y}`) ? imp : unimp;
     if (!target.has(name)) target.set(name, { name, iconId: info.ResourceType, count: 0 });
     target.get(name).count += 1;
-    total += 1;
   }
   const sort = (m) => Array.from(m.values()).sort((a, b) => b.count - a.count);
-  const improved = sort(imp);
-  const unimproved = sort(unimp);
-  // `groups` kept for backwards compatibility (all resource tiles together).
-  return { improved, unimproved, groups: [...improved, ...unimproved], total };
+  return { improved: sort(imp), unimproved: sort(unimp) };
 }
 
 // --- connected settlements (Hub) -------------------------------------------
 
-// Internal helper: used by getSettlementsByConnection (not imported directly).
-function getConnectedSettlements(city) {
+// Settlements this town is connected to, split City/Town. Names are localized.
+export function getConnectedSettlements(city) {
   const result = { cities: [], towns: [] };
   let ids = [];
   try { ids = city?.getConnectedCities?.() || []; }
@@ -220,40 +220,6 @@ function getConnectedSettlements(city) {
     const name = Locale.compose(s.name);
     if (s.isTown) result.towns.push(name);
     else result.cities.push(name);
-  }
-  return result;
-}
-
-// Connected vs. disconnected settlements for the Hub focus. "Disconnected" =
-// the player's OTHER settlements that this town is not connected to (excluding
-// the town itself). Returns connected + disconnected, each split City/Town.
-export function getSettlementsByConnection(city) {
-  const result = {
-    connected: { cities: [], towns: [] },
-    disconnected: { cities: [], towns: [] },
-  };
-  try {
-    const connected = getConnectedSettlements(city);
-    result.connected = connected;
-
-    // Exclude the connected settlements and the town itself from disconnected.
-    const exclude = [];
-    try { if (city?.id) exclude.push(city.id); } catch {}
-    let connIds = [];
-    try { connIds = city?.getConnectedCities?.() || []; } catch {}
-    for (const id of connIds) exclude.push(id);
-
-    const owner = city?.owner;
-    const all = (owner != null ? Players.get(owner)?.Cities?.getCities?.() : null) || [];
-    for (const s of all) {
-      if (!s || !s.id) continue;
-      if (ComponentID.isMatchInArray(exclude, s.id)) continue;
-      const name = Locale.compose(s.name);
-      if (s.isTown) result.disconnected.towns.push(name);
-      else result.disconnected.cities.push(name);
-    }
-  } catch (e) {
-    console.error("[ETFI] getSettlementsByConnection failed", e);
   }
   return result;
 }
@@ -269,7 +235,7 @@ export function getSettlementsByConnection(city) {
 // every connected City; the engine exposes that per-City amount directly via
 // Town.getSentFoodPerCity(), and the receivers are Town.getConnectedCities()
 // filtered to non-Towns. The same `getConnectedCities()` call backs
-// getSettlementsByConnection().
+// getConnectedSettlements().
 //
 // Note: the engine only sends Food while the town's growthType is PROJECT
 // (i.e. it has an active focus, not the default EXPAND/growing mode). When the
@@ -341,7 +307,8 @@ export function isTownGrowing(city) {
   try {
     const gt = city?.Growth?.growthType;
     return typeof GrowthTypes !== "undefined" && gt === GrowthTypes.EXPAND;
-  } catch {
+  } catch (e) {
+    console.error("[ETFI] isTownGrowing failed; assuming the town is not growing", e);
     return false;
   }
 }
@@ -645,34 +612,57 @@ function isResortActive(city) {
     const g = city.Growth;
     if (!g || typeof GrowthTypes === "undefined" || g.growthType !== GrowthTypes.PROJECT) return false;
     return GameInfo.Projects.lookup(g.projectType)?.ProjectType === "PROJECT_TOWN_RESORT";
-  } catch {
+  } catch (e) {
+    console.error("[ETFI] isResortActive failed; treating the Resort project as inactive", e);
     return false;
   }
 }
 
 // The Resort's per-improved-Natural-Wonder-tile contribution is what the tile
-// GAINS from the focus = (effective yields) - (pre-resort base yields). The game:
-//   * grants a flat +1 Happiness / +1 Gold appealing bonus (NW tiles are always
-//     Appealing), AND
-//   * applies +50% to the WHOLE tile, including that flat +1/+1.
-// So effective = (base + flat) * 1.5, and the contribution per type is:
-//     contribution = base*0.5 + flat*1.5   (flat = 1 for Happiness/Gold, else 0)
-// getYields() returns EFFECTIVE yields. We recover `base` per type:
-//   * Resort active  -> base = effective/1.5 - flat
-//   * Resort inactive-> effective already IS base (no focus bonus applied)
+// GAINS from the focus. Two separate project modifiers can apply to the plot
+// (base-standard/data/projects-gameeffects.xml):
+//   * ATTACH_RESORT_HAPPINESS_GOLD_FROM_PROJECT — flat +1 Happiness / +1 Gold,
+//     but ONLY on a plot that meets the appeal threshold, and
+//   * ATTACH_RESORT_NATURAL_WONDER_FROM_PROJECT — +50%, on any Natural Wonder
+//     plot, for a FIXED list of seven yield types.
+// The flat amount lands in the plot's base and the percentage is applied to that
+// total, so effective = (base + flat) * 1.5 and:
+//     contribution = base*0.5 + flat*1.5     (flat = 1 only when appealing)
+// getYields() reports the tile as it currently stands, so `base` is recovered as:
+//   * Resort active   -> base = effective/1.5 - flat
+//   * Resort inactive -> effective already IS base (no focus bonus applied)
+// VERIFIED IN-GAME: GameplayMap.getYields(plot, playerID) DOES include the
+// town's own project modifiers, so the branch above is correct — toggling the
+// Resort focus on and off produces matching numbers in both states. Do not
+// "fix" this by switching to getYieldsWithCity(): that variant exists for
+// evaluating a plot in the context of a city it does not currently belong to
+// (building/worker placement previews), not for reading owned tiles.
 // Example (per tile): base 6 Culture / 3 Happiness / 0 Gold -> effective with
 // Resort = 9 / 6 / 1.5 -> contribution = +3 Culture / +3 Happiness / +1.5 Gold.
 const NATURAL_WONDER_YIELD_PCT = 0.5;   // +50%
 const RESORT_APPEALING_PER_TILE = 1;    // flat +1 Happiness / +1 Gold
-function addNaturalWonderYields(acc, plotIndex, resortActive) {
+// The exact YieldType list on ATTACH_RESORT_NATURAL_WONDER_FROM_PROJECT. The
+// +50% applies to these and nothing else, so a tile yielding some other type
+// must not have the bonus applied to it.
+const NATURAL_WONDER_BONUS_YIELDS = new Set([
+  ETFI_YIELDS.FOOD,
+  ETFI_YIELDS.PRODUCTION,
+  ETFI_YIELDS.GOLD,
+  ETFI_YIELDS.SCIENCE,
+  ETFI_YIELDS.CULTURE,
+  ETFI_YIELDS.HAPPINESS,
+  ETFI_YIELDS.INFLUENCE, // YIELD_DIPLOMACY
+]);
+// `appealing` says whether this plot actually meets the appeal threshold. It is
+// NOT assumed: a Natural Wonder tile below the threshold earns no flat +1/+1,
+// and pretending otherwise both invents yield and drives `base` negative.
+function addNaturalWonderYields(acc, plotIndex, resortActive, appealing) {
   try {
     const M = NATURAL_WONDER_YIELD_PCT;
-    const FLAT = RESORT_APPEALING_PER_TILE;
+    const FLAT = appealing ? RESORT_APPEALING_PER_TILE : 0;
     const isFlatType = (t) => t === ETFI_YIELDS.HAPPINESS || t === ETFI_YIELDS.GOLD;
     const add = (t, v) => acc.set(t, (acc.get(t) || 0) + v);
 
-    // Effective yields by type (the flat Happiness/Gold types always present so
-    // the appealing bonus shows even on a tile with 0 base Gold).
     const eff = new Map();
     const raw = GameplayMap.getYields(plotIndex, GameContext.localPlayerID) || [];
     for (const [yieldType, amount] of raw) {
@@ -680,12 +670,19 @@ function addNaturalWonderYields(acc, plotIndex, resortActive) {
       const ydef = GameInfo.Yields.lookup(yieldType);
       if (ydef) eff.set(ydef.YieldType, (eff.get(ydef.YieldType) || 0) + amount);
     }
-    if (!eff.has(ETFI_YIELDS.HAPPINESS)) eff.set(ETFI_YIELDS.HAPPINESS, 0);
-    if (!eff.has(ETFI_YIELDS.GOLD)) eff.set(ETFI_YIELDS.GOLD, 0);
+    // Ensure the flat types are present so the appealing bonus still shows on a
+    // tile with no base Gold — but only when the tile actually earns it.
+    if (FLAT > 0) {
+      if (!eff.has(ETFI_YIELDS.HAPPINESS)) eff.set(ETFI_YIELDS.HAPPINESS, 0);
+      if (!eff.has(ETFI_YIELDS.GOLD)) eff.set(ETFI_YIELDS.GOLD, 0);
+    }
 
     for (const [t, amount] of eff) {
+      if (!NATURAL_WONDER_BONUS_YIELDS.has(t)) continue;
       const flat = isFlatType(t) ? FLAT : 0;
-      const base = resortActive ? (amount / (1 + M) - flat) : amount;
+      // Clamp: a tile whose effective value is below flat*1.5 would otherwise
+      // produce a negative base and fabricate yield out of nothing.
+      const base = Math.max(0, resortActive ? (amount / (1 + M) - flat) : amount);
       const contribution = base * M + flat * (1 + M);
       if (contribution > 0) add(t, contribution);
     }
@@ -722,7 +719,9 @@ function tileBuildingsAt(x, y) {
         iconId: def.ConstructibleType,
       });
     }
-  } catch {}
+  } catch (e) {
+    console.error("[ETFI] tileBuildingsAt failed; buildings on plot may be under-counted", x, y, e);
+  }
   return out;
 }
 
@@ -767,18 +766,28 @@ export function getResortData(city) {
       const key = `${x},${y}`;
       let isNW = false;
       try { isNW = !!GameplayMap.isNaturalWonder(x, y); } catch {}
+      // Appeal is needed by the Natural Wonder branch below (to decide whether
+      // the tile earns the flat +1/+1) as well as by the Breathtaking/Appealing
+      // classification further down, so resolve it up front.
+      let appeal = 0;
+      try { appeal = GameplayMap.getAppeal(x, y); } catch (e) {
+        console.error("[ETFI] getAppeal failed; treating tile as unappealing", x, y, e);
+      }
+      const isAppealing = appeal >= Math.min(charming, breathtaking);
       let nwName = null;
       if (isNW) {
         nwName = naturalWonderName(x, y) || "Natural Wonder";
         if (impMap.has(key)) {
           // Improved Natural Wonder (Expedition Base). It earns the Resort's
-          // +50% raw-yield bonus (Natural Wonders category) AND — because the
-          // tile is Appealing — the +1 Happiness / +1 Gold and Breathtaking
-          // Tourism below. Record the +50% here, then fall through.
+          // +50% raw-yield bonus (Natural Wonders category), plus — only if the
+          // tile actually meets the appeal threshold — the flat +1 Happiness /
+          // +1 Gold. Both are folded in here, which is why the tile is excluded
+          // from the Appealing category below. It still counts toward the
+          // Breathtaking tally for Tourism.
           let entry = nwByName.get(nwName);
           if (!entry) { entry = { name: nwName, count: 0, yieldMap: new Map() }; nwByName.set(nwName, entry); }
           entry.count++;
-          addNaturalWonderYields(entry.yieldMap, idx, resortActive);
+          addNaturalWonderYields(entry.yieldMap, idx, resortActive, isAppealing);
         } else {
           // Unimproved Natural Wonder: eligible but not earning yet -> Unimproved.
           if (!unimp.has(nwName)) unimp.set(nwName, { name: nwName, iconId: "IMPROVEMENT_EXPEDITION_BASE", count: 0 });
@@ -789,8 +798,6 @@ export function getResortData(city) {
       let water = false;
       try { water = !!GameplayMap.isWater(x, y); } catch {}
       if (water && !isNW) continue;
-      let appeal = 0;
-      try { appeal = GameplayMap.getAppeal(x, y); } catch {}
       const impAtTile = impMap.get(key);
       // A non-improved tile that has completed building(s) is a District. Query
       // its buildings per-plot so a Quarter (2 buildings on one tile) lists both.
@@ -818,9 +825,10 @@ export function getResortData(city) {
         }
       }
 
-      // Appealing tiles are Charming OR Breathtaking. Use the lower of the two
-      // thresholds as the cutoff so BOTH levels are always counted.
-      if (appeal < Math.min(charming, breathtaking)) continue;
+      // Appealing tiles are Charming OR Breathtaking — isAppealing (computed
+      // above) uses the lower of the two thresholds so BOTH levels are counted,
+      // and is the same test the Natural Wonder branch used for its flat bonus.
+      if (!isAppealing) continue;
       // An improved Natural Wonder already contributes its appealing +1 Happiness
       // / +1 Gold inside the NATURAL WONDERS category: addNaturalWonderYields
       // folds the flat bonus in (boosted by the +50%, so 1.5 each). Counting the

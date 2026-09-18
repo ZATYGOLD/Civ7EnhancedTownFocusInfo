@@ -3,14 +3,12 @@
   <LocalizedText>
     <!-- カテゴリ見出し -->
     <Replace Tag="LOC_MOD_ETFI_IMPROVED" Language="ja_JP"><Text>整備済み</Text></Replace>
-    <Replace Tag="LOC_MOD_ETFI_UNIMPROVED" Language="ja_JP"><Text>未整備</Text></Replace>
     <Replace Tag="LOC_MOD_ETFI_QUARTERS" Language="ja_JP"><Text>街区</Text></Replace>
     <Replace Tag="LOC_MOD_ETFI_UNIQUE_QUARTERS" Language="ja_JP"><Text>固有街区</Text></Replace>
     <Replace Tag="LOC_MOD_ETFI_SPECIAL_QUARTERS" Language="ja_JP"><Text>特殊街区</Text></Replace>
     <Replace Tag="LOC_MOD_ETFI_BUILDINGS" Language="ja_JP"><Text>建造物</Text></Replace>
     <Replace Tag="LOC_MOD_ETFI_TOURISM" Language="ja_JP"><Text>観光</Text></Replace>
     <Replace Tag="LOC_MOD_ETFI_CONNECTED" Language="ja_JP"><Text>接続済み</Text></Replace>
-    <Replace Tag="LOC_MOD_ETFI_DISCONNECTED" Language="ja_JP"><Text>未接続</Text></Replace>
 
     <!-- 行ラベル -->
     <Replace Tag="LOC_MOD_ETFI_CONNECTED_CITIES" Language="ja_JP"><Text>都市</Text></Replace>
@@ -27,8 +25,6 @@
     <Replace Tag="LOC_OPTIONS_GROUP_ETFI" Language="ja_JP"><Text>Zatygoldのモッド</Text></Replace>
     <Replace Tag="LOC_MOD_ETFI_YIELDS_OPTION_COLORFUL" Language="ja_JP"><Text>産出バッジの色</Text></Replace>
     <Replace Tag="LOC_MOD_ETFI_YIELDS_OPTION_COLORFUL_DESC" Language="ja_JP"><Text>産出プレビューを種類別に色分けして、見分けやすくします。</Text></Replace>
-    <Replace Tag="LOC_MOD_ETFI_TOGGLE_ON" Language="ja_JP"><Text>オン</Text></Replace>
-    <Replace Tag="LOC_MOD_ETFI_TOGGLE_OFF" Language="ja_JP"><Text>オフ</Text></Replace>
     <Replace Tag="LOC_MOD_ETFI_EXPAND_DETAILS_DEFAULT" Language="ja_JP"><Text>詳細を展開</Text></Replace>
     <Replace Tag="LOC_MOD_ETFI_EXPAND_DETAILS_DEFAULT_DESC" Language="ja_JP"><Text>詳細の初期表示を展開するか、折りたたむかを切り替えます。</Text></Replace>
 
@@ -38,10 +34,6 @@
     <Replace Tag="LOC_MOD_ETFI_EXPAND_DETAILS" Language="ja_JP"><Text>詳細を表示</Text></Replace>
     <Replace Tag="LOC_MOD_ETFI_PRODUCTION_TO_GOLD" Language="ja_JP"><Text>町の [icon:YIELD_PRODUCTION] 生産力はすべて [icon:YIELD_GOLD] ゴールドに変換される。</Text></Replace>
     <Replace Tag="LOC_MOD_ETFI_COMING_SOON" Language="ja_JP"><Text>近日公開</Text></Replace>
-    <Replace Tag="LOC_MOD_ETFI_GROWTH" Language="ja_JP"><Text>成長</Text></Replace>
-    <Replace Tag="LOC_MOD_ETFI_FOOD_SAVED" Language="ja_JP"><Text>節約された食料</Text></Replace>
-    <Replace Tag="LOC_MOD_ETFI_TURNS_SAVED" Language="ja_JP"><Text>短縮ターン</Text></Replace>
-    <Replace Tag="LOC_MOD_ETFI_RESOURCES" Language="ja_JP"><Text>資源</Text></Replace>
     <Replace Tag="LOC_MOD_ETFI_WALLS" Language="ja_JP"><Text>城壁</Text></Replace>
     <Replace Tag="LOC_MOD_ETFI_FORTIFICATIONS" Language="ja_JP"><Text>要塞化施設</Text></Replace>
   </LocalizedText>
