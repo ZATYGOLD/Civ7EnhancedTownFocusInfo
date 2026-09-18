@@ -18,11 +18,24 @@
 //     excluded here — their appealing bonus is already folded into the Natural
 //     Wonders rows above (see addNaturalWonderYields).
 
-import { ETFI_YIELDS, TOURISM_ICON, getResortData, getCurrentAgeType, hasGlobalismMastery, composeWithFallback } from "../utilities/etfi-utilities.js";
+import { ETFI_YIELDS, TOURISM_ICON, getResortData, getCurrentAgeType, hasGlobalismMastery, getModifierAmount, getVictoryScoringPoints, composeWithFallback } from "../utilities/etfi-utilities.js";
 import { contribution, fromGroups, foldByYield, sectionFrom } from "./contributions.js";
 
-const PER_TILE = 1;
-const TOURISM_PER = 4;
+// The per-tile Happiness/Gold is a modifier Amount shared by both yields
+// (base-standard/data/projects-gameeffects.xml). The Natural Wonder bonus is a
+// Percent on a sibling modifier and is read inside addNaturalWonderYields.
+const MOD_PER_TILE = "ATTACH_RESORT_HAPPINESS_GOLD_FROM_PROJECT";
+// Tourism is NOT a project modifier — it is a victory-point tracker row in
+// base-standard/data/victories.xml, activated by the Globalism civic.
+const SCORING_TOURISM = "VICTORY_TRACKER_RESORT_TOWN_TOURISM_MODERN";
+// Last-known-good (game 1.5.0), used only if the game data can't be read.
+const FALLBACK_PER_TILE = 1;
+const FALLBACK_TOURISM = 4;
+
+// The "7 developed Breathtaking tiles" requirement has NO representation in the
+// game data that could be located — it is not a GlobalParameter, a modifier
+// argument, or a VictoryScoringArgs row. It stays a constant until a source for
+// it is found; do not assume it is data-driven like the numbers above.
 const BREATHTAKING_MIN = 7;
 
 const HEX_ICON_CLASS = "general-appeal-legend-hex size-5 bg-contain bg-no-repeat";
@@ -33,6 +46,8 @@ const NATURAL_WONDER_ICON = "IMPROVEMENT_EXPEDITION_BASE";
 export function buildResortModel(city) {
   const d = getResortData(city);
   const developed = d.breathtakingImprovements + d.breathtakingDistricts;
+  const PER_TILE = getModifierAmount(MOD_PER_TILE, "Amount", FALLBACK_PER_TILE);
+  const TOURISM_PER = getVictoryScoringPoints(SCORING_TOURISM, FALLBACK_TOURISM);
 
   const isModern = getCurrentAgeType() === "AGE_MODERN";
   const reqsMet =

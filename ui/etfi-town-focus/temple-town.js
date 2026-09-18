@@ -14,14 +14,23 @@
 // Unlike Urban Center, lone Buildings still earn the bonus, so that category is
 // NOT hidden. Header pills: total Happiness and a +2 Relic Slots pill (relic icon).
 
-import { ETFI_YIELDS, RELIC_ICON, getTownBuildings, countTemples, composeWithFallback } from "../utilities/etfi-utilities.js";
+import { ETFI_YIELDS, RELIC_ICON, getTownBuildings, countTemples, getModifierAmount, composeWithFallback } from "../utilities/etfi-utilities.js";
 import { contribution, fromQuarters, foldByYield, sectionFrom } from "./contributions.js";
 
-const HAPPINESS_PER_BUILDING = 2;
-const RELIC_SLOTS_PER_TEMPLE = 2;
+// Modifier ids from age-exploration/data/projects-gameeffects.xml. Note the
+// Happiness modifier is named ..._ON_TEMPLES_... but its effect targets
+// ConstructibleClass=BUILDING — every building, not just Temples. Only the
+// great-work slots are Temple-specific.
+const MOD_HAPPINESS = "HAPPINESS_ON_TEMPLES_IN_CITY_FROM_PROJECT";
+const MOD_RELIC_SLOTS = "SLOTS_ON_TEMPLES_IN_CITY_FROM_PROJECT";
+// Last-known-good (game 1.5.0), used only if a modifier row can't be read.
+const FALLBACK_HAPPINESS = 2;
+const FALLBACK_RELIC_SLOTS = 2;
 
 export function buildTempleModel(city) {
   const data = getTownBuildings(city);
+  const HAPPINESS_PER_BUILDING = getModifierAmount(MOD_HAPPINESS, "Amount", FALLBACK_HAPPINESS);
+  const RELIC_SLOTS_PER_TEMPLE = getModifierAmount(MOD_RELIC_SLOTS, "Amount", FALLBACK_RELIC_SLOTS);
 
   // Every qualifying building earns +2 Happiness, so a Quarter's pill sums its
   // buildings — that's the contribution count. Lone Buildings earn it too.

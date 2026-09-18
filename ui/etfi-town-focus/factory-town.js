@@ -10,13 +10,18 @@
 // purchase discount is already in the project description, so it's not repeated
 // here.)
 
-import { RESOURCE_ICON, getFactoryResources, tradeRangePill, composeWithFallback } from "../utilities/etfi-utilities.js";
+import { RESOURCE_ICON, getFactoryResources, tradeRangePill, getModifierAmount, composeWithFallback } from "../utilities/etfi-utilities.js";
 import { contribution, fromGroups, foldByYield, sectionFrom } from "./contributions.js";
 
-const RESOURCE_SLOT = 1;
+// Modifier id from age-modern/data/projects-gameeffects.xml. The trade-range
+// bonus shares its modifiers with Trade Outpost and is read in tradeRangePill().
+const MOD_RESOURCE_SLOT = "ATTACH_RESOURCE_SLOTS_FROM_PROJECT";
+// Last-known-good (game 1.5.0), used only if the modifier row can't be read.
+const FALLBACK_RESOURCE_SLOT = 1;
 
 export function buildFactoryModel(city) {
   const { improved } = getFactoryResources(city);
+  const RESOURCE_SLOT = getModifierAmount(MOD_RESOURCE_SLOT, "Amount", FALLBACK_RESOURCE_SLOT);
   // The resource rows are informational — they list the town's Factory Resources
   // but grant no per-row yield, hence a null yield type.
   const contributions = fromGroups(improved, null, 0);

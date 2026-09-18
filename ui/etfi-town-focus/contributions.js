@@ -122,8 +122,13 @@ export function groupBySource(list) {
  *
  * Pass `yieldType = null` for rows that list something without granting a yield
  * (Factory Town's resource list).
+ *
+ * `per` is the amount each instance grants. It may be a number, or a function
+ * (group) -> number for focuses whose game data sets a different amount per
+ * improvement (the warehouse focuses — see warehouseAmountResolver).
  */
 export function fromGroups(groups, yieldType, per) {
+  const amountOf = typeof per === "function" ? per : () => per;
   return (groups || []).map((g) => {
     const source = { name: g.name, iconId: g.iconId, count: g.count };
     if (Array.isArray(g.tiles) && g.tiles.length) {
@@ -135,7 +140,7 @@ export function fromGroups(groups, yieldType, per) {
         }],
       };
     }
-    return contribution(yieldType, per, g.count, source);
+    return contribution(yieldType, amountOf(g), g.count, source);
   });
 }
 
@@ -154,7 +159,9 @@ export function fromGroups(groups, yieldType, per) {
  * bonus, e.g. Urban Center), or `(q) => q.buildings.length` for a per-building
  * bonus (e.g. Religious Site).
  */
-export function fromQuarters(quarters, yieldType, amount, keyPrefix, countOf = () => 1) {
+// The default takes (and ignores) the quarter so the parameter's signature
+// matches how it is called; a bare `() => 1` reads as taking no arguments.
+export function fromQuarters(quarters, yieldType, amount, keyPrefix, countOf = (_q) => 1) {
   return (quarters || []).map((q, i) => {
     const source = {
       key: `${keyPrefix}:${i}`,

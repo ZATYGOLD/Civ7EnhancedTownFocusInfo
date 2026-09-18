@@ -14,20 +14,27 @@
 //     (no bonus, hidden by default since Urban Center only rewards Quarters).
 // Each quarter row lists its building(s) with the +1 Science / +1 Culture pills.
 
-import { ETFI_YIELDS, getTownBuildings, composeWithFallback } from "../utilities/etfi-utilities.js";
+import { ETFI_YIELDS, getTownBuildings, getModifierAmount, composeWithFallback } from "../utilities/etfi-utilities.js";
 import { contribution, fromQuarters, foldByYield, sectionFrom } from "./contributions.js";
 
-const PER_QUARTER = 1;
+// Modifier ids from base-standard/data/projects-gameeffects.xml. The two yields
+// carry their own Amount, so they are read separately rather than assumed equal.
+const MOD_SCIENCE = "ATTACH_SCIENCE_QUARTERS_FROM_PROJECT";
+const MOD_CULTURE = "ATTACH_CULTURE_QUARTERS_FROM_PROJECT";
+// Last-known-good (game 1.5.0), used only if a modifier row can't be read.
+const FALLBACK_PER_QUARTER = 1;
 
 export function buildUrbanModel(city) {
   const data = getTownBuildings(city);
+  const sciencePer = getModifierAmount(MOD_SCIENCE, "Amount", FALLBACK_PER_QUARTER);
+  const culturePer = getModifierAmount(MOD_CULTURE, "Amount", FALLBACK_PER_QUARTER);
 
-  // Each Quarter earns +1 Science / +1 Culture (fixed per quarter). Calling
+  // Each Quarter earns Science and Culture (fixed per quarter). Calling
   // fromQuarters twice with the same key prefix layers both yields onto the
   // same rows.
   const quarterContribs = (list, prefix) => [
-    ...fromQuarters(list, ETFI_YIELDS.SCIENCE, PER_QUARTER, prefix),
-    ...fromQuarters(list, ETFI_YIELDS.CULTURE, PER_QUARTER, prefix),
+    ...fromQuarters(list, ETFI_YIELDS.SCIENCE, sciencePer, prefix),
+    ...fromQuarters(list, ETFI_YIELDS.CULTURE, culturePer, prefix),
   ];
   const quarters = quarterContribs(data.quarters, "q");
   const unique = quarterContribs(data.uniqueQuarters, "u");

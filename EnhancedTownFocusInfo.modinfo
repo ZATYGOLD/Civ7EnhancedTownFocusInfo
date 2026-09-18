@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Mod id="EnhancedTownFocusInfoMod" version="20501" xmlns="ModInfo">
+<Mod id="EnhancedTownFocusInfoMod" version="20502" xmlns="ModInfo">
 	<Properties>
 		<Name>LOC_MOD_ENHANCEDTOWNFOCUSINFO</Name>
 		<Description>LOC_MOD_ENHANCEDTOWNFOCUSINFO_DESCRIPTION</Description>
 		<Authors>Zatygold</Authors>
 		<Package>Mod</Package>
 		<AffectsSavedGames>0</AffectsSavedGames>
-		<Version>2.5.1</Version>
+		<Version>2.5.2</Version>
 		<LastUpdated>2026-09-18</LastUpdated>
 	</Properties>
 	<Dependencies>
@@ -44,6 +44,9 @@
 		<ActionGroup id="etfi-game" scope="game" criteria="always">
 			<Properties><LoadOrder>1100</LoadOrder></Properties>
 			<Actions>
+				<ImportFiles>
+					<Item>ui/etfi-styles.css</Item>
+				</ImportFiles>
 				<UIScripts>
 					<Item>core/settings.js</Item>
 					<Item>ui/settings-init.js</Item>

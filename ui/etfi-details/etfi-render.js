@@ -41,8 +41,8 @@ import { Pill } from "/base-standard/ui-next/components/pills.js";
 import { ETFI_Settings } from "../../core/settings.js";
 import TooltipManager from "/core/ui/tooltips/tooltip-manager.js";
 
-// Divider color + per-yield pill background colors.
-export const DIVIDER_COLOR = "rgba(77, 83, 102, 0.7)";
+// Per-yield pill background colors. (The divider color lives in
+// ui/etfi-styles.css, since only the stylesheet draws dividers now.)
 const YIELD_COLORS = {
   YIELD_FOOD: "rgba(128,179,77,0.35)",
   YIELD_PRODUCTION: "rgba(163,61,41,0.35)",
@@ -148,19 +148,21 @@ function iconEl(spec) {
   return null;
 }
 
-// Thin vertical divider between inline items on a single row.
+// Thin vertical divider between inline items on a single row. Width and color
+// come from .etfi-divider-v (etfi-styles.css).
 function vDivider() {
   const d = document.createElement("div");
-  d.className = "self-stretch shrink-0 mx-1";
-  d.style.cssText = `width:0.0625rem; background-color:${DIVIDER_COLOR};`;
+  d.className = "self-stretch shrink-0 mx-1 etfi-divider-v";
   return d;
 }
 
-// Thin horizontal divider between rows. marginYRem controls top/bottom spacing.
+// Thin horizontal divider between rows. Height and color come from
+// .etfi-divider-h; marginYRem varies by caller so it stays inline.
 function hDivider(marginYRem = 0.125) {
   const d = document.createElement("div");
-  d.className = "w-full shrink-0";
-  d.style.cssText = `height:0.0625rem; margin-top:${marginYRem}rem; margin-bottom:${marginYRem}rem; background-color:${DIVIDER_COLOR};`;
+  d.className = "w-full shrink-0 etfi-divider-h";
+  d.style.marginTop = `${marginYRem}rem`;
+  d.style.marginBottom = `${marginYRem}rem`;
   return d;
 }
 
@@ -182,11 +184,9 @@ export function yieldPill(entry, compact = false) {
       ? { "background-color": YIELD_COLORS[entry.yieldType] }
       : undefined;
 
-  const pill = Pill({ class: "ml-1", small: true, backgroundStyle, children: body });
-  // Trim the small Pill's default px-1.5 padding for a tighter pill.
-  pill.style.paddingLeft = "0.25rem";
-  pill.style.paddingRight = "0.25rem";
-  return pill;
+  // etfi-pill-tight trims the small Pill's default px-1.5 padding
+  // (etfi-styles.css) for a tighter pill.
+  return Pill({ class: "ml-1 etfi-pill-tight", small: true, backgroundStyle, children: body });
 }
 
 // A plain "[yield icon] +N" value (no pill background) for individual rows.
@@ -209,7 +209,8 @@ export function appendPillRows(container, els, max = 3) {
   for (let i = 0; i < items.length; i += max) {
     const row = document.createElement("div");
     row.className = "flex flex-row items-center justify-end";
-    if (i > 0) row.style.marginTop = "0.25rem";
+    // mt-1 is the game's own spacing step; only rows after the first get it.
+    if (i > 0) row.classList.add("mt-1");
     for (const el of items.slice(i, i + max)) row.appendChild(el);
     container.appendChild(row);
   }
@@ -217,14 +218,18 @@ export function appendPillRows(container, els, max = 3) {
 
 export function noteLine(text) {
   const p = document.createElement("p");
-  p.className = "mt-1 opacity-80";
-  p.style.fontSize = "0.85em";
+  p.className = "mt-1 opacity-80 etfi-text-small";
   p.innerHTML = Locale.stylize(text);
   return p;
 }
 
 // Uppercase title (left) + optional total yield pill (right) + shell-line
 // underline. lineMarginYRem controls the underline's top/bottom margin.
+/**
+ * @param {string} label
+ * @param {{ total?: { yieldType?: string, value?: number, colored?: boolean },
+ *           lineMarginYRem?: number, compactPills?: boolean }} [cfg]
+ */
 function sectionTitle(label, { total, lineMarginYRem = 0.0625, compactPills = false } = {}) {
   const wrap = document.createElement("div");
   wrap.className = "w-full flex flex-col";
@@ -255,7 +260,7 @@ function appendNameItem(left, spec, cfg = {}) {
     left.appendChild(vDivider());
   }
   const nm = document.createElement("span");
-  nm.style.cssText = "overflow:hidden; text-overflow:ellipsis; white-space:nowrap;";
+  nm.className = "truncate";
   nm.textContent = spec.name ?? "";
   // A row may carry a tooltip as a structured model (spec.tipModel — preferred,
   // rendered with real containers/icons/pills) or plain text (spec.tooltip).
@@ -275,8 +280,7 @@ function appendNameItem(left, spec, cfg = {}) {
       // Darker than the (secondary/gold) category title, so the two read distinctly.
       // GameFace rejects the "underline dotted" textDecoration shorthand, so draw
       // the dotted "link" underline with a bottom border instead.
-      nm.style.color = "rgb(168, 133, 78)";
-      nm.style.borderBottom = "0.0625rem dotted rgb(168, 133, 78)";
+      nm.classList.add("etfi-name-link");
     }
   }
   left.appendChild(nm);
@@ -293,8 +297,7 @@ function detailRow(row, cfg = {}) {
   line.style.marginTop = `${cfg.rowMarginTopRem ?? 0.0625}rem`;
 
   const left = document.createElement("div");
-  left.className = "flex items-center min-w-0";
-  left.style.cssText = "flex:1 1 auto; overflow:hidden;";
+  left.className = "flex items-center min-w-0 flex-auto overflow-hidden";
 
   if (Array.isArray(row.items) && row.items.length) {
     const yieldMode = !!(row.items[0] && row.items[0].yieldType != null);
@@ -350,8 +353,7 @@ function detailRow(row, cfg = {}) {
     wrap.className = "flex flex-col w-full";
     wrap.appendChild(line);
     const sub = document.createElement("div");
-    sub.className = "ml-6 opacity-70";
-    sub.style.fontSize = "0.85em";
+    sub.className = "ml-6 opacity-70 etfi-text-small";
     sub.textContent = row.subText;
     wrap.appendChild(sub);
     return wrap;

@@ -27,10 +27,17 @@ export const TOURISM_ICON = "CULTURE_VP";
 export const RESOURCE_ICON = "RADIAL_RESOURCES";
 export const RELIC_ICON = "NAR_REW_GREATWORK";
 
-// Shared: the +5 Trade Route range bonus, used by Trade Outpost and Factory Town.
-const TRADE_RANGE = 5;
+// Shared: the Trade Route range bonus, used by Trade Outpost and Factory Town.
+// Both focuses attach the same pair of modifiers (one per domain) carrying the
+// same Amount, so reading the land one is enough for the pill.
+const MOD_TRADE_RANGE = "ATTACH_LAND_TRADE_RANGE_IN_CITY_FROM_PROJECT";
+// Last-known-good (game 1.5.0), used only if the modifier row can't be read.
+const FALLBACK_TRADE_RANGE = 5;
 export function tradeRangePill() {
-  return { yieldType: TRADE_ROUTE_ICON, value: TRADE_RANGE };
+  return {
+    yieldType: TRADE_ROUTE_ICON,
+    value: getModifierAmount(MOD_TRADE_RANGE, "Amount", FALLBACK_TRADE_RANGE),
+  };
 }
 
 // --- small helpers ---------------------------------------------------------
@@ -168,8 +175,14 @@ export function getFocusImprovements(city, typeSet) {
       iconId = logicalType;
     }
 
+    // `type` is the IMPROVEMENT type, kept separate from iconId because a tile
+    // with a resource displays the resource's name and icon instead. The
+    // warehouse focuses need the improvement to look up their per-improvement
+    // amount in the game data (see warehouseAmountResolver).
+    const type = impAtTile?.type ?? logicalType ?? null;
+
     const target = isImproved ? improved : unimproved;
-    if (!target.has(name)) target.set(name, { name, iconId, count: 0 });
+    if (!target.has(name)) target.set(name, { name, iconId, type, count: 0 });
     target.get(name).count += 1;
   }
 
@@ -401,17 +414,141 @@ export function countTemples(city) {
 // patch (or another mod's data change) updates our preview automatically.
 // `fallback` is returned when the row is missing, so an unexpected game build
 // degrades to the last-known-good value rather than showing 0.
+//
+// PERFORMANCE: GameInfo.ModifierArguments is a flat table of roughly 15k-25k
+// rows depending on installed content, and .find() is a linear scan over it.
+// Results are memoized because the table is static for the session — without
+// this, a single panel refresh costs hundreds of thousands of row visits, and
+// callers reached from per-plot loops (addNaturalWonderYields) would re-scan
+// the whole table for every tile. Only successful lookups are cached, so a
+// value that is missing early (GameInfo not yet populated) can still resolve
+// later instead of freezing its fallback for the rest of the session.
+const modifierAmountCache = new Map();
+
 export function getModifierAmount(modifierId, argName = "Amount", fallback = 0) {
+  const cacheKey = `${modifierId} ${argName}`;
+  const cached = modifierAmountCache.get(cacheKey);
+  if (cached !== undefined) return cached;
   try {
     const rows = GameInfo?.ModifierArguments;
     const row = rows?.find?.((r) => r?.ModifierId === modifierId && r?.Name === argName);
     if (!row) return fallback;
     const n = Number(row.Value);
-    return Number.isFinite(n) ? n : fallback;
+    if (!Number.isFinite(n)) return fallback;
+    modifierAmountCache.set(cacheKey, n);
+    return n;
   } catch (e) {
     console.error("[ETFI] getModifierAmount failed", modifierId, argName, e);
     return fallback;
   }
+}
+
+// Raw (string) value of a modifier argument. Some arguments are lists rather
+// than numbers — see getWarehouseAmounts below. Memoized for the same reason as
+// getModifierAmount above.
+const modifierArgumentCache = new Map();
+
+function getModifierArgumentRaw(modifierId, argName) {
+  const cacheKey = `${modifierId} ${argName}`;
+  const cached = modifierArgumentCache.get(cacheKey);
+  if (cached !== undefined) return cached;
+  try {
+    const row = GameInfo?.ModifierArguments?.find?.(
+      (r) => r?.ModifierId === modifierId && r?.Name === argName,
+    );
+    const value = row?.Value ?? null;
+    if (value !== null) modifierArgumentCache.set(cacheKey, value);
+    return value;
+  } catch (e) {
+    console.error("[ETFI] getModifierArgumentRaw failed", modifierId, argName, e);
+    return null;
+  }
+}
+
+// Points awarded by a victory-point tracker (base-standard/data/victories.xml
+// <VictoryScorings>). Resort Town's Tourism is scored this way rather than as a
+// project modifier, so it is the one focus number that does not come from the
+// Modifiers tables.
+//
+// No shipped game script reads GameInfo.VictoryScorings, so we cannot confirm
+// the table is exposed to UI scripts. The read is attempted defensively: if the
+// table isn't there, `fallback` is used and the mod behaves exactly as it did
+// when the number was hardcoded.
+export function getVictoryScoringPoints(scoringId, fallback = 0) {
+  try {
+    const row = GameInfo?.VictoryScorings?.find?.((r) => r?.ScoringId === scoringId);
+    if (!row) return fallback;
+    const n = Number(row.Points);
+    return Number.isFinite(n) ? n : fallback;
+  } catch (e) {
+    console.error("[ETFI] getVictoryScoringPoints failed", scoringId, e);
+    return fallback;
+  }
+}
+
+// --- game data: warehouse yields -------------------------------------------
+//
+// The "warehouse" focuses (Farming, Fishing, Mining, and the Happiness half of
+// Trade Outpost) do NOT carry an Amount on their modifier. Their modifier uses
+// EFFECT_CITY_GRANT_WAREHOUSE_YIELD with a WarehouseYieldChange argument that
+// lists Warehouse_YieldChanges row IDs, and the number lives on those rows as
+// YieldChange, e.g. in age-antiquity/data/constructibles-no-persist.xml:
+//
+//   <Row ID="AQTownPastureFood" Age="AGE_ANTIQUITY" YieldType="YIELD_FOOD"
+//        YieldChange="1" ConstructibleInCity="IMPROVEMENT_PASTURE"/>
+//
+// The modifier IDs are the same strings in every age; each age module defines
+// its own copy pointing at that age's rows, so we filter by the current age.
+//
+// Returns { byConstructible: Map<constructibleType, amount>, fallback: number }.
+// `fallback` is the most common amount across the matched rows — used for the
+// improvements a focus displays that the data keys by terrain or feature
+// instead of by improvement (e.g. Farms are granted through TERRAIN_FLAT, not
+// through IMPROVEMENT_FARM). NaN means nothing could be resolved.
+export function getWarehouseAmounts(modifierId, yieldType) {
+  const byConstructible = new Map();
+  const tally = new Map();
+  try {
+    const raw = getModifierArgumentRaw(modifierId, "WarehouseYieldChange");
+    if (!raw) return { byConstructible, fallback: Number.NaN };
+    const wanted = new Set(String(raw).split(",").map((s) => s.trim()).filter(Boolean));
+    const age = getCurrentAgeType();
+    for (const row of GameInfo?.Warehouse_YieldChanges || []) {
+      if (!wanted.has(row?.ID)) continue;
+      if (row?.YieldType !== yieldType) continue;
+      // Rows carry the age they belong to; an empty Age applies to all.
+      if (row?.Age && age && row.Age !== age) continue;
+      const amount = Number(row.YieldChange);
+      if (!Number.isFinite(amount)) continue;
+      if (row.ConstructibleInCity) byConstructible.set(row.ConstructibleInCity, amount);
+      tally.set(amount, (tally.get(amount) || 0) + 1);
+    }
+  } catch (e) {
+    console.error("[ETFI] getWarehouseAmounts failed", modifierId, yieldType, e);
+  }
+  let fallback = Number.NaN;
+  let best = 0;
+  for (const [amount, n] of tally) {
+    if (n > best) { best = n; fallback = amount; }
+  }
+  return { byConstructible, fallback };
+}
+
+// Per-improvement amount resolver shared by the warehouse focuses. Returns a
+// function(constructibleType) -> amount, preferring the exact row for that
+// improvement and falling back to the focus's modal amount, then to
+// `lastKnownGood` if the game data could not be read at all.
+export function warehouseAmountResolver(modifierId, yieldType, lastKnownGood) {
+  const { byConstructible, fallback } = getWarehouseAmounts(modifierId, yieldType);
+  const resolved = Number.isFinite(fallback) || byConstructible.size > 0;
+  const base = Number.isFinite(fallback) ? fallback : lastKnownGood;
+  return {
+    resolved,
+    amountFor: (type) => {
+      const exact = byConstructible.get(type);
+      return Number.isFinite(exact) ? exact : base;
+    },
+  };
 }
 
 // --- fortifications (Fort) -------------------------------------------------
@@ -639,8 +776,19 @@ function isResortActive(city) {
 // (building/worker placement previews), not for reading owned tiles.
 // Example (per tile): base 6 Culture / 3 Happiness / 0 Gold -> effective with
 // Resort = 9 / 6 / 1.5 -> contribution = +3 Culture / +3 Happiness / +1.5 Gold.
-const NATURAL_WONDER_YIELD_PCT = 0.5;   // +50%
-const RESORT_APPEALING_PER_TILE = 1;    // flat +1 Happiness / +1 Gold
+// Both numbers come from the game's own modifier data. The Natural Wonder bonus
+// is a Percent argument (50) rather than an Amount, so it is divided by 100.
+const MOD_RESORT_NW = "ATTACH_RESORT_NATURAL_WONDER_FROM_PROJECT";
+const MOD_RESORT_PER_TILE = "ATTACH_RESORT_HAPPINESS_GOLD_FROM_PROJECT";
+// Last-known-good (game 1.5.0), used only if a modifier row can't be read.
+const FALLBACK_NW_PCT = 50;
+const FALLBACK_PER_TILE = 1;
+function naturalWonderMultiplier() {
+  return getModifierAmount(MOD_RESORT_NW, "Percent", FALLBACK_NW_PCT) / 100;
+}
+function resortAppealingPerTile() {
+  return getModifierAmount(MOD_RESORT_PER_TILE, "Amount", FALLBACK_PER_TILE);
+}
 // The exact YieldType list on ATTACH_RESORT_NATURAL_WONDER_FROM_PROJECT. The
 // +50% applies to these and nothing else, so a tile yielding some other type
 // must not have the bonus applied to it.
@@ -658,8 +806,8 @@ const NATURAL_WONDER_BONUS_YIELDS = new Set([
 // and pretending otherwise both invents yield and drives `base` negative.
 function addNaturalWonderYields(acc, plotIndex, resortActive, appealing) {
   try {
-    const M = NATURAL_WONDER_YIELD_PCT;
-    const FLAT = appealing ? RESORT_APPEALING_PER_TILE : 0;
+    const M = naturalWonderMultiplier();
+    const FLAT = appealing ? resortAppealingPerTile() : 0;
     const isFlatType = (t) => t === ETFI_YIELDS.HAPPINESS || t === ETFI_YIELDS.GOLD;
     const add = (t, v) => acc.set(t, (acc.get(t) || 0) + v);
 
