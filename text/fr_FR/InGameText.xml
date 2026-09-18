@@ -3,14 +3,12 @@
   <LocalizedText>
     <!-- Titres de catégorie -->
     <Replace Tag="LOC_MOD_ETFI_IMPROVED" Language="fr_FR"><Text>Aménagés</Text></Replace>
-    <Replace Tag="LOC_MOD_ETFI_UNIMPROVED" Language="fr_FR"><Text>Non aménagés</Text></Replace>
     <Replace Tag="LOC_MOD_ETFI_QUARTERS" Language="fr_FR"><Text>Quartiers</Text></Replace>
     <Replace Tag="LOC_MOD_ETFI_UNIQUE_QUARTERS" Language="fr_FR"><Text>Quartiers uniques</Text></Replace>
     <Replace Tag="LOC_MOD_ETFI_SPECIAL_QUARTERS" Language="fr_FR"><Text>Quartiers spéciaux</Text></Replace>
     <Replace Tag="LOC_MOD_ETFI_BUILDINGS" Language="fr_FR"><Text>Bâtiments</Text></Replace>
     <Replace Tag="LOC_MOD_ETFI_TOURISM" Language="fr_FR"><Text>Tourisme</Text></Replace>
     <Replace Tag="LOC_MOD_ETFI_CONNECTED" Language="fr_FR"><Text>Connectés</Text></Replace>
-    <Replace Tag="LOC_MOD_ETFI_DISCONNECTED" Language="fr_FR"><Text>Non connectés</Text></Replace>
 
     <!-- Libellés de ligne -->
     <Replace Tag="LOC_MOD_ETFI_CONNECTED_CITIES" Language="fr_FR"><Text>Villes</Text></Replace>
@@ -27,8 +25,6 @@
     <Replace Tag="LOC_OPTIONS_GROUP_ETFI" Language="fr_FR"><Text>Mods de Zatygold</Text></Replace>
     <Replace Tag="LOC_MOD_ETFI_YIELDS_OPTION_COLORFUL" Language="fr_FR"><Text>Couleurs des pastilles de rendement</Text></Replace>
     <Replace Tag="LOC_MOD_ETFI_YIELDS_OPTION_COLORFUL_DESC" Language="fr_FR"><Text>Colore les aperçus de rendement selon leur type, pour les distinguer plus facilement.</Text></Replace>
-    <Replace Tag="LOC_MOD_ETFI_TOGGLE_ON" Language="fr_FR"><Text>Activé</Text></Replace>
-    <Replace Tag="LOC_MOD_ETFI_TOGGLE_OFF" Language="fr_FR"><Text>Désactivé</Text></Replace>
     <Replace Tag="LOC_MOD_ETFI_EXPAND_DETAILS_DEFAULT" Language="fr_FR"><Text>Détails développés</Text></Replace>
     <Replace Tag="LOC_MOD_ETFI_EXPAND_DETAILS_DEFAULT_DESC" Language="fr_FR"><Text>Développe ou réduit l'affichage des détails par défaut.</Text></Replace>
 
@@ -38,10 +34,6 @@
     <Replace Tag="LOC_MOD_ETFI_EXPAND_DETAILS" Language="fr_FR"><Text>Afficher les détails</Text></Replace>
     <Replace Tag="LOC_MOD_ETFI_PRODUCTION_TO_GOLD" Language="fr_FR"><Text>Toute la [icon:YIELD_PRODUCTION] Production de la commune est convertie en [icon:YIELD_GOLD] Or.</Text></Replace>
     <Replace Tag="LOC_MOD_ETFI_COMING_SOON" Language="fr_FR"><Text>Bientôt disponible</Text></Replace>
-    <Replace Tag="LOC_MOD_ETFI_GROWTH" Language="fr_FR"><Text>Croissance</Text></Replace>
-    <Replace Tag="LOC_MOD_ETFI_FOOD_SAVED" Language="fr_FR"><Text>Nourriture économisée</Text></Replace>
-    <Replace Tag="LOC_MOD_ETFI_TURNS_SAVED" Language="fr_FR"><Text>Tours gagnés</Text></Replace>
-    <Replace Tag="LOC_MOD_ETFI_RESOURCES" Language="fr_FR"><Text>Ressources</Text></Replace>
     <Replace Tag="LOC_MOD_ETFI_WALLS" Language="fr_FR"><Text>Murs</Text></Replace>
     <Replace Tag="LOC_MOD_ETFI_FORTIFICATIONS" Language="fr_FR"><Text>Fortifications</Text></Replace>
   </LocalizedText>

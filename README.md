@@ -2,6 +2,67 @@
 
 A mod for Civilization VII that enhances the display of town focus yield bonuses, showing detailed breakdowns of improvements, buildings, and trade routes that contribute to specialization bonuses.
 
+## Version 2.5.2
+
+### What's New
+
+- **Every focus now reads its numbers from the game's own data.** Until now only Fort Town did; the other nine focuses carried hand-written values. Farming, Fishing, Mining and Trade Outpost read theirs from the warehouse-yield tables (which means a focus that pays a *different* amount for a particular improvement now shows that amount, instead of one flat number for the whole list); Hub, Religious Site, Urban Center, Factory Town and Resort Town read theirs from their project modifiers. A balance patch that changes any of these flows straight through to the preview.
+- **Resort Town's Tourism and Natural Wonder bonus are data-driven too.** The +50% wonder bonus comes from the project modifier and the Tourism value from the victory-point tables. The "7 developed Breathtaking tiles" requirement is the one number with no findable source in the game data, so it stays a constant — and is now labelled as such in the code.
+- **The Expand Details switch is smaller**, at 70% of the stock Options-screen size, so it sits comfortably in the panel header.
+- **The focus panel narrows on small screens.** The game's UI does not shrink below 1080p — a 720p screen renders everything at the same physical size with a third less room — so on narrow displays the panel now falls back to the width the base game lays out for, leaving more of the map visible. It follows your UI scale too, since scaling to 150% at 1080p squeezes the layout as much as running at 720p.
+
+### Compatibility
+
+- **The mod now checks the game's Town Focus component before patching it.** The mod works by wrapping four methods on the base focus card. If a future patch renames or removes one, the mod no longer wraps a missing method and breaks the panel in a hard-to-trace way: it reports which method is missing and disables just its own card changes, leaving the stock Town Focus panel working.
+- **The mod stops listening when the panel closes.** Two engine events that fire for every settlement in the game were subscribed for the whole session; they now follow the game's own attach/detach lifecycle, so no work is scheduled while the panel isn't open, and pending refreshes are cancelled rather than firing at a panel that has gone away.
+
+### Maintenance
+
+- Styling now uses the game's own utility classes wherever the game provides an equivalent. What genuinely has no stock equivalent moved out of JavaScript into a real stylesheet, `ui/etfi-styles.css`, loaded through the engine's own stylesheet loader.
+- Added editor type-checking (`jsconfig.json`). It immediately found a missing engine global and two loose function signatures, all now fixed.
+- Game-data lookups are cached for the session. The modifier table has tens of thousands of rows and is scanned linearly, so reading it once per value — rather than once per focus, or once per tile — keeps the new data-driven numbers free.
+- The Options group is titled "Zatygold's Mods" in every language, so other mods sharing these settings sit under one heading.
+
+## Version 2.5.1
+
+### What's New
+
+- **Settings are now toggle switches.** Both mod options — **Yield Pill Colors** and **Expanded Details** — are on/off switches in Options → Mods instead of dropdowns, which reads better for a simple yes/no choice. Your existing saved preferences carry over unchanged.
+- **The Expand Details control in the panel is a switch too.** The checkbox above the focus list is now the same switch used in Options, so the in-panel control and the setting that backs it look and behave alike.
+
+### Fixes
+
+- **Resort Town's Natural Wonder yields are now correct.** Three problems fed into the same rows: a Natural Wonder tile was credited the "+1 Happiness / +1 Gold on Appealing tiles" bonus whether or not the tile actually met the appeal threshold; a tile that did *not* meet it could report a Gold bonus it never earned; and the wonder's +50% was applied to yield types the bonus does not cover. Each is now checked against the tile's real appeal and the exact set of yields the bonus applies to.
+
+### Maintenance
+
+- The shared query layer moved to `ui/utilities/`, so every script the mod loads now lives under `ui/` in the folder that matches its job.
+- Removed leftover code that nothing used any more: two unused result fields, a scan of every settlement in the empire that was computed and thrown away on each refresh, six translation keys retired in earlier versions (across all nine languages), and sixteen internal render helpers that were exported but only ever used inside their own file.
+- Failures in the data layer that would quietly produce wrong numbers now report themselves in the log instead of being swallowed. Per-tile probes that legitimately fail on ordinary tiles stay silent so the log is still readable.
+
+## Version 2.5.0
+
+### Compatibility
+
+- **Updated for Game Patch 1.5.0.** Every game module and API the mod relies on was re-verified against the new build — the Solid tooltip system, the Options screen, the Town Focus panel, and all of its DOM/event hooks. Also hardened the tooltip's startup so a slow engine load can no longer take the whole tooltip offline.
+
+### Fixes
+
+- **Resort Town counted Natural Wonders twice.** A worked Natural Wonder tile earned its "+1 Happiness / +1 Gold on Appealing tiles" bonus *twice* — once inside the Natural Wonders category and again as an Appealing tile — reporting 2.5 of each per tile instead of 1.5, and listing the tile in two places. Natural Wonder tiles still count toward the Breathtaking total for Tourism.
+- **Fort Town gave Gold to the wrong fortifications.** The Fort Town's Gold applies to *Fortified Districts* — Ancient Walls, Medieval Walls and Defensive Fortifications. Great Walls, Baileys, Mottes, Hillforts, Kasbahs, Shore Batteries and the fortification wonders are Fortifications, not Fortified Districts: they earn the +25 Health but no Gold. The Walls and Fortifications categories now reflect that.
+- **The wide focus tooltip spilled outside its frame.** With inline details collapsed, the two-column tooltip is wider than the game's default tooltip limit, so Town's Gold and Food Sent were drawn past the edge and over the map. It now uses the game's wide-tooltip frame.
+- **Resort previews could be wildly inflated.** If the game ever renamed an appeal parameter, the Resort's Appealing and Breathtaking thresholds silently fell back to an invalid value that made *every* tile qualify. The fallback now works and reports itself.
+
+### Maintenance
+
+- Every Town Focus now builds its preview from a single list of contributions, with the header totals folded from the exact same data that produces the breakdown rows. The header is therefore always the sum of the rows shown beneath it — the class of mismatch behind both yield bugs above is no longer possible.
+- Fort Town reads its Gold, Health and Healing values from the game's own data instead of hard-coded numbers, so a balance change flows through automatically.
+- Removed dead code and a redundant patch of a core game Options function, and switched the focus-list refresh to the game's own published event.
+
+### Languages
+
+- Fixed the French entry in the mod manifest, which used the wrong capitalisation and would not have resolved on a case-sensitive file system.
+
 ## Version 2.4.0
 
 ### What's New

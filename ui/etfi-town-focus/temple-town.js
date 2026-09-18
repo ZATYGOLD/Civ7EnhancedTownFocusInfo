@@ -9,24 +9,45 @@
 //   * +2 Relic Slots on Temples in this Town.
 // Eligibility matches Urban Center (ageless / current-age / warehouse / unique /
 // full-tile, never Walls). Buildings are listed in the same categories as Urban
-// Center (via the shared quarterSections helper): Quarters, Unique Quarters,
+// Center (built from contributions via fromQuarters): Quarters, Unique Quarters,
 // Special Quarters, and Buildings (lone) - each building earns +2 Happiness.
 // Unlike Urban Center, lone Buildings still earn the bonus, so that category is
 // NOT hidden. Header pills: total Happiness and a +2 Relic Slots pill (relic icon).
 
-import { ETFI_YIELDS, RELIC_ICON, getTownBuildings, countTemples, quarterSections } from "../../etfi-utilities.js";
+import { ETFI_YIELDS, RELIC_ICON, getTownBuildings, countTemples, getModifierAmount, composeWithFallback } from "../utilities/etfi-utilities.js";
+import { contribution, fromQuarters, foldByYield, sectionFrom } from "./contributions.js";
 
-const HAPPINESS_PER_BUILDING = 2;
-const RELIC_SLOTS_PER_TEMPLE = 2;
+// Modifier ids from age-exploration/data/projects-gameeffects.xml. Note the
+// Happiness modifier is named ..._ON_TEMPLES_... but its effect targets
+// ConstructibleClass=BUILDING — every building, not just Temples. Only the
+// great-work slots are Temple-specific.
+const MOD_HAPPINESS = "HAPPINESS_ON_TEMPLES_IN_CITY_FROM_PROJECT";
+const MOD_RELIC_SLOTS = "SLOTS_ON_TEMPLES_IN_CITY_FROM_PROJECT";
+// Last-known-good (game 1.5.0), used only if a modifier row can't be read.
+const FALLBACK_HAPPINESS = 2;
+const FALLBACK_RELIC_SLOTS = 2;
 
 export function buildTempleModel(city) {
   const data = getTownBuildings(city);
-  const happiness = data.buildingCount * HAPPINESS_PER_BUILDING;
-  const relicSlots = countTemples(city) * RELIC_SLOTS_PER_TEMPLE;
+  const HAPPINESS_PER_BUILDING = getModifierAmount(MOD_HAPPINESS, "Amount", FALLBACK_HAPPINESS);
+  const RELIC_SLOTS_PER_TEMPLE = getModifierAmount(MOD_RELIC_SLOTS, "Amount", FALLBACK_RELIC_SLOTS);
 
-  // Header pills next to the focus name: total Happiness, plus the Relic Slots
-  // pill ONLY when the town actually has a Temple (or unique temple).
-  const header = [{ yieldType: ETFI_YIELDS.HAPPINESS, value: happiness }];
+  // Every qualifying building earns +2 Happiness, so a Quarter's pill sums its
+  // buildings — that's the contribution count. Lone Buildings earn it too.
+  const perBuilding = (q) => (q.buildings || []).length;
+  const H = ETFI_YIELDS.HAPPINESS;
+  const quarters = fromQuarters(data.quarters, H, HAPPINESS_PER_BUILDING, "q", perBuilding);
+  const unique = fromQuarters(data.uniqueQuarters, H, HAPPINESS_PER_BUILDING, "u", perBuilding);
+  const special = fromQuarters(data.specialQuarters, H, HAPPINESS_PER_BUILDING, "s", perBuilding);
+  const lone = (data.buildings || []).map((b, i) =>
+    contribution(H, HAPPINESS_PER_BUILDING, 1, { key: `b:${i}`, name: b.name, iconId: b.iconId })
+  );
+  const all = [...quarters, ...unique, ...special, ...lone];
+
+  // Header pills next to the focus name: total Happiness (folded from the same
+  // rows), plus the Relic Slots pill ONLY when the town actually has a Temple.
+  const header = foldByYield(all);
+  const relicSlots = countTemples(city) * RELIC_SLOTS_PER_TEMPLE;
   if (relicSlots > 0) {
     header.push({ yieldType: RELIC_ICON, value: relicSlots, colored: false });
   }
@@ -34,12 +55,12 @@ export function buildTempleModel(city) {
   return {
     header,
     rows: [],
-    sections: quarterSections(data, {
-      // Every qualifying building earns +2 Happiness; a Quarter's pill sums its
-      // buildings, and lone Buildings earn the bonus too (so NOT hidden).
-      quarterYields: (q) => [{ yieldType: ETFI_YIELDS.HAPPINESS, value: q.buildings.length * HAPPINESS_PER_BUILDING }],
-      buildingYields: () => [{ yieldType: ETFI_YIELDS.HAPPINESS, value: HAPPINESS_PER_BUILDING }],
-    }),
+    sections: [
+      ...sectionFrom(composeWithFallback("LOC_MOD_ETFI_QUARTERS", "Quarters"), quarters, { separatePanel: true }),
+      ...sectionFrom(composeWithFallback("LOC_MOD_ETFI_UNIQUE_QUARTERS", "Unique Quarters"), unique, { separatePanel: true }),
+      ...sectionFrom(composeWithFallback("LOC_MOD_ETFI_SPECIAL_QUARTERS", "Special Quarters"), special, { separatePanel: true }),
+      ...sectionFrom(composeWithFallback("LOC_MOD_ETFI_BUILDINGS", "Buildings"), lone, { separatePanel: "bottom" }),
+    ],
     notes: [],
   };
 }

@@ -1,0 +1,38 @@
+{
+  "//": [
+    "Editor-only configuration. The game does not read this file; it exists so",
+    "VS Code (or any TypeScript-powered editor) type-checks the mod's JavaScript.",
+    "",
+    "There is deliberately no baseUrl/paths mapping to the Civilization VII",
+    "install. The engine's absolute imports ('/core/...', '/base-standard/...')",
+    "are declared as wildcard ambient modules in etfi-globals.d.ts instead, so",
+    "the mod is checkable on any machine and the game's own compiled sources are",
+    "never pulled into the program to be checked alongside ours.",
+    "",
+    "Engine globals (GameInfo, Locale, Component, YieldTypes, ...) are declared",
+    "in etfi-globals.d.ts.",
+    "",
+    "noImplicitAny is off deliberately. With it on, TypeScript reports ~170",
+    "parameters as implicitly 'any'. Editors surface that as the suggestion",
+    "'implicitly has an any type, but a better type may be inferred from usage'.",
+    "Answering it by writing @param {any} on every parameter would add no type",
+    "safety -- it only restates the type the checker already assumed -- so the",
+    "hints are left unanswered rather than papered over. Real errors (undeclared",
+    "names, bad arity, wrong property access) still surface, because checkJs",
+    "stays on. To hide the hints in VS Code, set",
+    "'javascript.suggestionActions.enabled': false in your editor settings."
+  ],
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ES2022",
+    "moduleResolution": "bundler",
+    "checkJs": true,
+    "allowJs": true,
+    "noEmit": true,
+    "strict": false,
+    "noImplicitAny": false,
+    "skipLibCheck": true
+  },
+  "include": ["core/**/*.js", "ui/**/*.js", "etfi-globals.d.ts"],
+  "exclude": ["text"]
+}

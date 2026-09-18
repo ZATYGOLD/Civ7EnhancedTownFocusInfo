@@ -1,0 +1,146 @@
+/* SPDX-License-Identifier: GPL-3.0-only
+ * Copyright (C) 2025-2026 Zatygold
+ * File Path: ui/etfi-styles.css
+ *
+ * Author: Zatygold
+ *
+ * Every style the mod needs that the game's own utility classes do not already
+ * provide. Anything the game ships a class for (truncate, flex-auto, min-w-0,
+ * mt-1, px-2, hidden, ...) is used directly in the markup instead of being
+ * redefined here.
+ *
+ * Loaded at runtime through the engine's own stylesheet loader,
+ * ComponentUtilities.loadStyles() — see ui/production-chooser/etfi-town-focus-section.js.
+ */
+
+/* --- Town Focus panel ---------------------------------------------------- */
+
+/* The base panel sizes itself to its content, which the mod's wider cards make
+ * unstable; pin it to the compact width so the list does not grow.
+ *
+ * !important is required, not stylistic: the panel and its children carry the
+ * game's own width utility classes, and a class selector (0,1,0) outranks the
+ * element selectors below (0,0,1) no matter which stylesheet loads last.
+ * Without it the panel falls back to its natural, wider content size.
+ *
+ * NOTE: this is the default only. etfi-town-focus-section.js sets the width
+ * inline — which wins over this rule — and narrows the panel below the game's
+ * 71.1111rem small-screen breakpoint. There is no media query here on purpose:
+ * an inline style beats any stylesheet rule, so the decision has to live in JS
+ * for it to have any effect at all. */
+panel-town-focus {
+  width: 26rem !important;
+  max-width: 26rem !important;
+}
+
+panel-town-focus town-focus-chooser-item {
+  width: 100% !important;
+}
+
+/* Details collapsed: each card's detail zones move into the hover tooltip.
+ * Also !important — the zones carry `flex` utility classes that would
+ * otherwise win over a plain `display: none`. */
+panel-town-focus.etfi-hide-details .etfi-detail-zone {
+  display: none !important;
+}
+
+/* The base chooser item uses p-3 (0.75rem) on all sides; trim the horizontal
+ * padding so the focus icon sits closer to the left edge of the card. */
+.etfi-card-pad {
+  padding-left: 0.35rem;
+  padding-right: 0.35rem;
+}
+
+/* Breathing room above and below the inline details block. */
+.etfi-details-pad {
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+}
+
+/* Nudge the name-row yield pills off the right edge of the card. */
+.etfi-name-pills {
+  margin-right: 0.4rem;
+}
+
+/* --- Expand Details switch ------------------------------------------------ */
+
+/* fxs-switch renders itself at a fixed h-8 w-20 (2rem x 5rem) with px-2 and a
+ * size-4 (1rem) ball — sized for the Options screen and too heavy for a panel
+ * header, so it is scaled to 70% here.
+ *
+ * This must be a stylesheet rather than inline styles applied after creation:
+ * the component positions its ball from measured offsetWidths
+ * (left = switchWidth - ballWidth * 2), driven by a ResizeObserver on its root
+ * only. Resizing the ball after first layout would not re-trigger that
+ * observer, leaving the ON state half a ball off until the next toggle.
+ *
+ * That formula assumes the horizontal padding is HALF the ball width (stock:
+ * 1rem ball, 0.5rem padding). Keep these values in proportion if you retune. */
+/* Anchored to the panel's top-left corner, mirroring the close button, so the
+ * row adds no height that would push the focus list down. Only applied on the
+ * primary placement; the fallback placement stays in normal flow. */
+#etfi-hide-details-row.etfi-anchored {
+  position: absolute;
+  top: 0.7rem;
+  left: 1.2rem;
+  z-index: 1;
+}
+
+#etfi-hide-details-row fxs-switch {
+  height: 1.4rem;
+  width: 3.5rem;
+  padding-left: 0.35rem;
+  padding-right: 0.35rem;
+}
+
+#etfi-hide-details-row fxs-switch .img-radio-button-ball {
+  width: 0.7rem;
+  height: 0.7rem;
+}
+
+/* --- shared detail rendering --------------------------------------------- */
+
+/* Pills: trim the small Pill's default px-1.5 for a tighter pill. */
+.etfi-pill-tight {
+  padding-left: 0.25rem;
+  padding-right: 0.25rem;
+}
+
+/* A row name that opens a hover tooltip. Darker than the (secondary/gold)
+ * category title so the two read distinctly. GameFace rejects the
+ * "underline dotted" text-decoration shorthand, so the dotted "link" underline
+ * is drawn with a bottom border instead. */
+.etfi-name-link {
+  color: rgb(168, 133, 78);
+  border-bottom: 0.0625rem dotted rgb(168, 133, 78);
+}
+
+/* Secondary text (notes, sub-labels) sits slightly below body size. */
+.etfi-text-small {
+  font-size: 0.85em;
+}
+
+/* Dividers. The margins vary by caller and stay inline; only the rule itself
+ * lives here. */
+.etfi-divider-v {
+  width: 0.0625rem;
+  background-color: rgba(77, 83, 102, 0.7);
+}
+
+.etfi-divider-h {
+  height: 0.0625rem;
+  background-color: rgba(77, 83, 102, 0.7);
+}
+
+/* --- focus hover tooltip -------------------------------------------------- */
+
+/* Expanded ("wide") layout: two columns side by side. */
+.etfi-tooltip-wide {
+  width: 44rem;
+}
+
+/* While our tooltip is locked, the legacy #tooltips layer has to sit above
+ * #uinext-tooltips (z-index 10000) so sub-tooltips remain clickable. */
+.etfi-legacy-layer-lift {
+  z-index: 10001;
+}

@@ -27,11 +27,11 @@ import TooltipManager from "/core/ui/tooltips/tooltip-manager.js";
 import { GetTownFocusBlp } from "/base-standard/ui/production-chooser/production-chooser-helpers.js";
 import { AdvisorUtilities } from "/base-standard/ui/tutorial/advisor-utilities.js";
 import { render } from "/core/vendor/solid-js/web/dist/web.js";
-import { createComponent, useContext, createEffect } from "/core/vendor/solid-js/dist/solid.js";
+import { createComponent, useContext, createEffect, createSignal } from "/core/vendor/solid-js/dist/solid.js";
 import { Tooltip, TooltipContext, TooltipHorizontalPosition } from "/core/ui-next/components/tooltip.js";
 import { TooltipModel } from "/core/ui-next/components/tooltip-model.js";
 import { TriggerType } from "/core/ui-next/components/trigger.js";
-import { getConnectedCitiesFood, getConvertedGold, composeWithFallback, isTownGrowing, isGrowthFocusEl } from "../../etfi-utilities.js";
+import { getConnectedCitiesFood, getConvertedGold, composeWithFallback, isTownGrowing, isGrowthFocusEl } from "../utilities/etfi-utilities.js";
 import { buildFocusModel, focusHeaderYield } from "../etfi-town-focus/focus-models.js";
 import { fmt, renderSectionPanels, setChildren, applyListSpacing, splitSectionsByPanel, ETFI_SECTION_CFG, ETFI_DETAILS_CFG } from "../etfi-details/etfi-render.js";
 import { getHideDetails } from "../etfi-details/etfi-view-state.js";
@@ -125,9 +125,11 @@ class EtfiTownFocusTooltipContent {
     //   * descDivider — a thin separator line between the two blocks.
     //   * description (legacy <p>) — the generic Town behavior.
     this.sectionDescription.className = "flex flex-col";
-    this.descDivider.className = "w-full self-center shrink-0";
-    this.descDivider.style.cssText =
-      "height:0.0625rem; margin-top:0.4rem; margin-bottom:0.4rem; background-color:rgba(77, 83, 102, 0.7);";
+    // Divider height/color come from etfi-styles.css; the vertical margin is
+    // specific to this separator so it stays inline.
+    this.descDivider.className = "w-full self-center shrink-0 etfi-divider-h";
+    this.descDivider.style.marginTop = "0.4rem";
+    this.descDivider.style.marginBottom = "0.4rem";
     this.description.className = "text-2xs";
     this.bodyRow.className = "flex flex-col w-full";
     this.topRow.className = "flex flex-row w-full";
@@ -135,11 +137,8 @@ class EtfiTownFocusTooltipContent {
     for (const cell of [this.leftDesc, this.rightDesc, this.leftCats, this.rightCats]) {
       cell.className = "flex flex-col flex-1 min-w-0";
     }
-    const colDivStyle = "width:0.0625rem; background-color:rgba(77, 83, 102, 0.7);";
-    this.colDividerTop.className = "self-stretch shrink-0 mx-3";
-    this.colDividerTop.style.cssText = colDivStyle;
-    this.colDividerBot.className = "self-stretch shrink-0 mx-3";
-    this.colDividerBot.style.cssText = colDivStyle;
+    this.colDividerTop.className = "self-stretch shrink-0 mx-3 etfi-divider-v";
+    this.colDividerBot.className = "self-stretch shrink-0 mx-3 etfi-divider-v";
     this.focusDetails.className = "flex flex-col hidden";
     // Default (normal-mode) parenting; applyLayout() re-parents as needed.
     this.bodyRow.append(
@@ -202,12 +201,14 @@ class EtfiTownFocusTooltipContent {
     if (growing) {
       focusDescription = hidden ? (this.target.dataset.description || "") : "";
     } else {
-      focusDescription = this.target.dataset.description || this.target.__etfiDescription || "";
+      focusDescription = this.target.dataset.description || "";
       if (!focusDescription) {
         try {
           const def = projectType ? GameInfo.Projects.lookup(projectType) : null;
           if (def?.Description) focusDescription = def.Description;
-        } catch {}
+        } catch (e) {
+          console.error("[ETFI] project description lookup failed", e);
+        }
       }
     }
     let tooltipDescription = this.target.dataset.tooltipDescription || "";
@@ -261,6 +262,23 @@ class EtfiTownFocusTooltipContent {
     this.gemsContainer.classList.toggle("hidden", !recommendations);
     this.applyLayout(city);
   }
+  // Widen (or restore) the Solid Tooltip.Frame that hosts this content.
+  //
+  // Tooltip.Frame renders `img-tooltip-border`, which default.css defines as
+  // `width: max-content; max-width: 30rem`. Our two-column layout is 44rem, so
+  // without this the frame stops at 30rem and the right-hand column (Town's Gold
+  // / Food Sent) spills outside the tooltip and draws over the map. The game's
+  // own `img-tooltip-border--wide` raises the cap to 60rem; declared after the
+  // base rule, it wins when both classes are present.
+  //
+  // This MUST go through a Solid signal rather than touching the DOM: applyLayout
+  // runs from update(), which happens BEFORE triggerTooltip() mounts the tooltip,
+  // so at that moment our content root is still detached and has no frame parent
+  // to poke. The signal is read by Tooltip.Frame's `class` prop whenever it
+  // renders, so the width is correct the first time the tooltip appears.
+  setWideFrame(wide) {
+    setWideFrameSignal(!!wide);
+  }
   // Arrange the body. Normally everything stacks in one column. When the panel's
   // details are hidden, widen into two rows (descriptions, then categories) split
   // by a vertical divider.
@@ -278,7 +296,13 @@ class EtfiTownFocusTooltipContent {
 
     if (getHideDetails()) {
       this.focusDetails.classList.toggle("hidden", !hasLeft);
-      this.root.style.width = "44rem";
+      // .etfi-tooltip-wide sets the two-column width (etfi-styles.css).
+      this.root.classList.add("etfi-tooltip-wide");
+      // Tooltip.Frame carries `img-tooltip-border`, which the game's stylesheet
+      // caps at max-width 30rem — narrower than our 44rem two-column layout, so
+      // the right column would overflow and render outside the frame. The game
+      // ships an opt-in wide variant (max-width 60rem) for exactly this.
+      this.setWideFrame(true);
       this.descDivider.classList.add("hidden");
       this.requirementsContainer.classList.add("justify-center");
       this.requirementsText.classList.add("text-center");
@@ -292,7 +316,8 @@ class EtfiTownFocusTooltipContent {
       setChildren(this.botRow, [this.leftCats, this.colDividerBot, this.rightCats]);
       setChildren(this.bodyRow, [this.topRow, this.botRow]);
     } else {
-      this.root.style.width = "";
+      this.root.classList.remove("etfi-tooltip-wide");
+      this.setWideFrame(false);
       renderSectionPanels(this.details, this._goldFoodSections || [], ETFI_DETAILS_CFG);
       const showLeft = growing && hasLeft;
       this.focusDetails.classList.toggle("hidden", !showLeft);
@@ -410,6 +435,12 @@ class EtfiTownFocusTooltipContent {
 // New-tooltip wiring
 // ----------------------------------------------------------------------------
 
+// Whether the frame must use the game's wide variant (60rem) instead of the
+// default 30rem cap — true while the panel's details are collapsed and this
+// tooltip renders its 44rem two-column layout. Read reactively by Tooltip.Frame
+// below, so it applies on the very first render of the tooltip.
+const [isWideFrame, setWideFrameSignal] = createSignal(false);
+
 // The single persistent content instance shown inside the Solid Tooltip.Frame.
 const CONTENT = new EtfiTownFocusTooltipContent();
 
@@ -437,7 +468,8 @@ function LegacyLayerLift() {
   const layer = document.getElementById("tooltips");
   createEffect(() => {
     const locked = ctx ? model.isLocked(ctx.name) : false;
-    if (layer) layer.style.zIndex = locked ? "10001" : "";
+    // .etfi-legacy-layer-lift holds the raised z-index (etfi-styles.css).
+    if (layer) layer.classList.toggle("etfi-legacy-layer-lift", locked);
   });
   return null;
 }
@@ -452,16 +484,24 @@ function TownFocusTooltipTree() {
         createComponent(NameCapture, {}),
         createComponent(LegacyLayerLift, {}),
         // Registration-only nested tooltip. It has no trigger/content so it never
-        // displays, but mounting a nested <Tooltip> root bumps OUR root's
-        // childTooltipCount to 1. Both the INSPECT hint (Tooltip.Frame ->
-        // Tooltip.InspectHint, gated on childTooltipCount > 0) and the model's
-        // lock()/auto-lock (same gate) require that count to be > 0. With it set,
-        // the tooltip can be inspected/locked, after which the mouse can move into
-        // it to hover the concept-link rows inside.
+        // displays, but mounting a nested <Tooltip> root registers it on OUR root.
+        // Both the INSPECT hint (Tooltip.Frame -> Tooltip.InspectHint) and the
+        // model's lock()/auto-lock are gated on the root having at least one
+        // registered child tooltip, so this is what makes the tooltip
+        // inspectable/lockable — after which the mouse can move into it to hover
+        // the concept-link rows inside.
+        // NOTE: game 1.5.0 renamed this from a `childTooltipCount` counter to a
+        // `childTooltipList` array (gate is now `childTooltipList().length`), but
+        // registering a nested root still satisfies it, so the trick is unchanged.
         createComponent(Tooltip, { get children() { return null; } }),
         createComponent(Tooltip.Content, {
           get children() {
             return createComponent(Tooltip.Frame, {
+              // Tooltip.Frame merges this into its own class list, so the wide
+              // variant lifts the 30rem cap to 60rem for the two-column layout.
+              get ["class"]() {
+                return isWideFrame() ? "img-tooltip-border--wide" : "";
+              },
               get children() {
                 return CONTENT.root;
               },
@@ -477,19 +517,37 @@ function mountTownFocusTooltip() {
   const root = document.body || document.documentElement;
   if (!root) { setTimeout(mountTownFocusTooltip, 200); return; }
 
+  // ModelRegistry only resolves models once the engine is ready; touching
+  // TooltipModel before then throws. This runs at module load, so an unguarded
+  // throw would abort the entire module — including the ETFI_TOWN_FOCUS_TOOLTIP_STYLE
+  // export that etfi-town-focus-section.js imports. Retry instead of dying.
+  let model;
+  try {
+    model = TooltipModel.get();
+  } catch {
+    setTimeout(mountTownFocusTooltip, 250);
+    return;
+  }
+
   // Hidden host — Tooltip.Content portals itself into #uinext-tooltips, so the
   // host's position in the DOM is irrelevant.
   const host = document.createElement("div");
   host.style.display = "none";
   root.appendChild(host);
-  render(() => createComponent(TownFocusTooltipTree, {}), host);
-
-  const model = TooltipModel.get();
+  try {
+    // Solid's render() returns the disposer for this root; keep it so the
+    // teardown below can unwind the reactive tree, not just the listeners.
+    disposeSolidRoot = render(() => createComponent(TownFocusTooltipTree, {}), host);
+  } catch (e) {
+    console.error("[ETFI] town-focus tooltip mount failed", e);
+    return;
+  }
   // The card whose content is currently built/shown. Guards against rebuilding on
   // every bubbled mouseover (which reloaded icons and caused visible flicker) —
   // we only re-run update() when the hovered card actually changes.
   let shownCard = null;
-  document.addEventListener("mouseover", (e) => {
+
+  const onMouseOver = (e) => {
     const card = e.target?.closest?.(CARD_SELECTOR);
     if (!card || !TOOLTIP_NAME.value) return;
     // Innermost-tooltip rule: if the cursor is over an inner element that carries
@@ -512,8 +570,9 @@ function mountTownFocusTooltip() {
       shownCard = card;
       model.triggerTooltip(TOOLTIP_NAME.value, TriggerType.Focus, card);
     }
-  }, true);
-  document.addEventListener("mouseout", (e) => {
+  };
+
+  const onMouseOut = (e) => {
     const card = e.target?.closest?.(CARD_SELECTOR);
     if (!card || !TOOLTIP_NAME.value) return;
     // Only blur when actually leaving the card (not moving within it).
@@ -521,7 +580,33 @@ function mountTownFocusTooltip() {
       model.triggerTooltip(TOOLTIP_NAME.value, TriggerType.Blur, card);
       if (shownCard === card) shownCard = null;
     }
-  }, true);
+  };
+
+  document.addEventListener("mouseover", onMouseOver, true);
+  document.addEventListener("mouseout", onMouseOut, true);
+
+  // Teardown counterpart to the mount above, matching how the game's own
+  // components pair onAttach with onDetach. The tooltip is a session-lifetime
+  // singleton so nothing calls this during normal play; it exists so the
+  // listeners and the Solid root are removable rather than permanently pinned,
+  // and so a future caller (or a hot reload) has a clean way to unwind.
+  disposeTownFocusTooltip = () => {
+    document.removeEventListener("mouseover", onMouseOver, true);
+    document.removeEventListener("mouseout", onMouseOut, true);
+    try { disposeSolidRoot?.(); } catch (e) { console.error("[ETFI] tooltip dispose failed", e); }
+    disposeSolidRoot = null;
+    try { host.remove(); } catch {}
+    shownCard = null;
+    disposeTownFocusTooltip = null;
+  };
+}
+
+// Set by mountTownFocusTooltip(); null until the tooltip is mounted.
+let disposeTownFocusTooltip = null;
+let disposeSolidRoot = null;
+
+export function unmountTownFocusTooltip() {
+  disposeTownFocusTooltip?.();
 }
 
 mountTownFocusTooltip();
