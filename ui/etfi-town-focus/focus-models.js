@@ -1,12 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-only
 // Copyright (C) 2025-2026 Zatygold
-// File Path: ui/etfi-town-focus/focus-models.js
 //
-// Author: Zatygold
-//
-// Shared dispatch mapping a Town Focus ProjectType to its preview model. Used by
-// both the inline focus list (etfi-town-focus-section.js) and the focus hover
-// tooltip (town-focus-tooltip.js) so the focus math lives in one place.
+// Shared by the inline focus list (etfi-town-focus-section.js) and the focus
+// hover tooltip (town-focus-tooltip.js) so the focus math lives in one place.
 
 import { buildFoodModel } from "./farm-fish-towns.js";
 import { buildMiningModel } from "./mining-town.js";
@@ -18,8 +14,7 @@ import { buildFortModel } from "./fort-town.js";
 import { buildResortModel } from "./resort-town.js";
 import { buildFactoryModel } from "./factory-town.js";
 
-// Build a focus's preview model from its ProjectType string. Returns null for
-// the Growing Town / unknown focuses.
+// Returns null for the Growing Town / unknown focuses.
 export function buildFocusModel(city, projectType) {
   if (!city) return null;
   switch (projectType) {
@@ -47,8 +42,7 @@ export function buildFocusModel(city, projectType) {
   }
 }
 
-// Sum a model header's yields of a given type — the focus's unrealized preview
-// for that yield (0 when the focus grants none).
+// Sum a model header's yields of one type; 0 when the focus grants none.
 export function focusHeaderYield(model, yieldType) {
   let sum = 0;
   for (const y of model?.header || []) {

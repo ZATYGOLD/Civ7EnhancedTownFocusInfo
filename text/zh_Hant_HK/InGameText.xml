@@ -34,7 +34,6 @@
     <Replace Tag="LOC_MOD_ETFI_EXPAND_DETAILS" Language="zh_Hant_HK"><Text>展開詳情</Text></Replace>
     <Replace Tag="LOC_MOD_ETFI_PRODUCTION_TO_GOLD" Language="zh_Hant_HK"><Text>城鎮所有的[icon:YIELD_PRODUCTION]生產力轉化為[icon:YIELD_GOLD]金幣。</Text></Replace>
     <Replace Tag="LOC_MOD_ETFI_COMING_SOON" Language="zh_Hant_HK"><Text>敬請期待</Text></Replace>
-    <Replace Tag="LOC_MOD_ETFI_WALLS" Language="zh_Hant_HK"><Text>城牆</Text></Replace>
     <Replace Tag="LOC_MOD_ETFI_FORTIFICATIONS" Language="zh_Hant_HK"><Text>防禦工事</Text></Replace>
   </LocalizedText>
 </Database>

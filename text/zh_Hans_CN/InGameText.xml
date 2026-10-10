@@ -34,7 +34,6 @@
     <Replace Tag="LOC_MOD_ETFI_EXPAND_DETAILS" Language="zh_Hans_CN"><Text>展开详情</Text></Replace>
     <Replace Tag="LOC_MOD_ETFI_PRODUCTION_TO_GOLD" Language="zh_Hans_CN"><Text>城镇的所有[icon:YIELD_PRODUCTION]生产力转换为[icon:YIELD_GOLD]金币。</Text></Replace>
     <Replace Tag="LOC_MOD_ETFI_COMING_SOON" Language="zh_Hans_CN"><Text>敬请期待</Text></Replace>
-    <Replace Tag="LOC_MOD_ETFI_WALLS" Language="zh_Hans_CN"><Text>城墙</Text></Replace>
     <Replace Tag="LOC_MOD_ETFI_FORTIFICATIONS" Language="zh_Hans_CN"><Text>防御工事</Text></Replace>
   </LocalizedText>
 </Database>

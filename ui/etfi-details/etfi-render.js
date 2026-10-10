@@ -1,22 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0-only
 // Copyright (C) 2025-2026 Zatygold
-// File Path: ui/etfi-details/etfi-render.js
 //
-// Author: Zatygold
-//
-// Shared visual "render kit" for the Town Focus UI. These are the yield pills,
-// dividers, section titles, ticket panels, and row renderer used by BOTH:
-//   * the inline focus list (ui/production-chooser/etfi-town-focus-section.js)
-//   * the focus hover tooltip (ui/production-chooser/town-focus-tooltip.js)
-// Keeping them in one place guarantees the two stay visually identical — a
-// change to a pill color, divider, or spacing happens once.
-//
-// The two consumers want slightly different spacing and a couple of behavior
-// differences (the inline list shows yields as colored pills and gives row
-// names a dotted "link" cue; the tooltip shows yields as plain values). Those
-// differences are captured in a single `cfg` object — see ETFI_SECTION_CFG and
-// ETFI_DETAILS_CFG below — that each consumer passes through. The DOM/markup is
-// otherwise identical between them.
+// Shared render kit — pills, dividers, section titles, panels and the row
+// renderer — used by BOTH the inline focus list and the focus hover tooltip, so
+// the two stay visually identical. Their few differences (pills vs plain
+// values, the dotted name cue) live in the `cfg` each passes through; see
+// ETFI_SECTION_CFG and ETFI_DETAILS_CFG.
 //
 // Row model (a superset understood by detailRow):
 //   {
@@ -80,7 +69,6 @@ export function fmt(v) {
   return Number.isInteger(n) ? String(n) : (Math.round(n * 10) / 10).toFixed(1);
 }
 
-// The bullet glyph the game uses to mark list items in stylized LOC text.
 const BULLET_CHAR = String.fromCodePoint(8226);
 
 // Empty a container (GameFace lacks Element.replaceChildren).
@@ -88,7 +76,6 @@ export function clearChildren(parent) {
   while (parent.firstChild) parent.removeChild(parent.firstChild);
 }
 
-// Replace a container's children with the given nodes (nulls skipped).
 export function setChildren(parent, nodes) {
   clearChildren(parent);
   for (const n of nodes) if (n) parent.appendChild(n);
@@ -135,8 +122,6 @@ function fxsIcon(iconId, sizeClass) {
   return icon;
 }
 
-// Icon for a row's left label: a custom class-based icon (iconClass/iconStyle)
-// or an fxs-icon by id (size-5). Returns null when the spec has no icon.
 function iconEl(spec) {
   if (spec && spec.iconClass) {
     const d = document.createElement("div");
@@ -148,16 +133,14 @@ function iconEl(spec) {
   return null;
 }
 
-// Thin vertical divider between inline items on a single row. Width and color
-// come from .etfi-divider-v (etfi-styles.css).
+// Width and color come from .etfi-divider-v (etfi-styles.css).
 function vDivider() {
   const d = document.createElement("div");
   d.className = "self-stretch shrink-0 mx-1 etfi-divider-v";
   return d;
 }
 
-// Thin horizontal divider between rows. Height and color come from
-// .etfi-divider-h; marginYRem varies by caller so it stays inline.
+// Height and color from .etfi-divider-h; marginYRem varies by caller.
 function hDivider(marginYRem = 0.125) {
   const d = document.createElement("div");
   d.className = "w-full shrink-0 etfi-divider-h";
@@ -166,11 +149,8 @@ function hDivider(marginYRem = 0.125) {
   return d;
 }
 
-// A "[yield icon] +N" pill (colored background when the colorful option is on).
-// `compact` shrinks the icon/text for use inside hover tooltips.
 export function yieldPill(entry, compact = false) {
   const body = document.createElement("div");
-  // Tight icon-to-number spacing (gap-0.5 instead of gap-1).
   body.className = "flex items-center gap-0\\.5";
   body.appendChild(fxsIcon(entry.yieldType, compact ? "size-3" : "size-4"));
   const span = document.createElement("span");
@@ -184,12 +164,10 @@ export function yieldPill(entry, compact = false) {
       ? { "background-color": YIELD_COLORS[entry.yieldType] }
       : undefined;
 
-  // etfi-pill-tight trims the small Pill's default px-1.5 padding
-  // (etfi-styles.css) for a tighter pill.
+  // etfi-pill-tight trims the Pill's default px-1.5 (etfi-styles.css).
   return Pill({ class: "ml-1 etfi-pill-tight", small: true, backgroundStyle, children: body });
 }
 
-// A plain "[yield icon] +N" value (no pill background) for individual rows.
 function yieldValue(entry) {
   const cell = document.createElement("div");
   cell.className = "flex items-center shrink-0";
@@ -209,7 +187,6 @@ export function appendPillRows(container, els, max = 3) {
   for (let i = 0; i < items.length; i += max) {
     const row = document.createElement("div");
     row.className = "flex flex-row items-center justify-end";
-    // mt-1 is the game's own spacing step; only rows after the first get it.
     if (i > 0) row.classList.add("mt-1");
     for (const el of items.slice(i, i + max)) row.appendChild(el);
     container.appendChild(row);
@@ -223,8 +200,6 @@ export function noteLine(text) {
   return p;
 }
 
-// Uppercase title (left) + optional total yield pill (right) + shell-line
-// underline. lineMarginYRem controls the underline's top/bottom margin.
 /**
  * @param {string} label
  * @param {{ total?: { yieldType?: string, value?: number, colored?: boolean },
@@ -262,8 +237,6 @@ function appendNameItem(left, spec, cfg = {}) {
   const nm = document.createElement("span");
   nm.className = "truncate";
   nm.textContent = spec.name ?? "";
-  // A row may carry a tooltip as a structured model (spec.tipModel — preferred,
-  // rendered with real containers/icons/pills) or plain text (spec.tooltip).
   if (spec.tipModel || spec.tooltip) {
     // Render this hover via our registered framed tooltip. Setting our own
     // data-tooltip-style overrides the parent item's project tooltip here. The
@@ -361,7 +334,6 @@ function detailRow(row, cfg = {}) {
   return line;
 }
 
-// Append rows to a panel, with a horizontal divider between each.
 export function appendRows(panel, rows, cfg = {}) {
   rows.forEach((row, i) => {
     if (i > 0) panel.appendChild(hDivider(cfg.hDividerMarginYRem));
@@ -369,11 +341,8 @@ export function appendRows(panel, rows, cfg = {}) {
   });
 }
 
-// A "ticket" background panel. Padding/margins come from cfg so each consumer
-// keeps its current spacing.
 function newPanel(cfg = {}) {
   const p = document.createElement("div");
-  // text-2xs makes the panel contents (row names, counts, notes) compact.
   p.className = `img-base-ticket-bg-container w-full flex flex-col ${cfg.panelMarginTopClass ?? "mt-1"} text-2xs`;
   const pad = `${cfg.panelPadRem ?? 0.6666666667}rem`;
   p.style.paddingTop = pad;
@@ -406,16 +375,11 @@ export function renderSectionPanels(container, sections, cfg = {}) {
   return last;
 }
 
-// ---------------------------------------------------------------------------
-// Reusable framed hover tooltip (the single hover-text tooltip for the mod).
-// ---------------------------------------------------------------------------
-// Registered with the TooltipManager so it renders in the game's proper framed
-// tooltip background (the manager wraps the fxs-tooltip). It shows an optional
-// uppercase title header, then renders its content at a FIXED width (so every
-// tooltip is the same size) — either a JSON model rendered via the SAME
-// renderSectionPanels the inline panels use (real containers, icons, vertical
-// dividers, x# counts, yield pills), or, as a fallback, plain "[N]"-separated
-// stylize text divided by horizontal dividers.
+// --- reusable framed hover tooltip -----------------------------------------
+//
+// Registered with the TooltipManager so it gets the game's framed background.
+// Renders at a fixed width so every tooltip matches, from either a JSON model
+// (via the same renderSectionPanels the inline panels use) or plain stylize text.
 //
 // USE on any hoverable element (appendNameItem wires this automatically):
 //   data-tooltip-style   = ETFI_TEXT_TOOLTIP_STYLE
@@ -469,10 +433,8 @@ class EtfiTextTooltipType {
         const model = JSON.parse(this._modelJson);
         if (model && Array.isArray(model.sections)) sections = model.sections;
       } catch {}
-      // Tooltips use compact (smaller) yield pills.
       renderSectionPanels(this.content, sections, { ...ETFI_SECTION_CFG, compactPills: true });
     } else {
-      // Plain-text fallback: one line per "[N]", divided by hDivider.
       this.content.innerHTML = "";
       const parts = (this._text || "").split("[N]");
       parts.forEach((part, i) => {

@@ -2,6 +2,16 @@
 
 A mod for Civilization VII that enhances the display of town focus yield bonuses, showing detailed breakdowns of improvements, buildings, and trade routes that contribute to specialization bonuses.
 
+## Version 2.5.3
+
+### Fixes
+
+- **Reverted an incorrect change to Fort Town.** Version 2.5.0 stopped Great Walls, Baileys, Mottes, Hillforts, Kasbahs and the fortification wonders from showing the Fort Town's Gold, on the grounds that the project's description says "+1 Gold on Fortified Districts" and these are Fortifications rather than Fortified Districts. That was wrong, and the mod has been under-reporting Fort Town from 2.5.0 until now.
+
+  Tested in game: a Fort Town does grant its Gold on Great Wall tiles. The modifier data was right all along — all three of the project's bonuses apply to anything tagged as a fortification, and the description is simply loose about it. Every fortification now shows both the Gold and the Health, in a single category, as it did before 2.5.0.
+
+  The 2.5.0 note further down is left as written rather than quietly edited, because a changelog should record what was actually shipped.
+
 ## Version 2.5.2
 
 ### What's New

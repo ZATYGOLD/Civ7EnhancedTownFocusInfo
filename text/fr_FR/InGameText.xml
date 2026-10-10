@@ -34,7 +34,6 @@
     <Replace Tag="LOC_MOD_ETFI_EXPAND_DETAILS" Language="fr_FR"><Text>Afficher les détails</Text></Replace>
     <Replace Tag="LOC_MOD_ETFI_PRODUCTION_TO_GOLD" Language="fr_FR"><Text>Toute la [icon:YIELD_PRODUCTION] Production de la commune est convertie en [icon:YIELD_GOLD] Or.</Text></Replace>
     <Replace Tag="LOC_MOD_ETFI_COMING_SOON" Language="fr_FR"><Text>Bientôt disponible</Text></Replace>
-    <Replace Tag="LOC_MOD_ETFI_WALLS" Language="fr_FR"><Text>Murs</Text></Replace>
     <Replace Tag="LOC_MOD_ETFI_FORTIFICATIONS" Language="fr_FR"><Text>Fortifications</Text></Replace>
   </LocalizedText>
 </Database>

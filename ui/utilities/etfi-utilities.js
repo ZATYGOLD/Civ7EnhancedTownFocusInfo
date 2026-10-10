@@ -1,11 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-only
 // Copyright (C) 2025-2026 Zatygold
-// File Path: ui/utilities/etfi-utilities.js
-//
-// Author: Zatygold
 //
 // ETFI API. Live, read-only queries against the current town, used by the
-// per-focus model builders. No rendering here. Uses only confirmed engine APIs.
+// per-focus model builders. No rendering here.
 
 import { ConstructibleHasTagType } from "/base-standard/ui/utilities/utilities-tags.js";
 import { getGlobalParamNumber } from "/core/ui/utilities/utilities-data.js";
@@ -41,11 +38,6 @@ export function tradeRangePill() {
 }
 
 // --- small helpers ---------------------------------------------------------
-//
-// NOTE: hover tooltips are now built as structured MODELS (`row.tipModel`, a
-// { sections: [...] } object) and rendered by the framed tooltip in
-// etfi-render.js via the same renderSectionPanels the inline panels use. There
-// is no text-markup tooltip builder anymore.
 
 export function composeWithFallback(key, fallback) {
   if (!key) return fallback || "";
@@ -125,12 +117,9 @@ function resourceAt(x, y) {
 
 // --- improvement focuses (Farming / Fishing / Mining) ----------------------
 //
-// For the town's tiles whose (logical) improvement is in `typeSet`, split into
-// IMPROVED (a completed improvement -> earns the yield) and UNIMPROVED (an
-// eligible tile not yet improved -> no yield). Display uses the RESOURCE
-// name/icon when the tile has one (e.g. "Tea"), otherwise the improvement
-// name/icon (e.g. "Woodcutter"). Unimproved includes eligible NON-resource
-// tiles (e.g. a forest eligible for a Woodcutter), not just resources.
+// Tiles whose logical improvement is in `typeSet`, split by whether the
+// improvement is built (only built ones earn the yield). Rows display the
+// RESOURCE name/icon when the tile has one, else the improvement's.
 export function getFocusImprovements(city, typeSet) {
   const impMap = buildImprovementTileMap(city);
   const improved = new Map();
@@ -194,8 +183,7 @@ export function getFocusImprovements(city, typeSet) {
 
 // --- resource tile counting (Trade) ----------------------------------------
 
-// Resource tiles inside the town's borders, split by whether the tile carries
-// an improvement. Each entry is a display row: { name, iconId, count }.
+// Resource tiles in the town, split by whether the tile is improved.
 export function countResourceTiles(city) {
   const impMap = buildImprovementTileMap(city);
   const imp = new Map();
@@ -221,7 +209,6 @@ export function countResourceTiles(city) {
 
 // --- connected settlements (Hub) -------------------------------------------
 
-// Settlements this town is connected to, split City/Town. Names are localized.
 export function getConnectedSettlements(city) {
   const result = { cities: [], towns: [] };
   let ids = [];
@@ -239,21 +226,11 @@ export function getConnectedSettlements(city) {
 
 // --- connected cities + food sent (Town -> connected Cities) ---------------
 //
-// Returns the player's Cities (NOT Towns) that this town is connected to, each
-// as { id, name, food }, where `food` is the Food per turn the town sends to
-// that City.
+// Connected Cities (NOT Towns) as { id, name, food }. Mirrors
+// buildSendingFoodData in base-standard/ui/city-details/model-city-details.js.
 //
-// Source: base-standard/ui/city-details/model-city-details.js
-// (buildSendingFoodData). A specialized Town distributes its Food equally to
-// every connected City; the engine exposes that per-City amount directly via
-// Town.getSentFoodPerCity(), and the receivers are Town.getConnectedCities()
-// filtered to non-Towns. The same `getConnectedCities()` call backs
-// getConnectedSettlements().
-//
-// Note: the engine only sends Food while the town's growthType is PROJECT
-// (i.e. it has an active focus, not the default EXPAND/growing mode). When the
-// town is still growing, getSentFoodPerCity() reports 0, so `food` is 0 for
-// every City — that matches the game (an unspecialized town sends nothing).
+// The engine only sends Food while growthType is PROJECT, so a still-growing
+// town reports 0 for every City. That matches the game.
 export function getConnectedCitiesFood(city) {
   const cities = [];
   let ids = [];
@@ -289,14 +266,8 @@ export function getConnectedCitiesFood(city) {
 
 // --- converted gold (default Town behavior) --------------------------------
 //
-// The default Town behavior (LOC_PROJECT_DEFAULT_TOOLTIP_DESCRIPTION) converts
-// all of the Town's Production into Gold. This returns the Town's Production and
-// Gold per turn and their sum — the effective Gold/turn the Town yields once the
-// Production conversion is applied.
-//
-// Source: same yield API the base City Details panel uses
-// (base-standard/ui/city-details/model-city-details.js):
-// city.Yields.getNetYield(YieldTypes.YIELD_*).
+// An unspecialized Town converts all its Production into Gold. Returns the
+// Production and Gold per turn plus their sum (the effective Gold/turn).
 export function getConvertedGold(city) {
   let production = 0;
   let gold = 0;
@@ -344,7 +315,6 @@ export function isGrowthFocusEl(el) {
 
 // --- building helpers (Religious Site) -------------------------------------
 
-// Internal helper (not imported directly by builders).
 function isCurrentOrAgeless(type) {
   try {
     if (ConstructibleHasTagType(type, "AGELESS")) return true;
@@ -369,18 +339,15 @@ const RELIC_SLOT_TEMPLE_TYPES = (() => {
   } catch (e) {
     console.error("[ETFI] building relic-temple set failed", e);
   }
-  // Always include the base Temple as a fallback.
   set.add("BUILDING_TEMPLE");
   return set;
 })();
 
-// Internal helper (not imported directly by builders).
 function isRelicTemple(type) {
   return RELIC_SLOT_TEMPLE_TYPES.has(type);
 }
 
-// Count the completed temple-type buildings (relic-slot buildings, excluding the
-// Palace, which is never a Town building) in the town.
+// Completed relic-slot buildings, excluding the Palace.
 export function countTemples(city) {
   let n = 0;
   try {
@@ -402,27 +369,13 @@ export function countTemples(city) {
 
 // --- game data: modifier arguments -----------------------------------------
 
-// Town Focus effects are defined as Modifiers in the game's own data (see
-// base-standard/data/projects-gameeffects.xml), e.g. the Fort Town's Gold:
+// Focus amounts come from the game's own modifier data, so balance patches flow
+// through automatically. `fallback` covers a missing row rather than showing 0.
 //
-//   <Modifier id="ATTACH_FORT_WALLS_GOLD_FROM_PROJECT"
-//             collection="COLLECTION_CITY_PLOT_YIELDS" effect="EFFECT_PLOT_ADJUST_YIELD">
-//     <Argument name="YieldType">YIELD_GOLD</Argument>
-//     <Argument name="Amount">1</Argument>
-//
-// Reading the number out of GameInfo instead of hardcoding it means a balance
-// patch (or another mod's data change) updates our preview automatically.
-// `fallback` is returned when the row is missing, so an unexpected game build
-// degrades to the last-known-good value rather than showing 0.
-//
-// PERFORMANCE: GameInfo.ModifierArguments is a flat table of roughly 15k-25k
-// rows depending on installed content, and .find() is a linear scan over it.
-// Results are memoized because the table is static for the session — without
-// this, a single panel refresh costs hundreds of thousands of row visits, and
-// callers reached from per-plot loops (addNaturalWonderYields) would re-scan
-// the whole table for every tile. Only successful lookups are cached, so a
-// value that is missing early (GameInfo not yet populated) can still resolve
-// later instead of freezing its fallback for the rest of the session.
+// Memoized: ModifierArguments is a flat 15k-25k row table and .find() scans it
+// linearly, and some callers sit inside per-plot loops. Only successful lookups
+// are cached, so a value missing before GameInfo is populated can still resolve
+// later rather than freezing its fallback for the session.
 const modifierAmountCache = new Map();
 
 export function getModifierAmount(modifierId, argName = "Amount", fallback = 0) {
@@ -465,15 +418,12 @@ function getModifierArgumentRaw(modifierId, argName) {
   }
 }
 
-// Points awarded by a victory-point tracker (base-standard/data/victories.xml
-// <VictoryScorings>). Resort Town's Tourism is scored this way rather than as a
-// project modifier, so it is the one focus number that does not come from the
-// Modifiers tables.
+// Resort Town's Tourism is scored as a victory-point tracker, not a project
+// modifier — the one focus number outside the Modifiers tables.
 //
-// No shipped game script reads GameInfo.VictoryScorings, so we cannot confirm
-// the table is exposed to UI scripts. The read is attempted defensively: if the
-// table isn't there, `fallback` is used and the mod behaves exactly as it did
-// when the number was hardcoded.
+// UNVERIFIED: no shipped game script reads GameInfo.VictoryScorings, so we
+// cannot confirm it is exposed to UI scripts. If it isn't, `fallback` applies
+// and behaviour matches the old hardcoded number.
 export function getVictoryScoringPoints(scoringId, fallback = 0) {
   try {
     const row = GameInfo?.VictoryScorings?.find?.((r) => r?.ScoringId === scoringId);
@@ -488,23 +438,14 @@ export function getVictoryScoringPoints(scoringId, fallback = 0) {
 
 // --- game data: warehouse yields -------------------------------------------
 //
-// The "warehouse" focuses (Farming, Fishing, Mining, and the Happiness half of
-// Trade Outpost) do NOT carry an Amount on their modifier. Their modifier uses
-// EFFECT_CITY_GRANT_WAREHOUSE_YIELD with a WarehouseYieldChange argument that
-// lists Warehouse_YieldChanges row IDs, and the number lives on those rows as
-// YieldChange, e.g. in age-antiquity/data/constructibles-no-persist.xml:
+// The warehouse focuses (Farming, Fishing, Mining, Trade's Happiness) carry NO
+// Amount on their modifier. It holds a WarehouseYieldChange argument listing
+// Warehouse_YieldChanges row IDs, and the number lives on those rows. Modifier
+// IDs repeat across ages pointing at per-age rows, hence the age filter.
 //
-//   <Row ID="AQTownPastureFood" Age="AGE_ANTIQUITY" YieldType="YIELD_FOOD"
-//        YieldChange="1" ConstructibleInCity="IMPROVEMENT_PASTURE"/>
-//
-// The modifier IDs are the same strings in every age; each age module defines
-// its own copy pointing at that age's rows, so we filter by the current age.
-//
-// Returns { byConstructible: Map<constructibleType, amount>, fallback: number }.
-// `fallback` is the most common amount across the matched rows — used for the
-// improvements a focus displays that the data keys by terrain or feature
-// instead of by improvement (e.g. Farms are granted through TERRAIN_FLAT, not
-// through IMPROVEMENT_FARM). NaN means nothing could be resolved.
+// Returns { byConstructible: Map<type, amount>, fallback }. `fallback` is the
+// modal amount, for improvements the data keys by terrain or feature instead
+// (Farms come via TERRAIN_FLAT, not IMPROVEMENT_FARM). NaN = nothing resolved.
 export function getWarehouseAmounts(modifierId, yieldType) {
   const byConstructible = new Map();
   const tally = new Map();
@@ -553,19 +494,13 @@ export function warehouseAmountResolver(modifierId, yieldType, lastKnownGood) {
 
 // --- fortifications (Fort) -------------------------------------------------
 
-// Fortifications in the town, grouped by type with a count and split into:
-//   * walls          - those tagged DISTRICT_WALL (Ancient Walls, Medieval Walls,
-//                      Defensive Fortifications). These are what make a District
-//                      "Fortified", so ONLY these earn the Fort Town's +1 Gold.
-//   * fortifications - everything else tagged FORTIFICATION (Bailey, Motte, Great
-//                      Wall, Kasbah, Hillfort, Shore Battery, wonders, ...).
-//                      These are Fortifications but NOT Fortified Districts, so
-//                      they earn the +25 Health only — no Gold.
-// Each group is { name, iconId, type, count }. `total` is the combined count
-// (every fortification earns the Health bonus).
+// Every FORTIFICATION-tagged constructible, grouped by type:
+// { name, iconId, type, count }.
+//
+// Deliberately NOT split on DISTRICT_WALL — that tag affects neither of Fort
+// Town's yields. 2.5.0 split it and was wrong; see fort-town.js for the detail.
 export function getFortifications(city) {
-  const wallMap = new Map();
-  const fortMap = new Map();
+  const byType = new Map();
   try {
     for (const cls of ["BUILDING", "IMPROVEMENT", "WONDER"]) {
       const ids = city?.Constructibles?.getIdsOfClass?.(cls) || [];
@@ -576,22 +511,16 @@ export function getFortifications(city) {
         if (!def) continue;
         const type = def.ConstructibleType;
         if (!ConstructibleHasTagType(type, "FORTIFICATION")) continue;
-        const isWall = ConstructibleHasTagType(type, "DISTRICT_WALL");
-        const target = isWall ? wallMap : fortMap;
-        if (!target.has(type)) {
-          target.set(type, { type, name: def.Name ? Locale.compose(def.Name) : type, iconId: type, count: 0 });
+        if (!byType.has(type)) {
+          byType.set(type, { type, name: def.Name ? Locale.compose(def.Name) : type, iconId: type, count: 0 });
         }
-        target.get(type).count++;
+        byType.get(type).count++;
       }
     }
   } catch (e) {
     console.error("[ETFI] getFortifications failed", e);
   }
-  const sort = (m) => Array.from(m.values()).sort((a, b) => b.count - a.count);
-  const walls = sort(wallMap);
-  const fortifications = sort(fortMap);
-  const total = walls.reduce((s, g) => s + g.count, 0) + fortifications.reduce((s, g) => s + g.count, 0);
-  return { walls, fortifications, total };
+  return Array.from(byType.values()).sort((a, b) => b.count - a.count);
 }
 
 // --- quarters (Urban Center) -----------------------------------------------
@@ -632,15 +561,13 @@ function isQuarterBuilding(type) {
   return false;
 }
 
-// Classify the town's qualifying buildings (see isQuarterBuilding) by tile into
-// four buckets, shared by Urban Center and Religious Site:
-//   * uniqueQuarters  - tiles flagged as a civ-unique quarter { name, buildings[] },
-//   * specialQuarters - tiles with FULL_TILE building(s)        { buildings[] },
-//   * quarters        - other tiles with 2+ qualifying buildings { buildings[] },
-//   * buildings       - tiles with a single qualifying building (lone)  { name, iconId, type }.
-// Each `buildings[]` entry is { name, iconId }. The town center tile is skipped.
-//   quarterCount  = uniqueQuarters + specialQuarters + quarters (Urban Center bonus unit),
-//   buildingCount = every qualifying building across all buckets (Religious Site bonus unit).
+// Qualifying buildings by tile, in four mutually exclusive buckets:
+//   * uniqueQuarters  - civ-unique quarter       { name, buildings[] }
+//   * specialQuarters - FULL_TILE building(s)    { buildings[] }
+//   * quarters        - 2+ qualifying buildings  { buildings[] }
+//   * buildings       - a single one (lone)      { name, iconId, type }
+// quarterCount is the Urban Center bonus unit, buildingCount the Religious Site
+// one. Each buildings[] entry is { name, iconId }.
 export function getTownBuildings(city) {
   const quarters = [];
   const uniqueQuarters = [];
@@ -728,13 +655,11 @@ export function getFactoryResources(city) {
 
 // --- resort: appealing tiles (improved / unimproved) + breathtaking dev -----
 //
-// appealingImproved / appealingUnimproved: rural tiles with appeal >= Charming,
-//   split by whether they have an improvement (grouped by resource/improvement).
-// breathtakingImprovements / breathtakingDistricts: improved Breathtaking tiles
-//   that are rural Improvements vs Districts (>=1 building). breathtakingTotal:
-//   all Breathtaking tiles. (The game counts a Breathtaking tile as developed
-//   if it has an improvement OR a building/district.)
-// Round DOWN to the nearest 0.5 (applied once at the very end of a calculation).
+// appealing*: rural tiles at Charming or better, split by whether improved.
+// breathtaking*: developed Breathtaking tiles, split Improvements vs Districts
+// (the game counts a tile as developed if it has an improvement OR a building).
+
+// Round DOWN to the nearest 0.5, applied once at the end of a calculation.
 function roundToHalf(v) {
   return Math.floor(v * 2) / 2;
 }
@@ -755,29 +680,23 @@ function isResortActive(city) {
   }
 }
 
-// The Resort's per-improved-Natural-Wonder-tile contribution is what the tile
-// GAINS from the focus. Two separate project modifiers can apply to the plot
-// (base-standard/data/projects-gameeffects.xml):
-//   * ATTACH_RESORT_HAPPINESS_GOLD_FROM_PROJECT — flat +1 Happiness / +1 Gold,
-//     but ONLY on a plot that meets the appeal threshold, and
-//   * ATTACH_RESORT_NATURAL_WONDER_FROM_PROJECT — +50%, on any Natural Wonder
-//     plot, for a FIXED list of seven yield types.
-// The flat amount lands in the plot's base and the percentage is applied to that
-// total, so effective = (base + flat) * 1.5 and:
-//     contribution = base*0.5 + flat*1.5     (flat = 1 only when appealing)
-// getYields() reports the tile as it currently stands, so `base` is recovered as:
-//   * Resort active   -> base = effective/1.5 - flat
-//   * Resort inactive -> effective already IS base (no focus bonus applied)
-// VERIFIED IN-GAME: GameplayMap.getYields(plot, playerID) DOES include the
-// town's own project modifiers, so the branch above is correct — toggling the
-// Resort focus on and off produces matching numbers in both states. Do not
-// "fix" this by switching to getYieldsWithCity(): that variant exists for
-// evaluating a plot in the context of a city it does not currently belong to
-// (building/worker placement previews), not for reading owned tiles.
-// Example (per tile): base 6 Culture / 3 Happiness / 0 Gold -> effective with
-// Resort = 9 / 6 / 1.5 -> contribution = +3 Culture / +3 Happiness / +1.5 Gold.
-// Both numbers come from the game's own modifier data. The Natural Wonder bonus
-// is a Percent argument (50) rather than an Amount, so it is divided by 100.
+// What an improved Natural Wonder tile GAINS from the Resort focus. Two
+// modifiers apply: a flat +1 Happiness/Gold (appealing plots only) and +50% on
+// a fixed list of seven yield types. The flat lands in the base and the
+// percentage applies to the total, so effective = (base + flat) * 1.5 and:
+//
+//     contribution = base*0.5 + flat*1.5        (flat = 1 only when appealing)
+//
+// getYields() reports the tile as it stands, so base is recovered as
+// effective/1.5 - flat when Resort is active, or effective itself when not.
+//
+// VERIFIED IN-GAME: getYields() DOES include the town's own project modifiers,
+// so that branch is correct — toggling the focus gives matching numbers both
+// ways. Do NOT switch to getYieldsWithCity(): that is for evaluating a plot
+// against a city it does not belong to (placement previews), not owned tiles.
+//
+// Example: base 6 Culture / 3 Happiness / 0 Gold -> effective 9 / 6 / 1.5
+// -> contribution +3 Culture / +3 Happiness / +1.5 Gold.
 const MOD_RESORT_NW = "ATTACH_RESORT_NATURAL_WONDER_FROM_PROJECT";
 const MOD_RESORT_PER_TILE = "ATTACH_RESORT_HAPPINESS_GOLD_FROM_PROJECT";
 // Last-known-good (game 1.5.0), used only if a modifier row can't be read.
@@ -926,10 +845,7 @@ export function getResortData(city) {
       if (isNW) {
         nwName = naturalWonderName(x, y) || "Natural Wonder";
         if (impMap.has(key)) {
-          // Improved Natural Wonder (Expedition Base). It earns the Resort's
-          // +50% raw-yield bonus (Natural Wonders category), plus — only if the
-          // tile actually meets the appeal threshold — the flat +1 Happiness /
-          // +1 Gold. Both are folded in here, which is why the tile is excluded
+          // Both bonuses are folded in here, which is why the tile is excluded
           // from the Appealing category below. It still counts toward the
           // Breathtaking tally for Tourism.
           let entry = nwByName.get(nwName);
@@ -937,7 +853,6 @@ export function getResortData(city) {
           entry.count++;
           addNaturalWonderYields(entry.yieldMap, idx, resortActive, isAppealing);
         } else {
-          // Unimproved Natural Wonder: eligible but not earning yet -> Unimproved.
           if (!unimp.has(nwName)) unimp.set(nwName, { name: nwName, iconId: "IMPROVEMENT_EXPEDITION_BASE", count: 0 });
           unimp.get(nwName).count++;
           continue;
@@ -952,8 +867,6 @@ export function getResortData(city) {
       const tileBuildings = impAtTile ? [] : tileBuildingsAt(x, y);
       const isDistrict = tileBuildings.length > 0;
       const resInfo = resourceAt(x, y);
-      // Label for an improved tile: the Natural Wonder, else the resource, else
-      // the improvement itself.
       const impName = nwName
         ? nwName
         : resInfo ? (resInfo.Name ? Locale.compose(resInfo.Name) : resInfo.ResourceType) : impAtTile?.name;
@@ -977,14 +890,10 @@ export function getResortData(city) {
       // above) uses the lower of the two thresholds so BOTH levels are counted,
       // and is the same test the Natural Wonder branch used for its flat bonus.
       if (!isAppealing) continue;
-      // An improved Natural Wonder already contributes its appealing +1 Happiness
-      // / +1 Gold inside the NATURAL WONDERS category: addNaturalWonderYields
-      // folds the flat bonus in (boosted by the +50%, so 1.5 each). Counting the
-      // tile again here would double-count Happiness and Gold. It still counted
-      // toward the Breathtaking tally above (that drives Tourism).
+      // addNaturalWonderYields already folded this tile's flat +1/+1 into the
+      // Natural Wonders category, so counting it here would double-count.
       if (nwName && impAtTile) continue;
       if (impAtTile) {
-        // Appealing improved tile -> +1 Happiness / +1 Gold.
         if (!imp.has(impName)) imp.set(impName, { name: impName, iconId: impIcon, count: 0 });
         imp.get(impName).count++;
       } else if (isDistrict) {
@@ -996,8 +905,6 @@ export function getResortData(city) {
         if (!imp.has(name)) imp.set(name, { name, iconId: "CITY_BUILDINGS", count: 0, tiles: [], isDistrict: true });
         const entry = imp.get(name);
         entry.count++;
-        // A tile's building(s) on ONE bullet line — a 2-building Quarter (e.g.
-        // City Hall + Altar) shows both names joined by " | ".
         entry.tiles.push(tileBuildings.slice());
       } else {
         let name = null;
@@ -1020,21 +927,17 @@ export function getResortData(city) {
   } catch (e) {
     console.error("[ETFI] getResortData failed", e);
   }
-  // Districts first, then the rest by descending count.
   result.appealingImproved = Array.from(imp.values()).sort((a, b) => {
     if (!!a.isDistrict !== !!b.isDistrict) return a.isDistrict ? -1 : 1;
     return b.count - a.count;
   });
   result.appealingUnimproved = Array.from(unimp.values()).sort((a, b) => b.count - a.count);
   result.breathtakingImprovementGroups = Array.from(btImp.values()).sort((a, b) => b.count - a.count);
-  // Quarters (2-building tiles) first, then single-building Districts.
   result.breathtakingDistrictTiles = btDistTiles.sort((a, b) => (b?.length || 0) - (a?.length || 0));
-  // One entry per wonder: { name, count, yields:[{yieldType,value}] }.
   result.naturalWonders = Array.from(nwByName.values())
     .map((e) => ({
       name: e.name,
       count: e.count,
-      // Round each accumulated bonus to the nearest 0.5.
       yields: Array.from(e.yieldMap.entries())
         .map(([yieldType, value]) => ({ yieldType, value: roundToHalf(value) }))
         .filter((y) => y.value > 0),
@@ -1043,8 +946,7 @@ export function getResortData(city) {
   return result;
 }
 
-// True if the local player has fully unlocked (mastered) the Globalism civic,
-// which enables Resort-town Tourism on improved Breathtaking tiles.
+// True when the Globalism civic is fully unlocked (gates Resort Tourism).
 export function hasGlobalismMastery() {
   try {
     const playerId = GameContext.localPlayerID;

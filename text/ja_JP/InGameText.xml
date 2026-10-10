@@ -34,7 +34,6 @@
     <Replace Tag="LOC_MOD_ETFI_EXPAND_DETAILS" Language="ja_JP"><Text>詳細を表示</Text></Replace>
     <Replace Tag="LOC_MOD_ETFI_PRODUCTION_TO_GOLD" Language="ja_JP"><Text>町の [icon:YIELD_PRODUCTION] 生産力はすべて [icon:YIELD_GOLD] ゴールドに変換される。</Text></Replace>
     <Replace Tag="LOC_MOD_ETFI_COMING_SOON" Language="ja_JP"><Text>近日公開</Text></Replace>
-    <Replace Tag="LOC_MOD_ETFI_WALLS" Language="ja_JP"><Text>城壁</Text></Replace>
     <Replace Tag="LOC_MOD_ETFI_FORTIFICATIONS" Language="ja_JP"><Text>要塞化施設</Text></Replace>
   </LocalizedText>
 </Database>

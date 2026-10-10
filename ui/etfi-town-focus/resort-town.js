@@ -1,22 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0-only
 // Copyright (C) 2025-2026 Zatygold
-// File Path: ui/etfi-town-focus/resort-town.js
 //
-// Author: Zatygold
-//
-// Resort Town (PROJECT_TOWN_RESORT):
-//   * TOURISM category (top, separate panel): a single Breathtaking row
-//     (hex icon, developed/7, total Tourism pill). Hovering the "Breathtaking"
-//     text shows a tooltip with the Improvements / Districts breakdown. Tourism
-//     is colored only when all requirements are met (Modern, 7+ developed
-//     Breathtaking, Globalism's Mastery), and also appears next to the focus
-//     name when met. A "Requires Globalism's Mastery" note shows until met.
-//   * NATURAL WONDERS (below Tourism, above Improved): one row per wonder, with
-//     the tile count (x#) and +50% of the wonder's accumulated tile yields.
-//   * APPEALING tiles: only the Improved (worked) ones are listed, each earning
-//     +1 Happiness / +1 Gold. Improved Natural Wonder tiles are deliberately
-//     excluded here — their appealing bonus is already folded into the Natural
-//     Wonders rows above (see addNaturalWonderYields).
+// Resort Town (PROJECT_TOWN_RESORT), three categories:
+//   * TOURISM — one Breathtaking row, colored only once every requirement is met
+//     (Modern, 7+ developed Breathtaking, Globalism's Mastery).
+//   * NATURAL WONDERS — one row per wonder, +50% of its accumulated tile yields.
+//   * APPEALING — worked tiles earning +1 Happiness / +1 Gold. Improved Natural
+//     Wonder tiles are excluded; addNaturalWonderYields already folded their
+//     appealing bonus into the rows above.
 
 import { ETFI_YIELDS, TOURISM_ICON, getResortData, getCurrentAgeType, hasGlobalismMastery, getModifierAmount, getVictoryScoringPoints, composeWithFallback } from "../utilities/etfi-utilities.js";
 import { contribution, fromGroups, foldByYield, sectionFrom } from "./contributions.js";
@@ -121,11 +112,8 @@ export function buildResortModel(city) {
     ));
   }
 
-  // Natural Wonders — own panel below Tourism, above Improved. One row per
-  // wonder, with the tile count (x#) and its accumulated Resort contribution
-  // (+50% of the tile's yields, and the appealing +1/+1 already folded in by
-  // addNaturalWonderYields — which is why these tiles are deliberately NOT also
-  // counted in the Appealing category below).
+  // One row per wonder. addNaturalWonderYields already folded in the appealing
+  // +1/+1, which is why these tiles are NOT also counted as Appealing below.
   const nwContributions = [];
   for (const w of d.naturalWonders) {
     const source = { name: w.name, iconId: NATURAL_WONDER_ICON, count: w.count };

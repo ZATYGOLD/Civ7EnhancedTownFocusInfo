@@ -11,10 +11,8 @@ CategoryData[CategoryType["Mods"]] = {
     description: "LOC_UI_CONTENT_MGR_SUBTITLE_DESCRIPTION",
 };
 
-// Both options are simple booleans rendered as toggle switches (OptionType.Switch
-// -> <fxs-switch>). The switch reads its state from `optionInfo.currentValue` and
-// reports changes as a boolean in the change event, so the listeners just read
-// and write the setting directly — no index mapping, and no On/Off label strings.
+// <fxs-switch> reads `optionInfo.currentValue` and reports changes as a plain
+// boolean, so no index mapping or On/Off label strings are needed.
 const onOptionColorfulInit = (optionInfo) => {
     optionInfo.currentValue = ETFI_Settings.IsColorful;
 }
@@ -31,12 +29,10 @@ const onOptionExpandDetailsUpdate = (optionInfo, value) => {
     ETFI_Settings.ExpandDetailsByDefault = !!value;
 }
 
-// NOTE: earlier versions monkey-patched Options.addInitCallback here to "fix
-// Options initialization". As of game 1.5.0 that replacement is byte-identical
-// to the stock implementation in /core/ui/options/model-options.js, so it fixed
-// nothing and merely froze a core singleton's method at our copy of it for every
-// other mod in the session. Removed deliberately — do not reinstate without
-// checking the current stock implementation first.
+// Earlier versions monkey-patched Options.addInitCallback to "fix" Options
+// initialization. As of game 1.5.0 that replacement is identical to the stock
+// implementation, so it fixed nothing and only froze a core singleton's method
+// at our copy for every other mod. Do not reinstate without re-checking stock.
 
 Options.addInitCallback(() => {
     Options.addOption({

@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-only
 // Copyright (C) 2025-2026 Zatygold
-// File Path: ui/production-chooser/etfi-town-focus-section.js
 //
-// Author: Zatygold
+// Reshapes the base game's Town Focus cards: yield pills on the name row and
+// the inline breakdown panels, plus the panel's Expand Details switch.
 
 import { ComponentUtilities } from "/core/ui-next/utilities/component-utilities.js";
 import { TownFocusChooserItem } from "/base-standard/ui/production-chooser/town-focus-section.js";
@@ -51,8 +51,6 @@ function refreshFocusPanel(fromEl) {
   }
 }
 
-// --- module-level focus-change listener ------------------------------------
-
 function refreshProductionYieldBar() {
   try {
     const el = document.querySelector("panel-production-chooser");
@@ -70,7 +68,6 @@ function scheduleFocusPanelRebuild() {
     if (etfiPanelRefreshTimer) clearTimeout(etfiPanelRefreshTimer);
     etfiPanelRefreshTimer = setTimeout(() => {
       etfiPanelRefreshTimer = null;
-      // Only act when the production/town-focus panel is present (city panel open).
       if (document.querySelector("panel-town-focus")) refreshFocusPanel(null);
       refreshProductionYieldBar();
     }, 0);
@@ -87,13 +84,10 @@ function scheduleFocusPanelRebuild() {
 
 // --- engine subscription lifecycle -----------------------------------------
 //
-// These two engine events fire for EVERY settlement in the game, not just the
-// one on screen, so subscribing at module load meant scheduling rebuild work
-// for the whole session even with no panel open. Instead they follow the same
-// attach/detach lifecycle the game's own components use: the first focus card
-// to attach subscribes, the last one to detach unsubscribes and cancels any
-// timer still in flight. `attachedItems` is the reference count — focus cards
-// attach and detach as a group whenever the panel opens, closes, or refreshes.
+// These events fire for EVERY settlement, not just the one on screen, so
+// subscribing at module load scheduled rebuild work all session with no panel
+// open. They now follow attach/detach: the first card subscribes, the last to
+// detach unsubscribes and cancels any timer still in flight.
 const ENGINE_EVENTS = ["CityGrowthModeChanged", "CityYieldChanged"];
 let attachedItems = 0;
 let engineSubscribed = false;
@@ -124,8 +118,6 @@ function unsubscribeEngineEvents() {
   if (etfiYieldBarTimer) { clearTimeout(etfiYieldBarTimer); etfiYieldBarTimer = null; }
 }
 
-// --- model dispatch --------------------------------------------------------
-
 function projectTypeString(root) {
   const pt = root.getAttribute("data-project-type");
   const projectType = pt != null && pt !== "" ? parseInt(pt) : null;
@@ -137,18 +129,13 @@ function buildModel(item) {
   return buildFocusModel(getTownCity(), projectTypeString(item.Root));
 }
 
-// --- panel width constraint ------------------------------------------------
-
-// The panel width. Set BOTH here and in etfi-styles.css on purpose: the
-// stylesheet rule is the declarative source of truth, and this inline set is
-// the guarantee. The panel is built by the base game with its own width utility
-// classes, and if the stylesheet ever fails to load the panel silently falls
-// back to its natural (much wider) content width — a visible regression rather
-// than a caught error. Inline styles win over both.
+// Panel width is set BOTH here and in etfi-styles.css on purpose: the sheet is
+// the declarative source, this inline set is the guarantee. The base panel
+// carries its own width utility classes, so if the sheet fails to load the panel
+// silently reverts to its much wider natural width.
 //
-// Because the inline set wins, the narrow-screen fallback below CANNOT be a CSS
-// media query — an inline style beats any stylesheet rule. It has to be decided
-// here.
+// And because an inline style beats any stylesheet rule, the narrow-screen
+// fallback below CANNOT be a media query — it has to be decided here.
 const ETFI_TOWN_FOCUS_WIDTH = 26;
 // On a narrow screen, fall back to the base game's own chooser-item width
 // (town-focus-chooser-item in panel-production-chooser.css) so the panel takes
@@ -214,8 +201,6 @@ function onViewportResize() {
   }
 }
 
-// Static hover label for the details checkbox. Checked expands the details
-// inline on each focus; unchecked moves them into the hover tooltip.
 function expandDetailsLabel() {
   return composeWithFallback("LOC_MOD_ETFI_EXPAND_DETAILS", "Expand Details");
 }
@@ -244,8 +229,6 @@ function ensureHideToggle(fromEl) {
     // component-value-changed event as fxs-checkbox, so this is a drop-in swap —
     // it just reads as a toggle, matching the mod's Options entries.
     const toggle = document.createElement("fxs-switch");
-    // On = expand Details inline (the default); off moves them to the hover
-    // tooltip.
     toggle.setAttribute("selected", getHideDetails() ? "false" : "true");
     toggle.setAttribute("data-tooltip-content", expandDetailsLabel());
     toggle.addEventListener("component-value-changed", (/** @type {CustomEvent} */ e) => {
@@ -255,18 +238,13 @@ function ensureHideToggle(fromEl) {
     });
 
     const row = document.createElement("div");
-    // The id is also the stylesheet hook that positions the row and scales the
-    // switch — see etfi-styles.css.
     row.id = "etfi-hide-details-row";
     row.className = "flex flex-row items-center";
     row.appendChild(toggle);
 
-    // Place the checkbox OUT of the normal flow so it doesn't add a row that
-    // pushes the focus list down. The panel Root is already position:relative
-    // (and the close button is anchored to it at top-right), so anchor the
-    // checkbox to the Root's top-left corner — mirroring the close button. We do
-    // NOT position the content itself: that would paint the content over the
-    // close button and make it unclickable. Fall back to a header row if needed.
+    // Anchored out of normal flow so it adds no row that pushes the list down,
+    // mirroring the close button at the opposite corner. Do NOT position the
+    // content itself — that paints over the close button and blocks clicks.
     const header = panel.querySelector("fxs-header");
     const content = header?.parentElement;
     if (content) {
@@ -300,16 +278,11 @@ function hideDescription(item) {
 
 // --- prototype patch -------------------------------------------------------
 //
-// The mod works by wrapping three TownFocusChooserItem methods. That is the
-// only way to reshape the base game's focus cards, but it is also the mod's
-// most brittle contact point: if a game patch renames or removes one of these,
-// the wrapper silently wraps `undefined` and the panel breaks in a way that is
-// hard to trace back here.
-//
-// So the contract is verified up front. A missing method is reported once, by
-// name, and the patch is skipped entirely — the player gets the stock,
-// unmodified Town Focus panel instead of a half-patched broken one, and the log
-// says exactly which method to look at.
+// Wrapping TownFocusChooserItem is the only way to reshape the base cards, and
+// the mod's most brittle contact point: if a patch renames one of these, the
+// wrapper wraps `undefined` and the panel breaks far from the cause. So the
+// contract is checked up front — a missing method is named in the log and the
+// patch is skipped entirely, leaving the stock panel working.
 const REQUIRED_METHODS = ["render", "onAttach", "onDetach", "onAttributeChanged"];
 
 function verifyBaseContract() {
@@ -347,8 +320,6 @@ function etfiOnAttach() {
   attachedItems++;
   subscribeEngineEvents();
   if (baseOnAttach) baseOnAttach.call(this);
-  // Now that the item is in the DOM, pin the panel width and ensure the
-  // hide-details checkbox is present.
   constrainPanelWidth(this.Root);
   ensureHideToggle(this.Root);
 }
@@ -368,7 +339,6 @@ function etfiRender() {
 
   const growth = isGrowthFocusEl(this.Root);
 
-  // Hide the inline focus description for every focus.
   hideDescription(this);
 
   // Growing Town keeps the base card layout — no yield pills, detail panels, or
@@ -381,14 +351,11 @@ function etfiRender() {
 
   const inSummary = !!this.Root.closest("town-focus-section");
 
-  // Shrink the focus icon (base is size-16 = 4rem) for a more compact card.
   try {
     this.projectIconElement.classList.remove("size-16");
     this.projectIconElement.classList.add("size-12");
   } catch {}
 
-  // flex-auto / min-w-0 / truncate are the game's own utility classes and are
-  // exact equivalents of the inline styles they replace.
   try {
     infoContainer.classList.remove("flex-initial");
     infoContainer.classList.add("flex-auto", "min-w-0");
@@ -401,8 +368,6 @@ function etfiRender() {
   this.nameElement.classList.add("text-left", "flex-auto", "min-w-0", "truncate");
 
   this.etfiYields = document.createElement("div");
-  // Pills stack in rows of at most 3 (see etfiUpdate), right-aligned. The
-  // margin nudges them off the right edge of the card (see etfi-styles.css).
   this.etfiYields.className = "etfi-name-pills flex flex-col items-end shrink-0";
 
   nameRow.append(this.nameElement, this.etfiYields);
@@ -424,8 +389,6 @@ function etfiRender() {
       topRow.appendChild(this.projectIconElement);
       topRow.appendChild(infoContainer);
       container.classList.remove("flex-row");
-      // etfi-card-pad trims the base container's p-3 horizontal padding so the
-      // focus icon sits closer to the left edge of the card (etfi-styles.css).
       container.classList.add("flex-col", "w-full", "etfi-card-pad");
       container.appendChild(topRow);
       container.appendChild(this.etfiTop);
@@ -456,8 +419,6 @@ function etfiOnAttributeChanged(name, oldValue, newValue) {
 function etfiUpdate() {
   const growth = isGrowthFocusEl(this.Root);
 
-  // Keep the inline description hidden (re-asserted here since the summary item
-  // is reused across focus changes).
   hideDescription(this);
 
   if (!this.etfiYields) return;
@@ -473,8 +434,6 @@ function etfiUpdate() {
 
   const model = buildModel(this) || { header: [], rows: [], sections: [], notes: [] };
 
-  // Header pills next to the focus name. Merge duplicate yield types into one
-  // pill by summing their values (first-seen order is preserved).
   clearChildren(this.etfiYields);
   const headerMerged = [];
   const headerByType = new Map();
@@ -490,8 +449,7 @@ function etfiUpdate() {
       headerMerged.push(entry);
     }
   }
-  // Lay the pills out in rows of at most 3 so they don't crowd / overlap the
-  // focus name; a 4th+ pill wraps to a new line.
+  // Rows of at most 3 so the pills don't crowd the focus name.
   appendPillRows(this.etfiYields, headerMerged.map((y) => yieldPill(y)));
   this.etfiYields.classList.toggle("hidden", this.etfiYields.childElementCount === 0);
 
@@ -501,19 +459,15 @@ function etfiUpdate() {
   const flat = (model.rows || []).filter(Boolean);
   const notes = (model.notes || []).filter(Boolean);
 
-  // Top zone: top sections, each its own panel.
   const lastTop = renderSectionPanels(this.etfiTop, topSecs, ETFI_SECTION_CFG);
 
-  // Base panel: any flat (untitled) rows.
   const base = this.etfiDetails;
   clearChildren(base);
   if (flat.length) appendRows(base, flat, ETFI_SECTION_CFG);
   base.classList.toggle("hidden", base.childElementCount === 0);
 
-  // Bottom zone: middle (default) sections then bottom sections, each its own panel.
   const lastBottom = renderSectionPanels(this.etfiBottom, [...midSecs, ...bottomSecs], ETFI_SECTION_CFG);
 
-  // Top-level notes attach to the last rendered panel (falling back to base).
   if (notes.length) {
     let host = lastBottom || (base.childElementCount ? base : null) || lastTop;
     if (!host) host = base;
@@ -524,9 +478,7 @@ function etfiUpdate() {
 
 // --- install ---------------------------------------------------------------
 //
-// The single place the mod takes over the base component. If the contract check
-// at the top of this section failed, nothing is installed and the stock Town
-// Focus panel is left exactly as the game built it.
+// The single place the mod takes over the base component.
 if (contractOk) {
   TownFocusChooserItem.prototype.onAttach = etfiOnAttach;
   TownFocusChooserItem.prototype.onDetach = etfiOnDetach;

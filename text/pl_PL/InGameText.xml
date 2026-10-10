@@ -34,7 +34,6 @@
     <Replace Tag="LOC_MOD_ETFI_EXPAND_DETAILS" Language="pl_PL"><Text>Rozwiń szczegóły</Text></Replace>
     <Replace Tag="LOC_MOD_ETFI_PRODUCTION_TO_GOLD" Language="pl_PL"><Text>Cała [icon:YIELD_PRODUCTION] produkcja miasteczka jest przekształcana w [icon:YIELD_GOLD] złoto.</Text></Replace>
     <Replace Tag="LOC_MOD_ETFI_COMING_SOON" Language="pl_PL"><Text>Wkrótce</Text></Replace>
-    <Replace Tag="LOC_MOD_ETFI_WALLS" Language="pl_PL"><Text>Mury</Text></Replace>
     <Replace Tag="LOC_MOD_ETFI_FORTIFICATIONS" Language="pl_PL"><Text>Fortyfikacje</Text></Replace>
   </LocalizedText>
 </Database>
