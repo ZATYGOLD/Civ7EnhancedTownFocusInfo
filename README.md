@@ -12,7 +12,15 @@ A mod for Civilization VII that enhances the display of town focus yield bonuses
 
   The 2.5.0 note further down is left as written rather than quietly edited, because a changelog should record what was actually shipped.
 
-## Version 2.5.2
+- **A building still under construction no longer counts as finished.** One of the mod's tile scans used a looser completeness test than all the others, so an unfinished building could make its tile count as a developed District for Resort Town — earning the appealing bonus and the Breathtaking tally — while staying invisible to Urban Center, Religious Site and Fort Town. All scans now agree.
+- **Civ-unique temple replacements count reliably again.** The list of buildings that hold a Relic slot was built once when the mod loaded, and if the game's data wasn't ready at that moment it silently fell back to the base Temple alone for the rest of the session — mis-sorting quarters for Urban Center and Religious Site, and under-counting Relic Slots. It is now read on first use and only kept once it actually resolves.
+
+### Performance
+
+- **Each focus card built its preview five times per refresh instead of once.** The game replays a card's attributes after attaching it, and every replay triggered a full rebuild, so roughly four fifths of the work on every panel open was computed and thrown away. The updates now coalesce into one.
+- **A yield change in any settlement rebuilt the panel.** These engine events carry the settlement they belong to and the mod now checks it, so only changes to the town you are looking at cause a refresh.
+- **Picking a focus rebuilt the list twice.** The base game already rebuilds it on a focus change; the mod was scheduling a second, identical rebuild straight after.
+- Smaller savings: the panel width is measured once per resolution change rather than once per card (each measurement forced the game to recalculate its whole UI layout), the Globalism unlock check and the Tourism value no longer re-scan game tables on every Resort preview, and the tile scans no longer build and discard data nothing displays.
 
 ### What's New
 

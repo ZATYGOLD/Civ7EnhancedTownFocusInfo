@@ -5,6 +5,7 @@
 // the inline breakdown panels, plus the panel's Expand Details switch.
 
 import { ComponentUtilities } from "/core/ui-next/utilities/component-utilities.js";
+import { ComponentID } from "/core/ui/utilities/utilities-component-id.js";
 import { TownFocusChooserItem } from "/base-standard/ui/production-chooser/town-focus-section.js";
 import { TownFocusRefreshEvent } from "/base-standard/ui/production-chooser/panel-town-focus.js";
 import { getTownCity, composeWithFallback, isGrowthFocusEl } from "../utilities/etfi-utilities.js";
@@ -39,8 +40,7 @@ ComponentUtilities.loadStyles("fs://game/EnhancedTownFocusInfoMod/ui/etfi-styles
 // previously garbled the layout.
 function refreshFocusPanel(fromEl) {
   try {
-    const panel = (fromEl && (fromEl.closest?.("panel-town-focus") || fromEl.getRootNode?.()?.querySelector?.("panel-town-focus")))
-      || document.querySelector("panel-town-focus");
+    const panel = findFocusPanel(fromEl);
     if (panel) {
       // Use the game's own exported event class rather than re-typing its name
       // and option flags — it stays correct if Firaxis renames either.
@@ -61,14 +61,33 @@ function refreshProductionYieldBar() {
   } catch {}
 }
 
+// These engine events carry the settlement they happened to. Without the filter
+// a yield change on ANY of the player's settlements rebuilt the whole panel —
+// the base game's own handler (panel-production-chooser.js onCityYieldChanged)
+// filters on exactly this payload, so the shape is known-good. An event with no
+// cityID is treated as "might be ours" and allowed through.
+function isForSelectedCity(data) {
+  try {
+    const id = data?.cityID;
+    if (!id) return true;
+    const selected = UI.Player?.getHeadSelectedCity?.();
+    if (!selected) return true;
+    return ComponentID.isMatch(selected, id);
+  } catch (e) {
+    console.error("[ETFI] could not compare event cityID; rebuilding anyway", e);
+    return true;
+  }
+}
+
 let etfiPanelRefreshTimer = null;
 let etfiYieldBarTimer = null;
-function scheduleFocusPanelRebuild() {
+function scheduleFocusPanelRebuild(data) {
+  if (!isForSelectedCity(data)) return;
   try {
     if (etfiPanelRefreshTimer) clearTimeout(etfiPanelRefreshTimer);
     etfiPanelRefreshTimer = setTimeout(() => {
       etfiPanelRefreshTimer = null;
-      if (document.querySelector("panel-town-focus")) refreshFocusPanel(null);
+      refreshFocusPanel(null);
       refreshProductionYieldBar();
     }, 0);
     // Yields can recompute a frame later than the event; refresh again shortly.
@@ -82,21 +101,41 @@ function scheduleFocusPanelRebuild() {
   }
 }
 
+// On a focus change the base game already rebuilds the list itself
+// (panel-production-chooser dispatches its own TownFocusRefreshEvent), so
+// scheduling a second full rebuild here just doubled the cost of one click.
+// The yield bar still needs nudging, because that is ours.
+function onGrowthModeChanged(data) {
+  if (!isForSelectedCity(data)) return;
+  try {
+    if (etfiYieldBarTimer) clearTimeout(etfiYieldBarTimer);
+    etfiYieldBarTimer = setTimeout(() => {
+      etfiYieldBarTimer = null;
+      refreshProductionYieldBar();
+    }, 120);
+  } catch (e) {
+    console.error("[ETFI] onGrowthModeChanged failed", e);
+  }
+}
+
 // --- engine subscription lifecycle -----------------------------------------
 //
 // These events fire for EVERY settlement, not just the one on screen, so
 // subscribing at module load scheduled rebuild work all session with no panel
 // open. They now follow attach/detach: the first card subscribes, the last to
 // detach unsubscribes and cancels any timer still in flight.
-const ENGINE_EVENTS = ["CityGrowthModeChanged", "CityYieldChanged"];
+const ENGINE_EVENTS = [
+  ["CityYieldChanged", scheduleFocusPanelRebuild],
+  ["CityGrowthModeChanged", onGrowthModeChanged],
+];
 let attachedItems = 0;
 let engineSubscribed = false;
 
 function subscribeEngineEvents() {
   if (engineSubscribed) return;
   engineSubscribed = true;
-  for (const ev of ENGINE_EVENTS) {
-    try { engine.on(ev, scheduleFocusPanelRebuild); }
+  for (const [ev, handler] of ENGINE_EVENTS) {
+    try { engine.on(ev, handler); }
     catch (e) { console.error("[ETFI] engine.on failed for", ev, e); }
   }
   try { window.addEventListener("resize", onViewportResize); }
@@ -106,8 +145,8 @@ function subscribeEngineEvents() {
 function unsubscribeEngineEvents() {
   if (!engineSubscribed) return;
   engineSubscribed = false;
-  for (const ev of ENGINE_EVENTS) {
-    try { engine.off(ev, scheduleFocusPanelRebuild); }
+  for (const [ev, handler] of ENGINE_EVENTS) {
+    try { engine.off(ev, handler); }
     catch (e) { console.error("[ETFI] engine.off failed for", ev, e); }
   }
   try { window.removeEventListener("resize", onViewportResize); }
@@ -152,18 +191,26 @@ const ETFI_FALLBACK_ROOT_FONT_PX = 18;
 // player's UI scale counts too: scaling the UI to 150% at 1080p squeezes the
 // layout exactly as much as running at 720p, and should narrow the panel for
 // the same reason.
+//
+// Cached, because getComputedStyle forces a style recalculation over the whole
+// UI tree and this used to run once per attaching card — ten forced recalcs
+// interleaved with ten DOM mutations, all computing the same number. Only
+// onViewportResize clears it, which is the only thing that can change it (the
+// engine dispatches resize on UI-scale changes too).
+let cachedPanelWidthRem = null;
 function panelWidthRem() {
+  if (cachedPanelWidthRem !== null) return cachedPanelWidthRem;
+  let width = ETFI_TOWN_FOCUS_WIDTH;
   try {
     const px = parseFloat(getComputedStyle(document.documentElement).fontSize);
     const rootFontPx = Number.isFinite(px) && px > 0 ? px : ETFI_FALLBACK_ROOT_FONT_PX;
     const viewportRem = window.innerWidth / rootFontPx;
-    return viewportRem <= ETFI_NARROW_BREAKPOINT_REM
-      ? ETFI_TOWN_FOCUS_WIDTH_NARROW
-      : ETFI_TOWN_FOCUS_WIDTH;
+    if (viewportRem <= ETFI_NARROW_BREAKPOINT_REM) width = ETFI_TOWN_FOCUS_WIDTH_NARROW;
   } catch (e) {
     console.error("[ETFI] could not measure the viewport; using the full panel width", e);
-    return ETFI_TOWN_FOCUS_WIDTH;
   }
+  cachedPanelWidthRem = width;
+  return width;
 }
 
 function applyPanelWidth(panel) {
@@ -195,6 +242,7 @@ function constrainPanelWidth(fromEl) {
 // so this one listener covers both ways the viewport's rem width can change.
 function onViewportResize() {
   try {
+    cachedPanelWidthRem = null;
     applyPanelWidth(findFocusPanel(null));
   } catch (e) {
     console.error("[ETFI] panel width resize handler failed", e);
@@ -211,9 +259,7 @@ function expandDetailsLabel() {
 // each card's detail zones into the hover tooltip instead.
 function ensureHideToggle(fromEl) {
   try {
-    const panel = fromEl?.closest?.("panel-town-focus")
-      || fromEl?.getRootNode?.()?.querySelector?.("panel-town-focus")
-      || document.querySelector("panel-town-focus");
+    const panel = findFocusPanel(fromEl);
     if (!panel) return;
     panel.classList.toggle("etfi-hide-details", getHideDetails());
 
@@ -401,18 +447,46 @@ function etfiRender() {
     }
   }
 
-  this.etfiUpdate();
+  // Scheduled, not called directly, so render() and the postOnAttach attribute
+  // replay that follows it collapse into one rebuild.
+  scheduleEtfiUpdate(this);
+}
+
+// Coalesce the burst of updates that one attach produces into a single rebuild.
+//
+// Component.postOnAttach() replays EVERY declared attribute that had a value
+// before attach, and panel-town-focus.js sets all four of
+// data-name/-description/-growth-type/-project-type before appendChild. Add
+// render()'s own update and each card was building its model FIVE times per
+// panel refresh, discarding four — roughly 5,000 engine calls where 1,000 would
+// do, plus five rounds of DOM teardown and rebuild.
+//
+// Coalescing per task rather than diffing the attribute values is deliberate:
+// the base game keeps ONE persistent summary card (TownFocusSection's
+// townFocusItem) and refreshes it by re-setting the same attribute values, which
+// still fires attributeChangedCallback. A value-based dirty check would skip
+// those and leave the summary card stale. A microtask runs before paint, so the
+// single rebuild still lands in the same frame.
+function scheduleEtfiUpdate(item) {
+  if (item._etfiUpdateQueued) return;
+  item._etfiUpdateQueued = true;
+  queueMicrotask(() => {
+    item._etfiUpdateQueued = false;
+    try { item.etfiUpdate(); }
+    catch (e) { console.error("[ETFI] etfiUpdate failed", e); }
+  });
 }
 
 function etfiOnAttributeChanged(name, oldValue, newValue) {
   baseOnAttributeChanged.call(this, name, oldValue, newValue);
-  if (
-    name === "data-project-type" ||
-    name === "data-growth-type" ||
-    name === "data-name" ||
-    name === "data-description"
-  ) {
-    this.etfiUpdate();
+  // These two don't affect the model; they only need the base description
+  // re-hidden, which is cheap and must not wait for a microtask.
+  if (name === "data-name" || name === "data-description") {
+    hideDescription(this);
+    return;
+  }
+  if (name === "data-project-type" || name === "data-growth-type") {
+    scheduleEtfiUpdate(this);
   }
 }
 

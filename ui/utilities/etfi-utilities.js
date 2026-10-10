@@ -117,13 +117,12 @@ function resourceAt(x, y) {
 
 // --- improvement focuses (Farming / Fishing / Mining) ----------------------
 //
-// Tiles whose logical improvement is in `typeSet`, split by whether the
-// improvement is built (only built ones earn the yield). Rows display the
-// RESOURCE name/icon when the tile has one, else the improvement's.
+// Tiles whose logical improvement is in `typeSet` AND is actually built (only
+// built improvements earn the yield). Rows display the RESOURCE name/icon when
+// the tile has one, else the improvement's.
 export function getFocusImprovements(city, typeSet) {
   const impMap = buildImprovementTileMap(city);
   const improved = new Map();
-  const unimproved = new Map();
   let indices = [];
   try { indices = city?.getPurchasedPlots?.() || []; } catch { indices = []; }
 
@@ -146,48 +145,36 @@ export function getFocusImprovements(city, typeSet) {
       (logicalType && typeSet.has(logicalType)) ||
       (impAtTile && typeSet.has(impAtTile.type));
     if (!eligible) continue;
+    // Only a built improvement earns the yield. Skipped before naming the row,
+    // so an eligible-but-unimproved tile costs no lookup or Locale.compose.
+    if (!impAtTile) continue;
 
-    const isImproved = !!impAtTile;
+    // The row displays the RESOURCE when the tile has one (e.g. "Tea"),
+    // otherwise the improvement ("Woodcutter").
     const resInfo = resourceAt(x, y);
+    const name = resInfo
+      ? (resInfo.Name ? Locale.compose(resInfo.Name) : resInfo.ResourceType)
+      : impAtTile.name;
+    const iconId = resInfo ? resInfo.ResourceType : impAtTile.iconId;
+    // `type` is the IMPROVEMENT, kept separate from iconId because of the above:
+    // the warehouse focuses need it to look up their per-improvement amount.
+    const type = impAtTile.type ?? logicalType ?? null;
 
-    let name;
-    let iconId;
-    if (resInfo) {
-      name = resInfo.Name ? Locale.compose(resInfo.Name) : resInfo.ResourceType;
-      iconId = resInfo.ResourceType;
-    } else if (impAtTile) {
-      name = impAtTile.name;
-      iconId = impAtTile.iconId;
-    } else {
-      const def = GameInfo.Constructibles.lookup(logicalType);
-      name = def?.Name ? Locale.compose(def.Name) : logicalType;
-      iconId = logicalType;
-    }
-
-    // `type` is the IMPROVEMENT type, kept separate from iconId because a tile
-    // with a resource displays the resource's name and icon instead. The
-    // warehouse focuses need the improvement to look up their per-improvement
-    // amount in the game data (see warehouseAmountResolver).
-    const type = impAtTile?.type ?? logicalType ?? null;
-
-    const target = isImproved ? improved : unimproved;
-    if (!target.has(name)) target.set(name, { name, iconId, type, count: 0 });
-    target.get(name).count += 1;
+    if (!improved.has(name)) improved.set(name, { name, iconId, type, count: 0 });
+    improved.get(name).count += 1;
   }
 
   return {
     improved: Array.from(improved.values()).sort((a, b) => b.count - a.count),
-    unimproved: Array.from(unimproved.values()).sort((a, b) => b.count - a.count),
   };
 }
 
 // --- resource tile counting (Trade) ----------------------------------------
 
-// Resource tiles in the town, split by whether the tile is improved.
+// Improved resource tiles in the town (only improved ones earn the yield).
 export function countResourceTiles(city) {
   const impMap = buildImprovementTileMap(city);
   const imp = new Map();
-  const unimp = new Map();
   let indices = [];
   try { indices = city?.getPurchasedPlots?.() || []; }
   catch (e) { console.error("[ETFI] getPurchasedPlots failed; no resource tiles counted", e); }
@@ -198,13 +185,12 @@ export function countResourceTiles(city) {
     if (!loc) continue;
     const info = resourceAt(loc.x, loc.y);
     if (!info) continue;
+    if (!impMap.has(`${loc.x},${loc.y}`)) continue;
     const name = info.Name ? Locale.compose(info.Name) : info.ResourceType;
-    const target = impMap.has(`${loc.x},${loc.y}`) ? imp : unimp;
-    if (!target.has(name)) target.set(name, { name, iconId: info.ResourceType, count: 0 });
-    target.get(name).count += 1;
+    if (!imp.has(name)) imp.set(name, { name, iconId: info.ResourceType, count: 0 });
+    imp.get(name).count += 1;
   }
-  const sort = (m) => Array.from(m.values()).sort((a, b) => b.count - a.count);
-  return { improved: sort(imp), unimproved: sort(unimp) };
+  return { improved: Array.from(imp.values()).sort((a, b) => b.count - a.count) };
 }
 
 // --- connected settlements (Hub) -------------------------------------------
@@ -267,7 +253,7 @@ export function getConnectedCitiesFood(city) {
 // --- converted gold (default Town behavior) --------------------------------
 //
 // An unspecialized Town converts all its Production into Gold. Returns the
-// Production and Gold per turn plus their sum (the effective Gold/turn).
+// Production and Gold per turn.
 export function getConvertedGold(city) {
   let production = 0;
   let gold = 0;
@@ -280,7 +266,7 @@ export function getConvertedGold(city) {
   } catch (e) {
     console.error("[ETFI] getConvertedGold failed", e);
   }
-  return { production, gold, total: production + gold };
+  return { production, gold };
 }
 
 // True when the town has no active focus (default EXPAND/Growing mode): its
@@ -327,24 +313,36 @@ function isCurrentOrAgeless(type) {
   }
 }
 
-// A "Temple" for Relic-slot purposes is any building that has a RELIC great-work
-// slot. This captures the base Temple AND any civ-unique temple replacement
-// without hardcoding civ-specific building types.
-const RELIC_SLOT_TEMPLE_TYPES = (() => {
+// A "Temple" for Relic-slot purposes is any building with a RELIC great-work
+// slot — catching civ-unique temple replacements without hardcoding civ types.
+//
+// Built lazily and cached ONLY on success, same rule as the modifier caches.
+// This used to be a module-load IIFE, which meant that if
+// Constructible_GreatWorks wasn't populated yet the set froze at just
+// BUILDING_TEMPLE for the whole session — mis-bucketing quarters for Urban
+// Center and Religious Site, and under-counting Relic Slots, identically every
+// run so it wouldn't look like a race.
+let cachedRelicTempleTypes = null;
+function relicTempleTypes() {
+  if (cachedRelicTempleTypes) return cachedRelicTempleTypes;
   const set = new Set();
+  let resolved = false;
   try {
-    for (const row of GameInfo.Constructible_GreatWorks || []) {
+    const rows = GameInfo?.Constructible_GreatWorks;
+    for (const row of rows || []) {
       if (row.GreatWorkSlotType === "GREATWORKSLOT_RELIC") set.add(row.ConstructibleType);
     }
+    resolved = !!rows?.length;
   } catch (e) {
-    console.error("[ETFI] building relic-temple set failed", e);
+    console.error("[ETFI] building relic-temple set failed; only the base Temple will count", e);
   }
   set.add("BUILDING_TEMPLE");
+  if (resolved) cachedRelicTempleTypes = set;
   return set;
-})();
+}
 
 function isRelicTemple(type) {
-  return RELIC_SLOT_TEMPLE_TYPES.has(type);
+  return relicTempleTypes().has(type);
 }
 
 // Completed relic-slot buildings, excluding the Palace.
@@ -424,12 +422,18 @@ function getModifierArgumentRaw(modifierId, argName) {
 // UNVERIFIED: no shipped game script reads GameInfo.VictoryScorings, so we
 // cannot confirm it is exposed to UI scripts. If it isn't, `fallback` applies
 // and behaviour matches the old hardcoded number.
+const victoryScoringCache = new Map();
+
 export function getVictoryScoringPoints(scoringId, fallback = 0) {
+  const cached = victoryScoringCache.get(scoringId);
+  if (cached !== undefined) return cached;
   try {
     const row = GameInfo?.VictoryScorings?.find?.((r) => r?.ScoringId === scoringId);
     if (!row) return fallback;
     const n = Number(row.Points);
-    return Number.isFinite(n) ? n : fallback;
+    if (!Number.isFinite(n)) return fallback;
+    victoryScoringCache.set(scoringId, n);
+    return n;
   } catch (e) {
     console.error("[ETFI] getVictoryScoringPoints failed", scoringId, e);
     return fallback;
@@ -566,8 +570,7 @@ function isQuarterBuilding(type) {
 //   * specialQuarters - FULL_TILE building(s)    { buildings[] }
 //   * quarters        - 2+ qualifying buildings  { buildings[] }
 //   * buildings       - a single one (lone)      { name, iconId, type }
-// quarterCount is the Urban Center bonus unit, buildingCount the Religious Site
-// one. Each buildings[] entry is { name, iconId }.
+// Each buildings[] entry is { name, iconId }.
 export function getTownBuildings(city) {
   const quarters = [];
   const uniqueQuarters = [];
@@ -619,17 +622,13 @@ export function getTownBuildings(city) {
   } catch (e) {
     console.error("[ETFI] getTownBuildings failed", e);
   }
-  const sumB = (arr) => arr.reduce((s, q) => s + q.buildings.length, 0);
-  const quarterCount = uniqueQuarters.length + specialQuarters.length + quarters.length;
-  const buildingCount = sumB(uniqueQuarters) + sumB(specialQuarters) + sumB(quarters) + buildings.length;
-  return { quarters, uniqueQuarters, specialQuarters, buildings, quarterCount, buildingCount };
+  return { quarters, uniqueQuarters, specialQuarters, buildings };
 }
 
 // --- factory resources (Factory) -------------------------------------------
 
 export function getFactoryResources(city) {
   const improved = new Map();
-  const unimproved = new Map();
   try {
     const impMap = buildImprovementTileMap(city);
     const indices = city?.getPurchasedPlots?.() || [];
@@ -639,23 +638,23 @@ export function getFactoryResources(city) {
       if (!loc) continue;
       const rInfo = resourceAt(loc.x, loc.y);
       if (!rInfo || rInfo.ResourceClassType !== "RESOURCECLASS_FACTORY") continue;
+      if (!impMap.has(`${loc.x},${loc.y}`)) continue;
       const name = rInfo.Name ? Locale.compose(rInfo.Name) : rInfo.ResourceType;
-      const target = impMap.has(`${loc.x},${loc.y}`) ? improved : unimproved;
-      if (!target.has(name)) target.set(name, { name, iconId: rInfo.ResourceType, count: 0 });
-      target.get(name).count++;
+      if (!improved.has(name)) improved.set(name, { name, iconId: rInfo.ResourceType, count: 0 });
+      improved.get(name).count++;
     }
   } catch (e) {
     console.error("[ETFI] getFactoryResources failed", e);
   }
   return {
     improved: Array.from(improved.values()).sort((a, b) => b.count - a.count),
-    unimproved: Array.from(unimproved.values()).sort((a, b) => b.count - a.count),
   };
 }
 
-// --- resort: appealing tiles (improved / unimproved) + breathtaking dev -----
+// --- resort: appealing improved tiles + breathtaking dev --------------------
 //
-// appealing*: rural tiles at Charming or better, split by whether improved.
+// appealingImproved: developed tiles at Charming or better (only developed
+// tiles earn the focus's +1 Happiness / +1 Gold).
 // breathtaking*: developed Breathtaking tiles, split Improvements vs Districts
 // (the game counts a tile as developed if it has an improvement OR a building).
 
@@ -705,7 +704,10 @@ const FALLBACK_PER_TILE = 1;
 function naturalWonderMultiplier() {
   return getModifierAmount(MOD_RESORT_NW, "Percent", FALLBACK_NW_PCT) / 100;
 }
-function resortAppealingPerTile() {
+// Exported so resort-town.js reads the same number for its Appealing rows that
+// addNaturalWonderYields folds into the Natural Wonder rows — one source, so the
+// two halves of a Resort preview cannot disagree.
+export function resortAppealingPerTile() {
   return getModifierAmount(MOD_RESORT_PER_TILE, "Amount", FALLBACK_PER_TILE);
 }
 // The exact YieldType list on ATTACH_RESORT_NATURAL_WONDER_FROM_PROJECT. The
@@ -775,7 +777,12 @@ function tileBuildingsAt(x, y) {
     const ids = MapConstructibles.getConstructibles(x, y) || [];
     for (const cid of ids) {
       const inst = Constructibles.getByComponentID(cid);
-      if (!inst || inst.complete === false) continue;
+      // `!inst.complete`, matching every other constructible scan in this file.
+      // This was `inst.complete === false`, which let a constructible with an
+      // undefined/0 `complete` through — so an in-progress building counted as
+      // a developed District for Resort while staying invisible to Urban
+      // Center, Religious Site and Fort.
+      if (!inst || !inst.complete) continue;
       const def = GameInfo.Constructibles.lookup(inst.type);
       if (!def || def.ConstructibleClass !== "BUILDING") continue;
       // Exclude Walls / Fortifications. isWallType expects the ConstructibleType
@@ -794,13 +801,12 @@ function tileBuildingsAt(x, y) {
 
 export function getResortData(city) {
   const result = {
-    appealingImproved: [], appealingUnimproved: [],
-    breathtakingImprovements: 0, breathtakingDistricts: 0, breathtakingTotal: 0,
+    appealingImproved: [],
+    breathtakingImprovements: 0, breathtakingDistricts: 0,
     breathtakingImprovementGroups: [], breathtakingDistrictTiles: [],
     naturalWonders: [],
   };
   const imp = new Map();
-  const unimp = new Map();
   const btImp = new Map();   // breathtaking improved tiles grouped by name
   const btDistTiles = [];    // one entry per breathtaking district tile: its buildings
   const nwByName = new Map();
@@ -853,8 +859,9 @@ export function getResortData(city) {
           entry.count++;
           addNaturalWonderYields(entry.yieldMap, idx, resortActive, isAppealing);
         } else {
-          if (!unimp.has(nwName)) unimp.set(nwName, { name: nwName, iconId: "IMPROVEMENT_EXPEDITION_BASE", count: 0 });
-          unimp.get(nwName).count++;
+          // An unimproved Natural Wonder earns nothing from the focus, so the
+          // rest of the loop body (which only accumulates earning tiles) is
+          // skipped entirely.
           continue;
         }
       }
@@ -875,7 +882,6 @@ export function getResortData(city) {
         : resInfo ? resInfo.ResourceType : impAtTile?.iconId;
 
       if (appeal >= breathtaking) {
-        result.breathtakingTotal++;
         if (impAtTile) {
           result.breathtakingImprovements++;
           if (!btImp.has(impName)) btImp.set(impName, { name: impName, iconId: impIcon, count: 0 });
@@ -906,23 +912,9 @@ export function getResortData(city) {
         const entry = imp.get(name);
         entry.count++;
         entry.tiles.push(tileBuildings.slice());
-      } else {
-        let name = null;
-        let iconId = null;
-        if (resInfo) {
-          name = resInfo.Name ? Locale.compose(resInfo.Name) : resInfo.ResourceType;
-          iconId = resInfo.ResourceType;
-        } else {
-          let logicalType = null;
-          try { logicalType = GameInfo.Constructibles.lookup(Districts.getFreeConstructible(loc, GameContext.localPlayerID))?.ConstructibleType ?? null; } catch {}
-          if (!logicalType) continue;
-          const def = GameInfo.Constructibles.lookup(logicalType);
-          name = def?.Name ? Locale.compose(def.Name) : logicalType;
-          iconId = logicalType;
-        }
-        if (!unimp.has(name)) unimp.set(name, { name, iconId, count: 0 });
-        unimp.get(name).count++;
       }
+      // An appealing tile that is neither improved nor a District is undeveloped
+      // and earns nothing, so there is nothing to accumulate for it.
     }
   } catch (e) {
     console.error("[ETFI] getResortData failed", e);
@@ -931,7 +923,6 @@ export function getResortData(city) {
     if (!!a.isDistrict !== !!b.isDistrict) return a.isDistrict ? -1 : 1;
     return b.count - a.count;
   });
-  result.appealingUnimproved = Array.from(unimp.values()).sort((a, b) => b.count - a.count);
   result.breathtakingImprovementGroups = Array.from(btImp.values()).sort((a, b) => b.count - a.count);
   result.breathtakingDistrictTiles = btDistTiles.sort((a, b) => (b?.length || 0) - (a?.length || 0));
   result.naturalWonders = Array.from(nwByName.values())
@@ -946,16 +937,27 @@ export function getResortData(city) {
   return result;
 }
 
+// The node ROW never changes, so its handle is resolved once — the linear scan
+// over ProgressionTreeNodes (every civ, every age) used to run on every Resort
+// model build. Only getNodeState below has to stay live.
+let cachedGlobalismHandle = null;
+function globalismNodeHandle() {
+  if (cachedGlobalismHandle !== null) return cachedGlobalismHandle;
+  for (const n of GameInfo?.ProgressionTreeNodes || []) {
+    if (n.ProgressionTreeNodeType === "NODE_CIVIC_MO_MAIN_GLOBALISM") {
+      cachedGlobalismHandle = n.$hash ?? n.ProgressionTreeNodeType;
+      return cachedGlobalismHandle;
+    }
+  }
+  return null;
+}
+
 // True when the Globalism civic is fully unlocked (gates Resort Tourism).
 export function hasGlobalismMastery() {
   try {
     const playerId = GameContext.localPlayerID;
-    let node = null;
-    for (const n of GameInfo.ProgressionTreeNodes || []) {
-      if (n.ProgressionTreeNodeType === "NODE_CIVIC_MO_MAIN_GLOBALISM") { node = n; break; }
-    }
-    if (!node) return false;
-    const handle = node.$hash ?? node.ProgressionTreeNodeType;
+    const handle = globalismNodeHandle();
+    if (handle == null) return false;
     const state = Game.ProgressionTrees.getNodeState(playerId, handle);
     if (typeof ProgressionTreeNodeState !== "undefined") {
       return state === ProgressionTreeNodeState.NODE_STATE_FULLY_UNLOCKED;
