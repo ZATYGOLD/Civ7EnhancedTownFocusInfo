@@ -59,8 +59,15 @@ function addYield(yields, yieldType, value, props) {
 
 // Fold contributions into header pills — one per yield type, first-seen order.
 // Returns [{ yieldType, value }].
-export function foldByYield(list) {
+// `alwaysTypes` are the yield types a focus reports even when nothing in the
+// town earns them, so the header reads "+0" instead of being empty. An absent
+// pill is ambiguous — it could mean zero, or that the mod failed to work
+// anything out — and "this focus would pay you nothing here" is exactly what
+// the player opened the panel to find out. Seeded first, so pill order stays
+// stable whether or not the town has qualifying sources.
+export function foldByYield(list, alwaysTypes = null) {
   const yields = [];
+  for (const t of alwaysTypes || []) addYield(yields, t, 0);
   for (const c of list || []) {
     if (!c || !c.yieldType) continue;
     addYield(yields, c.yieldType, valueOf(c), c.yieldProps);

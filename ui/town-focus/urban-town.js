@@ -33,7 +33,7 @@ export function buildUrbanModel(city) {
   );
 
   return {
-    header: foldByYield([...quarters, ...unique, ...special]),
+    header: foldByYield([...quarters, ...unique, ...special], [ETFI_YIELDS.SCIENCE, ETFI_YIELDS.CULTURE]),
     rows: [],
     sections: [
       ...sectionFrom(composeWithFallback("LOC_MOD_ETFI_QUARTERS", "Quarters"), quarters, { separatePanel: true }),

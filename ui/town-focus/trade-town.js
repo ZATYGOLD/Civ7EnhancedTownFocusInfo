@@ -31,7 +31,7 @@ export function buildTradeModel(city) {
 
   return {
     // A static range indicator, not a summed yield, so it is appended not folded.
-    header: [...foldByYield(contributions), tradeRangePill()],
+    header: [...foldByYield(contributions, [ETFI_YIELDS.HAPPINESS]), tradeRangePill()],
     rows: [],
     sections: sectionFrom(composeWithFallback("LOC_MOD_ETFI_IMPROVED", "Improved"), contributions),
     notes: [],

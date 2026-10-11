@@ -12,6 +12,7 @@ A mod for Civilization VII that enhances the display of town focus yield bonuses
 
   The 2.5.0 note further down is left as written rather than quietly edited, because a changelog should record what was actually shipped.
 
+- **A focus that would pay you nothing now says so.** Previously a focus with no qualifying sources in the town — Mining Town with no mines, Urban Center with no Quarters — showed no yield pill at all, which is ambiguous: it could mean zero, or that the mod had failed to work anything out. Each focus now reports the yields it covers even when the total is zero, so the list reads "+0" and you can tell at a glance which specializations this town can actually use.
 - **A building still under construction no longer counts as finished.** One of the mod's tile scans used a looser completeness test than all the others, so an unfinished building could make its tile count as a developed District for Resort Town — earning the appealing bonus and the Breathtaking tally — while staying invisible to Urban Center, Religious Site and Fort Town. All scans now agree.
 - **Civ-unique temple replacements count reliably again.** The list of buildings that hold a Relic slot was built once when the mod loaded, and if the game's data wasn't ready at that moment it silently fell back to the base Temple alone for the rest of the session — mis-sorting quarters for Urban Center and Religious Site, and under-counting Relic Slots. It is now read on first use and only kept once it actually resolves.
 

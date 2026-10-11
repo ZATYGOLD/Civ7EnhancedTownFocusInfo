@@ -40,7 +40,7 @@ export function buildFoodModel(city) {
   const contributions = fromGroups(improved, ETFI_YIELDS.FOOD, (g) => food.amountFor(g.type));
 
   return {
-    header: foldByYield(contributions),
+    header: foldByYield(contributions, [ETFI_YIELDS.FOOD]),
     rows: [],
     sections: sectionFrom(composeWithFallback("LOC_MOD_ETFI_IMPROVED", "Improved"), contributions),
     notes: [],

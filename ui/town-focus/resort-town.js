@@ -143,11 +143,10 @@ export function buildResortModel(city) {
   // their sum. Tourism is the one deliberate exception: the row always renders
   // (so the breakdown hover works before the town qualifies) but the pill by the
   // focus name only appears once the requirements are met.
-  const header = foldByYield([
-    ...appealing,
-    ...(reqsMet ? tourismContributions : []),
-    ...nwContributions,
-  ]);
+  const header = foldByYield(
+    [...appealing, ...(reqsMet ? tourismContributions : []), ...nwContributions],
+    [ETFI_YIELDS.HAPPINESS, ETFI_YIELDS.GOLD],
+  );
 
   return { header, rows: [], sections, notes: [] };
 }

@@ -54,7 +54,10 @@ export function buildFortModel(city) {
   const townContributions = [contribution(HEAL_ICON, amounts.healing, 1, null)];
 
   return {
-    header: foldByYield([...fortContributions, ...townContributions]),
+    header: foldByYield(
+      [...fortContributions, ...townContributions],
+      [ETFI_YIELDS.GOLD, FORTIFY_ICON],
+    ),
     rows: [],
     sections: sectionFrom(
       composeWithFallback("LOC_MOD_ETFI_FORTIFICATIONS", "Fortifications"),

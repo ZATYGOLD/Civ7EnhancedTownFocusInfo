@@ -34,7 +34,7 @@ export function buildTempleModel(city) {
   const all = [...quarters, ...unique, ...special, ...lone];
 
   // The Relic Slots pill shows only when the town actually has a Temple.
-  const header = foldByYield(all);
+  const header = foldByYield(all, [ETFI_YIELDS.HAPPINESS]);
   const relicSlots = countTemples(city) * RELIC_SLOTS_PER_TEMPLE;
   if (relicSlots > 0) {
     header.push({ yieldType: RELIC_ICON, value: relicSlots, colored: false });

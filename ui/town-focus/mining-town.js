@@ -42,7 +42,7 @@ export function buildMiningModel(city) {
   const contributions = fromGroups(improved, ETFI_YIELDS.PRODUCTION, (g) => production.amountFor(g.type));
 
   return {
-    header: foldByYield(contributions),
+    header: foldByYield(contributions, [ETFI_YIELDS.PRODUCTION]),
     rows: [],
     sections: sectionFrom(composeWithFallback("LOC_MOD_ETFI_IMPROVED", "Improved"), contributions),
     notes: [],

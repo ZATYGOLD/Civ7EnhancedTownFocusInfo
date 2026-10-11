@@ -36,7 +36,7 @@ export function buildHubModel(city) {
   ];
 
   return {
-    header: foldByYield(contributions),
+    header: foldByYield(contributions, [ETFI_YIELDS.INFLUENCE]),
     rows: [],
     sections: sectionFrom(composeWithFallback("LOC_MOD_ETFI_CONNECTED", "Connected"), contributions),
     notes: [],
