@@ -377,7 +377,7 @@ export function countTemples(city) {
 const modifierAmountCache = new Map();
 
 export function getModifierAmount(modifierId, argName = "Amount", fallback = 0) {
-  const cacheKey = `${modifierId} ${argName}`;
+  const cacheKey = `${modifierId}\u0000${argName}`;
   const cached = modifierAmountCache.get(cacheKey);
   if (cached !== undefined) return cached;
   try {
@@ -400,7 +400,7 @@ export function getModifierAmount(modifierId, argName = "Amount", fallback = 0) 
 const modifierArgumentCache = new Map();
 
 function getModifierArgumentRaw(modifierId, argName) {
-  const cacheKey = `${modifierId} ${argName}`;
+  const cacheKey = `${modifierId}\u0000${argName}`;
   const cached = modifierArgumentCache.get(cacheKey);
   if (cached !== undefined) return cached;
   try {
