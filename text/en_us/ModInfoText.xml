@@ -2,7 +2,7 @@
 <Database>
 	<EnglishText>
 		<Row Tag="LOC_MOD_ENHANCEDTOWNFOCUSINFO">
-			<Text>Enhanced Town Focus Info</Text>
+			<Text>Zatygold's Town Focus Info</Text>
 		</Row>
 		<Row Tag="LOC_MOD_ENHANCEDTOWNFOCUSINFO_DESCRIPTION">
 			<Text>An enhanced display of town focus yield bonuses in Civ7, showing detailed breakdowns of improvements, buildings, and trade routes that contribute to specialization bonuses. Inspired by the original idea of Yamada and Mallek</Text>

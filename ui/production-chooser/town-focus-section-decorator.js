@@ -61,11 +61,9 @@ function refreshProductionYieldBar() {
   } catch {}
 }
 
-// These engine events carry the settlement they happened to. Without the filter
-// a yield change on ANY of the player's settlements rebuilt the whole panel —
-// the base game's own handler (panel-production-chooser.js onCityYieldChanged)
-// filters on exactly this payload, so the shape is known-good. An event with no
-// cityID is treated as "might be ours" and allowed through.
+// Without this, a yield change on ANY settlement rebuilt the whole panel. The
+// base game's own onCityYieldChanged filters on this same payload, so the shape
+// is known-good. No cityID means "might be ours" and is allowed through.
 function isForSelectedCity(data) {
   try {
     const id = data?.cityID;
@@ -101,10 +99,9 @@ function scheduleFocusPanelRebuild(data) {
   }
 }
 
-// On a focus change the base game already rebuilds the list itself
-// (panel-production-chooser dispatches its own TownFocusRefreshEvent), so
-// scheduling a second full rebuild here just doubled the cost of one click.
-// The yield bar still needs nudging, because that is ours.
+// The base game already dispatches its own TownFocusRefreshEvent on a focus
+// change, so rebuilding here too doubled the cost of one click. The yield bar
+// still needs nudging — that part is ours.
 function onGrowthModeChanged(data) {
   if (!isForSelectedCity(data)) return;
   try {
@@ -168,14 +165,10 @@ function buildModel(item) {
   return buildFocusModel(getTownCity(), projectTypeString(item.Root));
 }
 
-// Panel width is set BOTH here and in town-focus-section-decorator.css on
-// purpose: the sheet is
-// the declarative source, this inline set is the guarantee. The base panel
-// carries its own width utility classes, so if the sheet fails to load the panel
-// silently reverts to its much wider natural width.
-//
-// And because an inline style beats any stylesheet rule, the narrow-screen
-// fallback below CANNOT be a media query — it has to be decided here.
+// Set BOTH here and in the stylesheet on purpose: the base panel carries its own
+// width utility classes, so if the sheet fails to load it silently reverts to a
+// much wider natural width. And because inline beats any stylesheet rule, the
+// narrow-screen fallback below cannot be a media query.
 const ETFI_TOWN_FOCUS_WIDTH = 26;
 // On a narrow screen, fall back to the base game's own chooser-item width
 // (town-focus-chooser-item in panel-production-chooser.css) so the panel takes
@@ -188,16 +181,10 @@ const ETFI_NARROW_BREAKPOINT_REM = 71.1111;
 // 1080p, 900p and 720p alike — the UI does not shrink to fit smaller screens.
 const ETFI_FALLBACK_ROOT_FONT_PX = 18;
 
-// Width is chosen in rem-relative terms rather than raw pixels so that the
-// player's UI scale counts too: scaling the UI to 150% at 1080p squeezes the
-// layout exactly as much as running at 720p, and should narrow the panel for
-// the same reason.
-//
-// Cached, because getComputedStyle forces a style recalculation over the whole
-// UI tree and this used to run once per attaching card — ten forced recalcs
-// interleaved with ten DOM mutations, all computing the same number. Only
-// onViewportResize clears it, which is the only thing that can change it (the
-// engine dispatches resize on UI-scale changes too).
+// Measured in rem, not pixels, so UI scale counts: 150% at 1080p squeezes the
+// layout as much as 720p does. Cached because getComputedStyle forces a style
+// recalculation over the whole UI tree, and this ran once per attaching card.
+// Only onViewportResize clears it (the engine fires resize on scale changes).
 let cachedPanelWidthRem = null;
 function panelWidthRem() {
   if (cachedPanelWidthRem !== null) return cachedPanelWidthRem;
@@ -454,21 +441,12 @@ function etfiRender() {
   scheduleEtfiUpdate(this);
 }
 
-// Coalesce the burst of updates that one attach produces into a single rebuild.
+// One attach produces five rebuilds: render()'s own, plus postOnAttach replaying
+// all four data-* attributes the panel set before appendChild. Coalesce them.
 //
-// Component.postOnAttach() replays EVERY declared attribute that had a value
-// before attach, and panel-town-focus.js sets all four of
-// data-name/-description/-growth-type/-project-type before appendChild. Add
-// render()'s own update and each card was building its model FIVE times per
-// panel refresh, discarding four — roughly 5,000 engine calls where 1,000 would
-// do, plus five rounds of DOM teardown and rebuild.
-//
-// Coalescing per task rather than diffing the attribute values is deliberate:
-// the base game keeps ONE persistent summary card (TownFocusSection's
-// townFocusItem) and refreshes it by re-setting the same attribute values, which
-// still fires attributeChangedCallback. A value-based dirty check would skip
-// those and leave the summary card stale. A microtask runs before paint, so the
-// single rebuild still lands in the same frame.
+// Must coalesce per task, NOT diff the values: the base game refreshes its one
+// persistent summary card by re-setting identical attribute values, so a value
+// diff would skip it and leave it stale. Microtasks run before paint.
 function scheduleEtfiUpdate(item) {
   if (item._etfiUpdateQueued) return;
   item._etfiUpdateQueued = true;

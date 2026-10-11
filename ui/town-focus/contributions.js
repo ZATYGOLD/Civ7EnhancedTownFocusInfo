@@ -9,10 +9,9 @@
 //   header pills    -> foldByYield(list)
 //   breakdown rows  -> groupBySource(list)   (or sectionFrom(), which wraps it)
 //
-// So the header is BY CONSTRUCTION the sum of the rows beneath it. That is the
-// whole point: when the two were computed separately they drifted, which is how
-// Resort double-counted a Natural Wonder's +1/+1. The bug class is now
-// inexpressible.
+// So the header is BY CONSTRUCTION the sum of the rows beneath it. Computing
+// them separately is what let Resort double-count a Natural Wonder's +1/+1;
+// that bug class is now inexpressible.
 //
 // `source` IS the row — its fields are copied onto the rendered row verbatim:
 // `{ name, iconId, count }` for a grouped row, `{ items, subText }` for a
@@ -59,12 +58,10 @@ function addYield(yields, yieldType, value, props) {
 
 // Fold contributions into header pills — one per yield type, first-seen order.
 // Returns [{ yieldType, value }].
-// `alwaysTypes` are the yield types a focus reports even when nothing in the
-// town earns them, so the header reads "+0" instead of being empty. An absent
-// pill is ambiguous — it could mean zero, or that the mod failed to work
-// anything out — and "this focus would pay you nothing here" is exactly what
-// the player opened the panel to find out. Seeded first, so pill order stays
-// stable whether or not the town has qualifying sources.
+//
+// `alwaysTypes` are reported even at zero, so a focus that earns nothing here
+// reads "+0" rather than showing no pill (which could equally mean the mod
+// failed). Seeded first, so pill order is stable either way.
 export function foldByYield(list, alwaysTypes = null) {
   const yields = [];
   for (const t of alwaysTypes || []) addYield(yields, t, 0);

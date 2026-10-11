@@ -313,15 +313,12 @@ function isCurrentOrAgeless(type) {
   }
 }
 
-// A "Temple" for Relic-slot purposes is any building with a RELIC great-work
-// slot — catching civ-unique temple replacements without hardcoding civ types.
+// Any building with a RELIC great-work slot, so civ-unique temple replacements
+// count without hardcoding civ types.
 //
-// Built lazily and cached ONLY on success, same rule as the modifier caches.
-// This used to be a module-load IIFE, which meant that if
-// Constructible_GreatWorks wasn't populated yet the set froze at just
-// BUILDING_TEMPLE for the whole session — mis-bucketing quarters for Urban
-// Center and Religious Site, and under-counting Relic Slots, identically every
-// run so it wouldn't look like a race.
+// Lazy, and cached ONLY on success — as a module-load IIFE this froze to just
+// BUILDING_TEMPLE whenever the table wasn't populated yet, every run alike, so
+// it never looked like a race.
 let cachedRelicTempleTypes = null;
 function relicTempleTypes() {
   if (cachedRelicTempleTypes) return cachedRelicTempleTypes;
@@ -679,20 +676,18 @@ function isResortActive(city) {
   }
 }
 
-// What an improved Natural Wonder tile GAINS from the Resort focus. Two
-// modifiers apply: a flat +1 Happiness/Gold (appealing plots only) and +50% on
-// a fixed list of seven yield types. The flat lands in the base and the
-// percentage applies to the total, so effective = (base + flat) * 1.5 and:
+// What an improved Natural Wonder tile GAINS from the focus. A flat +1
+// Happiness/Gold (appealing plots only) lands in the base, then +50% applies to
+// the total, so effective = (base + flat) * 1.5 and:
 //
 //     contribution = base*0.5 + flat*1.5        (flat = 1 only when appealing)
 //
-// getYields() reports the tile as it stands, so base is recovered as
-// effective/1.5 - flat when Resort is active, or effective itself when not.
+// base is recovered from getYields() as effective/1.5 - flat when Resort is
+// active, or effective itself when not.
 //
 // VERIFIED IN-GAME: getYields() DOES include the town's own project modifiers,
-// so that branch is correct — toggling the focus gives matching numbers both
-// ways. Do NOT switch to getYieldsWithCity(): that is for evaluating a plot
-// against a city it does not belong to (placement previews), not owned tiles.
+// so that branch is right — toggling the focus gives matching numbers both ways.
+// Do NOT switch to getYieldsWithCity(): that is for plots a city does not own.
 //
 // Example: base 6 Culture / 3 Happiness / 0 Gold -> effective 9 / 6 / 1.5
 // -> contribution +3 Culture / +3 Happiness / +1.5 Gold.
@@ -777,11 +772,9 @@ function tileBuildingsAt(x, y) {
     const ids = MapConstructibles.getConstructibles(x, y) || [];
     for (const cid of ids) {
       const inst = Constructibles.getByComponentID(cid);
-      // `!inst.complete`, matching every other constructible scan in this file.
-      // This was `inst.complete === false`, which let a constructible with an
-      // undefined/0 `complete` through — so an in-progress building counted as
-      // a developed District for Resort while staying invisible to Urban
-      // Center, Religious Site and Fort.
+      // `!inst.complete`, matching every other scan here. Was `=== false`,
+      // which let an in-progress building count as a developed District for
+      // Resort while staying invisible to Urban Center, Religious Site and Fort.
       if (!inst || !inst.complete) continue;
       const def = GameInfo.Constructibles.lookup(inst.type);
       if (!def || def.ConstructibleClass !== "BUILDING") continue;

@@ -12,22 +12,19 @@
 import { ETFI_YIELDS, TOURISM_ICON, getResortData, getCurrentAgeType, hasGlobalismMastery, resortAppealingPerTile, getVictoryScoringPoints, composeWithFallback } from "../utilities/utilities-town-focus.js";
 import { contribution, fromGroups, foldByYield, sectionFrom } from "./contributions.js";
 
-// The per-tile Happiness/Gold amount comes from resortAppealingPerTile() in the
-// data layer, which already reads it for the Natural Wonder rows. Declaring the
-// modifier id a second time here let the two halves of one Resort preview drift
-// apart if only one copy was updated — exactly what contributions.js exists to
-// prevent.
+// Per-tile Happiness/Gold comes from resortAppealingPerTile() so the Appealing
+// rows and the Natural Wonder rows read one source — declaring the modifier id
+// twice let the two halves of a Resort preview drift apart.
 //
-// Tourism is NOT a project modifier — it is a victory-point tracker row in
+// Tourism is NOT a project modifier; it is a victory-point tracker row in
 // base-standard/data/victories.xml, activated by the Globalism civic.
 const SCORING_TOURISM = "VICTORY_TRACKER_RESORT_TOWN_TOURISM_MODERN";
 // Last-known-good (game 1.5.0), used only if the game data can't be read.
 const FALLBACK_TOURISM = 4;
 
-// The "7 developed Breathtaking tiles" requirement has NO representation in the
-// game data that could be located — it is not a GlobalParameter, a modifier
-// argument, or a VictoryScoringArgs row. It stays a constant until a source for
-// it is found; do not assume it is data-driven like the numbers above.
+// No source for this could be found in the game data — not a GlobalParameter,
+// modifier argument, or VictoryScoringArgs row. Unlike the numbers above, it is
+// genuinely a constant. Do not assume otherwise.
 const BREATHTAKING_MIN = 7;
 
 const HEX_ICON_CLASS = "general-appeal-legend-hex size-5 bg-contain bg-no-repeat";
@@ -139,10 +136,9 @@ export function buildResortModel(city) {
     ...sectionFrom(composeWithFallback("LOC_MOD_ETFI_IMPROVED", "Improved"), appealing)
   );
 
-  // Header folds the SAME contributions that built the rows, so it is always
-  // their sum. Tourism is the one deliberate exception: the row always renders
-  // (so the breakdown hover works before the town qualifies) but the pill by the
-  // focus name only appears once the requirements are met.
+  // Tourism is the one deliberate header/rows exception: the row always renders
+  // so the breakdown hover works before the town qualifies, but the pill by the
+  // focus name waits until the requirements are met.
   const header = foldByYield(
     [...appealing, ...(reqsMet ? tourismContributions : []), ...nwContributions],
     [ETFI_YIELDS.HAPPINESS, ETFI_YIELDS.GOLD],
