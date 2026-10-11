@@ -34,7 +34,6 @@
     <Replace Tag="LOC_MOD_ETFI_EXPAND_DETAILS" Language="ko_KR"><Text>세부 정보 펼치기</Text></Replace>
     <Replace Tag="LOC_MOD_ETFI_PRODUCTION_TO_GOLD" Language="ko_KR"><Text>마을의 모든 [icon:YIELD_PRODUCTION] 생산력이 [icon:YIELD_GOLD] 금으로 전환됩니다.</Text></Replace>
     <Replace Tag="LOC_MOD_ETFI_COMING_SOON" Language="ko_KR"><Text>출시 예정</Text></Replace>
-    <Replace Tag="LOC_MOD_ETFI_WALLS" Language="ko_KR"><Text>성벽</Text></Replace>
     <Replace Tag="LOC_MOD_ETFI_FORTIFICATIONS" Language="ko_KR"><Text>요새</Text></Replace>
   </LocalizedText>
 </Database>

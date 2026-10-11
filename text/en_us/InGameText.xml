@@ -25,7 +25,6 @@
     <Row Tag="LOC_MOD_ETFI_REQUIRES_GLOBALISM"><Text>Requires Globalism's Mastery</Text></Row>
 
     <!-- Fort Town -->
-    <Row Tag="LOC_MOD_ETFI_WALLS"><Text>Walls</Text></Row>
     <Row Tag="LOC_MOD_ETFI_FORTIFICATIONS"><Text>Fortifications</Text></Row>
 
     <!-- Settings -->

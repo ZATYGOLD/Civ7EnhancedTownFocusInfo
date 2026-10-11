@@ -1,23 +1,15 @@
 // SPDX-License-Identifier: GPL-3.0-only
 // Copyright (C) 2025-2026 Zatygold
-// File Path: ui/etfi-town-focus/hub-town.js
 //
-// Author: Zatygold
-//
-// Hub Town (PROJECT_TOWN_INN): +1 Influence per Settlement connected to this
-// Town. Two categories, each in its own panel:
-//   * Connected     - settlements this Town is connected to (earn the Influence),
-// (Only Connected is rendered; there is no Disconnected category.)
-// Each lists Cities and Towns with their totals; hovering "Cities" / "Towns"
-// reveals the settlement names.
+// Hub Town (PROJECT_TOWN_INN): Influence per connected Settlement. Only
+// connected settlements are listed; there is no Disconnected category.
 
-import { ETFI_YIELDS, getConnectedSettlements, getModifierAmount, composeWithFallback } from "../utilities/etfi-utilities.js";
+import { ETFI_YIELDS, getConnectedSettlements, getModifierAmount, composeWithFallback } from "../utilities/utilities-town-focus.js";
 import { contribution, foldByYield, sectionFrom } from "./contributions.js";
 
-// Modifier id from age-exploration / age-modern data/projects-gameeffects.xml
-// (both ages define it identically).
+// Exploration and Modern define this modifier identically, so either resolves.
 const MOD_INFLUENCE = "ATTACH_INFLUENCE_ON_INNS_IN_CITY_FROM_PROJECT";
-// Last-known-good (game 1.5.0), used only if the modifier row can't be read.
+// Game 1.5.0 value, used only if the modifier row can't be read.
 const FALLBACK_INFLUENCE = 1;
 function influencePer() {
   return getModifierAmount(MOD_INFLUENCE, "Amount", FALLBACK_INFLUENCE);
@@ -25,8 +17,7 @@ function influencePer() {
 
 const HUB_ICONS = { CITY: "CITY_URBAN", TOWN: "CITY_RURAL" };
 
-// One contribution per settlement kind: `names.length` settlements each earning
-// `per` Influence. Hovering the row lists each settlement on its own divided line.
+// One contribution per settlement kind; the tipModel lists the names on hover.
 function settlementContribution(iconId, label, names, per) {
   const source = { name: label, iconId, count: names.length };
   if (names.length) {
@@ -45,7 +36,7 @@ export function buildHubModel(city) {
   ];
 
   return {
-    header: foldByYield(contributions),
+    header: foldByYield(contributions, [ETFI_YIELDS.INFLUENCE]),
     rows: [],
     sections: sectionFrom(composeWithFallback("LOC_MOD_ETFI_CONNECTED", "Connected"), contributions),
     notes: [],

@@ -1,26 +1,47 @@
-# Enhanced Town Focus Info
+# Zatygold's Town Focus Info
 
 A mod for Civilization VII that enhances the display of town focus yield bonuses, showing detailed breakdowns of improvements, buildings, and trade routes that contribute to specialization bonuses.
+
+## Version 2.5.3
+
+### Fixes
+
+- **Fort Town's Gold is back on every fortification.** 2.5.0 removed it from Great Walls, Baileys, Mottes, Hillforts and Kasbahs because the description says "Fortified Districts". Testing in game shows they do earn it — the data applies all three bonuses to anything tagged as a fortification. Fort Town has been under-reported since 2.5.0. (The 2.5.0 note below is left as shipped rather than quietly rewritten.)
+- **A focus that pays nothing now says "+0".** Mining Town with no mines, Urban Center with no Quarters, and so on previously showed no pill at all, which could equally mean "zero" or "the mod failed".
+- **Unfinished buildings no longer count as finished.** One tile scan used a looser test than the rest, so a building under construction counted as a developed District for Resort while staying invisible to Urban Center, Religious Site and Fort.
+- **Civ-unique temples count reliably.** The Relic-slot building list was read once at load and froze to the base Temple alone if the game data wasn't ready yet, mis-sorting quarters and under-counting Relic Slots.
+
+### Performance
+
+- **Each card built its preview five times per refresh, now once.** The game replays a card's attributes after attaching it and every replay triggered a full rebuild, so four fifths of the work was discarded.
+- **A yield change in any settlement rebuilt the panel.** Now filtered to the town you're looking at.
+- **Picking a focus rebuilt the list twice.** The base game already does it.
+- Smaller: the panel width is measured once per resize instead of once per card (each measurement forced a full UI layout recalculation), the Globalism and Tourism lookups are cached, and the tile scans no longer build data nothing displays.
+
+### Maintenance
+
+- Folder layout follows the base game's conventions — `ui/components/` for shared rendering, `utilities-town-focus.js` for the data layer, `vendor/` for the vendored settings shim, and the stylesheet beside the component that loads it. Redundant `etfi-` filename prefixes dropped.
+- Added a release-staging script (the Workshop uploads the whole folder, so the repository was going to ship) and a checker that verifies the manifest against disk, that imports resolve, and that all nine languages match.
 
 ## Version 2.5.2
 
 ### What's New
 
-- **Every focus now reads its numbers from the game's own data.** Until now only Fort Town did; the other nine focuses carried hand-written values. Farming, Fishing, Mining and Trade Outpost read theirs from the warehouse-yield tables (which means a focus that pays a *different* amount for a particular improvement now shows that amount, instead of one flat number for the whole list); Hub, Religious Site, Urban Center, Factory Town and Resort Town read theirs from their project modifiers. A balance patch that changes any of these flows straight through to the preview.
-- **Resort Town's Tourism and Natural Wonder bonus are data-driven too.** The +50% wonder bonus comes from the project modifier and the Tourism value from the victory-point tables. The "7 developed Breathtaking tiles" requirement is the one number with no findable source in the game data, so it stays a constant — and is now labelled as such in the code.
-- **The Expand Details switch is smaller**, at 70% of the stock Options-screen size, so it sits comfortably in the panel header.
-- **The focus panel narrows on small screens.** The game's UI does not shrink below 1080p — a 720p screen renders everything at the same physical size with a third less room — so on narrow displays the panel now falls back to the width the base game lays out for, leaving more of the map visible. It follows your UI scale too, since scaling to 150% at 1080p squeezes the layout as much as running at 720p.
+- **Every focus reads its numbers from the game's own data.** Previously only Fort Town did. Farming, Fishing, Mining and Trade Outpost read theirs from the warehouse-yield tables, so a focus that pays a different amount for one improvement now shows that amount rather than one flat number; the rest read theirs from their project modifiers. Balance patches flow straight through.
+- **Resort Town's Tourism and +50% wonder bonus are data-driven too.** The "7 developed Breathtaking tiles" requirement is the one number with no findable source in the game data, so it stays a constant.
+- **The Expand Details switch is smaller**, at 70% of the stock Options-screen size.
+- **The panel narrows on small screens.** The game's UI doesn't shrink below 1080p, so a 720p screen gets the same physical size in a third less room. Follows your UI scale too.
 
 ### Compatibility
 
-- **The mod now checks the game's Town Focus component before patching it.** The mod works by wrapping four methods on the base focus card. If a future patch renames or removes one, the mod no longer wraps a missing method and breaks the panel in a hard-to-trace way: it reports which method is missing and disables just its own card changes, leaving the stock Town Focus panel working.
-- **The mod stops listening when the panel closes.** Two engine events that fire for every settlement in the game were subscribed for the whole session; they now follow the game's own attach/detach lifecycle, so no work is scheduled while the panel isn't open, and pending refreshes are cancelled rather than firing at a panel that has gone away.
+- **The mod checks the game's Town Focus component before patching it.** If a future patch renames one of the four methods it wraps, it now reports which one and disables only its own changes, leaving the stock panel working.
+- **It stops listening when the panel closes.** Two engine events were subscribed for the whole session; they now follow the game's attach/detach lifecycle.
 
 ### Maintenance
 
-- Styling now uses the game's own utility classes wherever the game provides an equivalent. What genuinely has no stock equivalent moved out of JavaScript into a real stylesheet, `ui/etfi-styles.css`, loaded through the engine's own stylesheet loader.
-- Added editor type-checking (`jsconfig.json`). It immediately found a missing engine global and two loose function signatures, all now fixed.
-- Game-data lookups are cached for the session. The modifier table has tens of thousands of rows and is scanned linearly, so reading it once per value — rather than once per focus, or once per tile — keeps the new data-driven numbers free.
+- Styling uses the game's own utility classes where equivalents exist; the rest moved out of JavaScript into a real stylesheet loaded through the engine's own loader.
+- Added editor type-checking (`jsconfig.json`), which immediately found a missing engine global and two loose signatures.
+- Game-data lookups are cached for the session — the modifier table is scanned linearly and has tens of thousands of rows.
 - The Options group is titled "Zatygold's Mods" in every language, so other mods sharing these settings sit under one heading.
 
 ## Version 2.5.1
@@ -287,7 +308,7 @@ A mod for Civilization VII that enhances the display of town focus yield bonuses
 
 ## Overview
 
-Enhanced Town Focus Info is a quality-of-life mod for Civilization VII that provides detailed breakdowns of yield bonuses when selecting town specializations. This mod enhances the tooltip display to show exactly how many buildings, improvements, and trade routes contribute to each specialization's bonuses.
+Zatygold's Town Focus Info is a quality-of-life mod for Civilization VII that provides detailed breakdowns of yield bonuses when selecting town specializations. This mod enhances the tooltip display to show exactly how many buildings, improvements, and trade routes contribute to each specialization's bonuses.
 
 ## Compatibility
 

@@ -1,41 +1,30 @@
 // SPDX-License-Identifier: GPL-3.0-only
 // Copyright (C) 2025-2026 Zatygold
-// File Path: ui/etfi-town-focus/resort-town.js
 //
-// Author: Zatygold
-//
-// Resort Town (PROJECT_TOWN_RESORT):
-//   * TOURISM category (top, separate panel): a single Breathtaking row
-//     (hex icon, developed/7, total Tourism pill). Hovering the "Breathtaking"
-//     text shows a tooltip with the Improvements / Districts breakdown. Tourism
-//     is colored only when all requirements are met (Modern, 7+ developed
-//     Breathtaking, Globalism's Mastery), and also appears next to the focus
-//     name when met. A "Requires Globalism's Mastery" note shows until met.
-//   * NATURAL WONDERS (below Tourism, above Improved): one row per wonder, with
-//     the tile count (x#) and +50% of the wonder's accumulated tile yields.
-//   * APPEALING tiles: only the Improved (worked) ones are listed, each earning
-//     +1 Happiness / +1 Gold. Improved Natural Wonder tiles are deliberately
-//     excluded here — their appealing bonus is already folded into the Natural
-//     Wonders rows above (see addNaturalWonderYields).
+// Resort Town (PROJECT_TOWN_RESORT), three categories:
+//   * TOURISM — one Breathtaking row, colored only once every requirement is met
+//     (Modern, 7+ developed Breathtaking, Globalism's Mastery).
+//   * NATURAL WONDERS — one row per wonder, +50% of its accumulated tile yields.
+//   * APPEALING — worked tiles earning +1 Happiness / +1 Gold. Improved Natural
+//     Wonder tiles are excluded; addNaturalWonderYields already folded their
+//     appealing bonus into the rows above.
 
-import { ETFI_YIELDS, TOURISM_ICON, getResortData, getCurrentAgeType, hasGlobalismMastery, getModifierAmount, getVictoryScoringPoints, composeWithFallback } from "../utilities/etfi-utilities.js";
+import { ETFI_YIELDS, TOURISM_ICON, getResortData, getCurrentAgeType, hasGlobalismMastery, resortAppealingPerTile, getVictoryScoringPoints, composeWithFallback } from "../utilities/utilities-town-focus.js";
 import { contribution, fromGroups, foldByYield, sectionFrom } from "./contributions.js";
 
-// The per-tile Happiness/Gold is a modifier Amount shared by both yields
-// (base-standard/data/projects-gameeffects.xml). The Natural Wonder bonus is a
-// Percent on a sibling modifier and is read inside addNaturalWonderYields.
-const MOD_PER_TILE = "ATTACH_RESORT_HAPPINESS_GOLD_FROM_PROJECT";
-// Tourism is NOT a project modifier — it is a victory-point tracker row in
+// Per-tile Happiness/Gold comes from resortAppealingPerTile() so the Appealing
+// rows and the Natural Wonder rows read one source — declaring the modifier id
+// twice let the two halves of a Resort preview drift apart.
+//
+// Tourism is NOT a project modifier; it is a victory-point tracker row in
 // base-standard/data/victories.xml, activated by the Globalism civic.
 const SCORING_TOURISM = "VICTORY_TRACKER_RESORT_TOWN_TOURISM_MODERN";
 // Last-known-good (game 1.5.0), used only if the game data can't be read.
-const FALLBACK_PER_TILE = 1;
 const FALLBACK_TOURISM = 4;
 
-// The "7 developed Breathtaking tiles" requirement has NO representation in the
-// game data that could be located — it is not a GlobalParameter, a modifier
-// argument, or a VictoryScoringArgs row. It stays a constant until a source for
-// it is found; do not assume it is data-driven like the numbers above.
+// No source for this could be found in the game data — not a GlobalParameter,
+// modifier argument, or VictoryScoringArgs row. Unlike the numbers above, it is
+// genuinely a constant. Do not assume otherwise.
 const BREATHTAKING_MIN = 7;
 
 const HEX_ICON_CLASS = "general-appeal-legend-hex size-5 bg-contain bg-no-repeat";
@@ -46,7 +35,7 @@ const NATURAL_WONDER_ICON = "IMPROVEMENT_EXPEDITION_BASE";
 export function buildResortModel(city) {
   const d = getResortData(city);
   const developed = d.breathtakingImprovements + d.breathtakingDistricts;
-  const PER_TILE = getModifierAmount(MOD_PER_TILE, "Amount", FALLBACK_PER_TILE);
+  const PER_TILE = resortAppealingPerTile();
   const TOURISM_PER = getVictoryScoringPoints(SCORING_TOURISM, FALLBACK_TOURISM);
 
   const isModern = getCurrentAgeType() === "AGE_MODERN";
@@ -121,11 +110,8 @@ export function buildResortModel(city) {
     ));
   }
 
-  // Natural Wonders — own panel below Tourism, above Improved. One row per
-  // wonder, with the tile count (x#) and its accumulated Resort contribution
-  // (+50% of the tile's yields, and the appealing +1/+1 already folded in by
-  // addNaturalWonderYields — which is why these tiles are deliberately NOT also
-  // counted in the Appealing category below).
+  // One row per wonder. addNaturalWonderYields already folded in the appealing
+  // +1/+1, which is why these tiles are NOT also counted as Appealing below.
   const nwContributions = [];
   for (const w of d.naturalWonders) {
     const source = { name: w.name, iconId: NATURAL_WONDER_ICON, count: w.count };
@@ -150,15 +136,13 @@ export function buildResortModel(city) {
     ...sectionFrom(composeWithFallback("LOC_MOD_ETFI_IMPROVED", "Improved"), appealing)
   );
 
-  // Header folds the SAME contributions that built the rows, so it is always
-  // their sum. Tourism is the one deliberate exception: the row always renders
-  // (so the breakdown hover works before the town qualifies) but the pill by the
-  // focus name only appears once the requirements are met.
-  const header = foldByYield([
-    ...appealing,
-    ...(reqsMet ? tourismContributions : []),
-    ...nwContributions,
-  ]);
+  // Tourism is the one deliberate header/rows exception: the row always renders
+  // so the breakdown hover works before the town qualifies, but the pill by the
+  // focus name waits until the requirements are met.
+  const header = foldByYield(
+    [...appealing, ...(reqsMet ? tourismContributions : []), ...nwContributions],
+    [ETFI_YIELDS.HAPPINESS, ETFI_YIELDS.GOLD],
+  );
 
   return { header, rows: [], sections, notes: [] };
 }

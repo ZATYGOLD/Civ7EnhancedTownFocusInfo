@@ -1,37 +1,27 @@
 // SPDX-License-Identifier: GPL-3.0-only
 // Copyright (C) 2025-2026 Zatygold
-// File Path: ui/etfi-town-focus/contributions.js
-//
-// Author: Zatygold
 //
 // The shared vocabulary every Town Focus model speaks.
 //
-// A focus preview is ONE list of contributions. A contribution is a single
-// evaluated rule result: `count` instances of `source`, each granting `amount`
-// of `yieldType`. The two views a focus needs are both folds over that one list:
+// A focus preview is ONE list of contributions — `count` instances of `source`,
+// each granting `amount` of `yieldType`. Both views are folds over that list:
 //
 //   header pills    -> foldByYield(list)
 //   breakdown rows  -> groupBySource(list)   (or sectionFrom(), which wraps it)
 //
-// Because both derive from the same list, the header total is BY CONSTRUCTION
-// the sum of the rows shown underneath it. That invariant is the point: when the
-// header and the rows were computed by separate code paths, they drifted — the
-// Resort counted an improved Natural Wonder's +1 Happiness/+1 Gold twice, and
-// Fort Town credited Gold to fortifications that don't earn it. Neither bug is
-// expressible in this shape.
+// So the header is BY CONSTRUCTION the sum of the rows beneath it. Computing
+// them separately is what let Resort double-count a Natural Wonder's +1/+1;
+// that bug class is now inexpressible.
 //
-// `source` is the ROW: its own fields are copied onto the rendered row verbatim,
-// so it carries whatever that row needs — `{ name, iconId, count }` for a simple
-// grouped row, `{ items, subText }` for a Quarter row, plus optional extras like
-// `tipModel`. Rows are merged by `source.key` when present, otherwise by
-// `source.name`. The contribution's own `count` is used ONLY for the arithmetic;
-// if the row should display a count, put it on the source too.
+// `source` IS the row — its fields are copied onto the rendered row verbatim:
+// `{ name, iconId, count }` for a grouped row, `{ items, subText }` for a
+// Quarter, plus extras like `tipModel`. Rows merge by `source.key`, else
+// `source.name`. A contribution's own `count` is arithmetic only; if the row
+// should display one, put it on the source too.
 //
-// `source: null` marks a town-wide bonus (e.g. Fort Town's flat +5 Healing to
-// units): it lands in the header but produces no breakdown row.
+// `source: null` is a town-wide bonus: header only, no breakdown row.
 //
-// This module is deliberately dependency-free — it is pure data shaping, so the
-// builders and the data layer can both use it without a cycle.
+// Deliberately dependency-free, so builders and the data layer can both use it.
 
 /**
  * One evaluated contribution.
@@ -68,8 +58,13 @@ function addYield(yields, yieldType, value, props) {
 
 // Fold contributions into header pills — one per yield type, first-seen order.
 // Returns [{ yieldType, value }].
-export function foldByYield(list) {
+//
+// `alwaysTypes` are reported even at zero, so a focus that earns nothing here
+// reads "+0" rather than showing no pill (which could equally mean the mod
+// failed). Seeded first, so pill order is stable either way.
+export function foldByYield(list, alwaysTypes = null) {
   const yields = [];
+  for (const t of alwaysTypes || []) addYield(yields, t, 0);
   for (const c of list || []) {
     if (!c || !c.yieldType) continue;
     addYield(yields, c.yieldType, valueOf(c), c.yieldProps);

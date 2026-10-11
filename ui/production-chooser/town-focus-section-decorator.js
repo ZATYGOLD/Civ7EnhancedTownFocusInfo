@@ -1,14 +1,15 @@
 // SPDX-License-Identifier: GPL-3.0-only
 // Copyright (C) 2025-2026 Zatygold
-// File Path: ui/production-chooser/etfi-town-focus-section.js
 //
-// Author: Zatygold
+// Reshapes the base game's Town Focus cards: yield pills on the name row and
+// the inline breakdown panels, plus the panel's Expand Details switch.
 
 import { ComponentUtilities } from "/core/ui-next/utilities/component-utilities.js";
+import { ComponentID } from "/core/ui/utilities/utilities-component-id.js";
 import { TownFocusChooserItem } from "/base-standard/ui/production-chooser/town-focus-section.js";
 import { TownFocusRefreshEvent } from "/base-standard/ui/production-chooser/panel-town-focus.js";
-import { getTownCity, composeWithFallback, isGrowthFocusEl } from "../utilities/etfi-utilities.js";
-import { getHideDetails, setHideDetails } from "../etfi-details/etfi-view-state.js";
+import { getTownCity, composeWithFallback, isGrowthFocusEl } from "../utilities/utilities-town-focus.js";
+import { getHideDetails, setHideDetails } from "../components/town-focus-view-state.js";
 import { ETFI_TOWN_FOCUS_TOOLTIP_STYLE } from "./town-focus-tooltip.js";
 import {
   yieldPill,
@@ -19,19 +20,19 @@ import {
   splitSectionsByPanel,
   clearChildren,
   ETFI_SECTION_CFG,
-} from "../etfi-details/etfi-render.js";
-import { buildFocusModel } from "../etfi-town-focus/focus-models.js";
+} from "../components/town-focus-rows.js";
+import { buildFocusModel } from "../town-focus/focus-models.js";
 
 // When the panel carries the `etfi-hide-details` class (toggled by the header
 // switch), every focus card's detail zones are hidden, leaving just the name
-// + yield pills. The hide state lives in the shared etfi-view-state module so
+// + yield pills. The hide state lives in the shared town-focus-view-state module so
 // the focus hover tooltip can read it too. Defaults to showing details.
 
 // The mod's stylesheet, loaded through the engine's own loader rather than an
 // injected <style> element. ComponentUtilities.loadStyles() de-duplicates, and
 // logs "style-cache: Error loading style - <url>" if the path is wrong, so a
 // bad path is diagnosable in the log instead of failing silently.
-ComponentUtilities.loadStyles("fs://game/EnhancedTownFocusInfoMod/ui/etfi-styles.css");
+ComponentUtilities.loadStyles("fs://game/EnhancedTownFocusInfoMod/ui/production-chooser/town-focus-section-decorator.css");
 
 // Fully rebuild the focus list. We reuse the base game's own refresh event (the
 // same path used when the panel reopens), which rebuilds every
@@ -39,8 +40,7 @@ ComponentUtilities.loadStyles("fs://game/EnhancedTownFocusInfoMod/ui/etfi-styles
 // previously garbled the layout.
 function refreshFocusPanel(fromEl) {
   try {
-    const panel = (fromEl && (fromEl.closest?.("panel-town-focus") || fromEl.getRootNode?.()?.querySelector?.("panel-town-focus")))
-      || document.querySelector("panel-town-focus");
+    const panel = findFocusPanel(fromEl);
     if (panel) {
       // Use the game's own exported event class rather than re-typing its name
       // and option flags — it stays correct if Firaxis renames either.
@@ -50,8 +50,6 @@ function refreshFocusPanel(fromEl) {
     console.error("[ETFI] refreshFocusPanel failed", e);
   }
 }
-
-// --- module-level focus-change listener ------------------------------------
 
 function refreshProductionYieldBar() {
   try {
@@ -63,15 +61,31 @@ function refreshProductionYieldBar() {
   } catch {}
 }
 
+// Without this, a yield change on ANY settlement rebuilt the whole panel. The
+// base game's own onCityYieldChanged filters on this same payload, so the shape
+// is known-good. No cityID means "might be ours" and is allowed through.
+function isForSelectedCity(data) {
+  try {
+    const id = data?.cityID;
+    if (!id) return true;
+    const selected = UI.Player?.getHeadSelectedCity?.();
+    if (!selected) return true;
+    return ComponentID.isMatch(selected, id);
+  } catch (e) {
+    console.error("[ETFI] could not compare event cityID; rebuilding anyway", e);
+    return true;
+  }
+}
+
 let etfiPanelRefreshTimer = null;
 let etfiYieldBarTimer = null;
-function scheduleFocusPanelRebuild() {
+function scheduleFocusPanelRebuild(data) {
+  if (!isForSelectedCity(data)) return;
   try {
     if (etfiPanelRefreshTimer) clearTimeout(etfiPanelRefreshTimer);
     etfiPanelRefreshTimer = setTimeout(() => {
       etfiPanelRefreshTimer = null;
-      // Only act when the production/town-focus panel is present (city panel open).
-      if (document.querySelector("panel-town-focus")) refreshFocusPanel(null);
+      refreshFocusPanel(null);
       refreshProductionYieldBar();
     }, 0);
     // Yields can recompute a frame later than the event; refresh again shortly.
@@ -85,24 +99,40 @@ function scheduleFocusPanelRebuild() {
   }
 }
 
+// The base game already dispatches its own TownFocusRefreshEvent on a focus
+// change, so rebuilding here too doubled the cost of one click. The yield bar
+// still needs nudging — that part is ours.
+function onGrowthModeChanged(data) {
+  if (!isForSelectedCity(data)) return;
+  try {
+    if (etfiYieldBarTimer) clearTimeout(etfiYieldBarTimer);
+    etfiYieldBarTimer = setTimeout(() => {
+      etfiYieldBarTimer = null;
+      refreshProductionYieldBar();
+    }, 120);
+  } catch (e) {
+    console.error("[ETFI] onGrowthModeChanged failed", e);
+  }
+}
+
 // --- engine subscription lifecycle -----------------------------------------
 //
-// These two engine events fire for EVERY settlement in the game, not just the
-// one on screen, so subscribing at module load meant scheduling rebuild work
-// for the whole session even with no panel open. Instead they follow the same
-// attach/detach lifecycle the game's own components use: the first focus card
-// to attach subscribes, the last one to detach unsubscribes and cancels any
-// timer still in flight. `attachedItems` is the reference count — focus cards
-// attach and detach as a group whenever the panel opens, closes, or refreshes.
-const ENGINE_EVENTS = ["CityGrowthModeChanged", "CityYieldChanged"];
+// These events fire for EVERY settlement, not just the one on screen, so
+// subscribing at module load scheduled rebuild work all session with no panel
+// open. They now follow attach/detach: the first card subscribes, the last to
+// detach unsubscribes and cancels any timer still in flight.
+const ENGINE_EVENTS = [
+  ["CityYieldChanged", scheduleFocusPanelRebuild],
+  ["CityGrowthModeChanged", onGrowthModeChanged],
+];
 let attachedItems = 0;
 let engineSubscribed = false;
 
 function subscribeEngineEvents() {
   if (engineSubscribed) return;
   engineSubscribed = true;
-  for (const ev of ENGINE_EVENTS) {
-    try { engine.on(ev, scheduleFocusPanelRebuild); }
+  for (const [ev, handler] of ENGINE_EVENTS) {
+    try { engine.on(ev, handler); }
     catch (e) { console.error("[ETFI] engine.on failed for", ev, e); }
   }
   try { window.addEventListener("resize", onViewportResize); }
@@ -112,8 +142,8 @@ function subscribeEngineEvents() {
 function unsubscribeEngineEvents() {
   if (!engineSubscribed) return;
   engineSubscribed = false;
-  for (const ev of ENGINE_EVENTS) {
-    try { engine.off(ev, scheduleFocusPanelRebuild); }
+  for (const [ev, handler] of ENGINE_EVENTS) {
+    try { engine.off(ev, handler); }
     catch (e) { console.error("[ETFI] engine.off failed for", ev, e); }
   }
   try { window.removeEventListener("resize", onViewportResize); }
@@ -123,8 +153,6 @@ function unsubscribeEngineEvents() {
   if (etfiPanelRefreshTimer) { clearTimeout(etfiPanelRefreshTimer); etfiPanelRefreshTimer = null; }
   if (etfiYieldBarTimer) { clearTimeout(etfiYieldBarTimer); etfiYieldBarTimer = null; }
 }
-
-// --- model dispatch --------------------------------------------------------
 
 function projectTypeString(root) {
   const pt = root.getAttribute("data-project-type");
@@ -137,18 +165,10 @@ function buildModel(item) {
   return buildFocusModel(getTownCity(), projectTypeString(item.Root));
 }
 
-// --- panel width constraint ------------------------------------------------
-
-// The panel width. Set BOTH here and in etfi-styles.css on purpose: the
-// stylesheet rule is the declarative source of truth, and this inline set is
-// the guarantee. The panel is built by the base game with its own width utility
-// classes, and if the stylesheet ever fails to load the panel silently falls
-// back to its natural (much wider) content width — a visible regression rather
-// than a caught error. Inline styles win over both.
-//
-// Because the inline set wins, the narrow-screen fallback below CANNOT be a CSS
-// media query — an inline style beats any stylesheet rule. It has to be decided
-// here.
+// Set BOTH here and in the stylesheet on purpose: the base panel carries its own
+// width utility classes, so if the sheet fails to load it silently reverts to a
+// much wider natural width. And because inline beats any stylesheet rule, the
+// narrow-screen fallback below cannot be a media query.
 const ETFI_TOWN_FOCUS_WIDTH = 26;
 // On a narrow screen, fall back to the base game's own chooser-item width
 // (town-focus-chooser-item in panel-production-chooser.css) so the panel takes
@@ -161,22 +181,24 @@ const ETFI_NARROW_BREAKPOINT_REM = 71.1111;
 // 1080p, 900p and 720p alike — the UI does not shrink to fit smaller screens.
 const ETFI_FALLBACK_ROOT_FONT_PX = 18;
 
-// Width is chosen in rem-relative terms rather than raw pixels so that the
-// player's UI scale counts too: scaling the UI to 150% at 1080p squeezes the
-// layout exactly as much as running at 720p, and should narrow the panel for
-// the same reason.
+// Measured in rem, not pixels, so UI scale counts: 150% at 1080p squeezes the
+// layout as much as 720p does. Cached because getComputedStyle forces a style
+// recalculation over the whole UI tree, and this ran once per attaching card.
+// Only onViewportResize clears it (the engine fires resize on scale changes).
+let cachedPanelWidthRem = null;
 function panelWidthRem() {
+  if (cachedPanelWidthRem !== null) return cachedPanelWidthRem;
+  let width = ETFI_TOWN_FOCUS_WIDTH;
   try {
     const px = parseFloat(getComputedStyle(document.documentElement).fontSize);
     const rootFontPx = Number.isFinite(px) && px > 0 ? px : ETFI_FALLBACK_ROOT_FONT_PX;
     const viewportRem = window.innerWidth / rootFontPx;
-    return viewportRem <= ETFI_NARROW_BREAKPOINT_REM
-      ? ETFI_TOWN_FOCUS_WIDTH_NARROW
-      : ETFI_TOWN_FOCUS_WIDTH;
+    if (viewportRem <= ETFI_NARROW_BREAKPOINT_REM) width = ETFI_TOWN_FOCUS_WIDTH_NARROW;
   } catch (e) {
     console.error("[ETFI] could not measure the viewport; using the full panel width", e);
-    return ETFI_TOWN_FOCUS_WIDTH;
   }
+  cachedPanelWidthRem = width;
+  return width;
 }
 
 function applyPanelWidth(panel) {
@@ -208,14 +230,13 @@ function constrainPanelWidth(fromEl) {
 // so this one listener covers both ways the viewport's rem width can change.
 function onViewportResize() {
   try {
+    cachedPanelWidthRem = null;
     applyPanelWidth(findFocusPanel(null));
   } catch (e) {
     console.error("[ETFI] panel width resize handler failed", e);
   }
 }
 
-// Static hover label for the details checkbox. Checked expands the details
-// inline on each focus; unchecked moves them into the hover tooltip.
 function expandDetailsLabel() {
   return composeWithFallback("LOC_MOD_ETFI_EXPAND_DETAILS", "Expand Details");
 }
@@ -226,9 +247,7 @@ function expandDetailsLabel() {
 // each card's detail zones into the hover tooltip instead.
 function ensureHideToggle(fromEl) {
   try {
-    const panel = fromEl?.closest?.("panel-town-focus")
-      || fromEl?.getRootNode?.()?.querySelector?.("panel-town-focus")
-      || document.querySelector("panel-town-focus");
+    const panel = findFocusPanel(fromEl);
     if (!panel) return;
     panel.classList.toggle("etfi-hide-details", getHideDetails());
 
@@ -244,8 +263,6 @@ function ensureHideToggle(fromEl) {
     // component-value-changed event as fxs-checkbox, so this is a drop-in swap —
     // it just reads as a toggle, matching the mod's Options entries.
     const toggle = document.createElement("fxs-switch");
-    // On = expand Details inline (the default); off moves them to the hover
-    // tooltip.
     toggle.setAttribute("selected", getHideDetails() ? "false" : "true");
     toggle.setAttribute("data-tooltip-content", expandDetailsLabel());
     toggle.addEventListener("component-value-changed", (/** @type {CustomEvent} */ e) => {
@@ -255,22 +272,18 @@ function ensureHideToggle(fromEl) {
     });
 
     const row = document.createElement("div");
-    // The id is also the stylesheet hook that positions the row and scales the
-    // switch — see etfi-styles.css.
     row.id = "etfi-hide-details-row";
     row.className = "flex flex-row items-center";
     row.appendChild(toggle);
 
-    // Place the checkbox OUT of the normal flow so it doesn't add a row that
-    // pushes the focus list down. The panel Root is already position:relative
-    // (and the close button is anchored to it at top-right), so anchor the
-    // checkbox to the Root's top-left corner — mirroring the close button. We do
-    // NOT position the content itself: that would paint the content over the
-    // close button and make it unclickable. Fall back to a header row if needed.
+    // Anchored out of normal flow so it adds no row that pushes the list down,
+    // mirroring the close button at the opposite corner. Do NOT position the
+    // content itself — that paints over the close button and blocks clicks.
     const header = panel.querySelector("fxs-header");
     const content = header?.parentElement;
     if (content) {
-      // .etfi-anchored carries the absolute placement (etfi-styles.css); the
+      // .etfi-anchored carries the absolute placement
+      // (town-focus-section-decorator.css); the
       // fallback branch below deliberately stays in normal flow.
       row.classList.add("etfi-anchored");
       content.appendChild(row);
@@ -300,16 +313,11 @@ function hideDescription(item) {
 
 // --- prototype patch -------------------------------------------------------
 //
-// The mod works by wrapping three TownFocusChooserItem methods. That is the
-// only way to reshape the base game's focus cards, but it is also the mod's
-// most brittle contact point: if a game patch renames or removes one of these,
-// the wrapper silently wraps `undefined` and the panel breaks in a way that is
-// hard to trace back here.
-//
-// So the contract is verified up front. A missing method is reported once, by
-// name, and the patch is skipped entirely — the player gets the stock,
-// unmodified Town Focus panel instead of a half-patched broken one, and the log
-// says exactly which method to look at.
+// Wrapping TownFocusChooserItem is the only way to reshape the base cards, and
+// the mod's most brittle contact point: if a patch renames one of these, the
+// wrapper wraps `undefined` and the panel breaks far from the cause. So the
+// contract is checked up front — a missing method is named in the log and the
+// patch is skipped entirely, leaving the stock panel working.
 const REQUIRED_METHODS = ["render", "onAttach", "onDetach", "onAttributeChanged"];
 
 function verifyBaseContract() {
@@ -327,7 +335,7 @@ function verifyBaseContract() {
       "[ETFI] TownFocusChooserItem is missing expected method(s):", missing.join(", ") +
       ". The mod's focus-card patch is disabled so the stock panel keeps working. " +
       "This usually means a game patch renamed them; update REQUIRED_METHODS and the " +
-      "wrappers in ui/production-chooser/etfi-town-focus-section.js to match.",
+      "wrappers in ui/production-chooser/town-focus-section-decorator.js to match.",
     );
     return false;
   }
@@ -347,8 +355,6 @@ function etfiOnAttach() {
   attachedItems++;
   subscribeEngineEvents();
   if (baseOnAttach) baseOnAttach.call(this);
-  // Now that the item is in the DOM, pin the panel width and ensure the
-  // hide-details checkbox is present.
   constrainPanelWidth(this.Root);
   ensureHideToggle(this.Root);
 }
@@ -368,7 +374,6 @@ function etfiRender() {
 
   const growth = isGrowthFocusEl(this.Root);
 
-  // Hide the inline focus description for every focus.
   hideDescription(this);
 
   // Growing Town keeps the base card layout — no yield pills, detail panels, or
@@ -381,14 +386,11 @@ function etfiRender() {
 
   const inSummary = !!this.Root.closest("town-focus-section");
 
-  // Shrink the focus icon (base is size-16 = 4rem) for a more compact card.
   try {
     this.projectIconElement.classList.remove("size-16");
     this.projectIconElement.classList.add("size-12");
   } catch {}
 
-  // flex-auto / min-w-0 / truncate are the game's own utility classes and are
-  // exact equivalents of the inline styles they replace.
   try {
     infoContainer.classList.remove("flex-initial");
     infoContainer.classList.add("flex-auto", "min-w-0");
@@ -401,8 +403,6 @@ function etfiRender() {
   this.nameElement.classList.add("text-left", "flex-auto", "min-w-0", "truncate");
 
   this.etfiYields = document.createElement("div");
-  // Pills stack in rows of at most 3 (see etfiUpdate), right-aligned. The
-  // margin nudges them off the right edge of the card (see etfi-styles.css).
   this.etfiYields.className = "etfi-name-pills flex flex-col items-end shrink-0";
 
   nameRow.append(this.nameElement, this.etfiYields);
@@ -424,8 +424,6 @@ function etfiRender() {
       topRow.appendChild(this.projectIconElement);
       topRow.appendChild(infoContainer);
       container.classList.remove("flex-row");
-      // etfi-card-pad trims the base container's p-3 horizontal padding so the
-      // focus icon sits closer to the left edge of the card (etfi-styles.css).
       container.classList.add("flex-col", "w-full", "etfi-card-pad");
       container.appendChild(topRow);
       container.appendChild(this.etfiTop);
@@ -438,26 +436,43 @@ function etfiRender() {
     }
   }
 
-  this.etfiUpdate();
+  // Scheduled, not called directly, so render() and the postOnAttach attribute
+  // replay that follows it collapse into one rebuild.
+  scheduleEtfiUpdate(this);
+}
+
+// One attach produces five rebuilds: render()'s own, plus postOnAttach replaying
+// all four data-* attributes the panel set before appendChild. Coalesce them.
+//
+// Must coalesce per task, NOT diff the values: the base game refreshes its one
+// persistent summary card by re-setting identical attribute values, so a value
+// diff would skip it and leave it stale. Microtasks run before paint.
+function scheduleEtfiUpdate(item) {
+  if (item._etfiUpdateQueued) return;
+  item._etfiUpdateQueued = true;
+  queueMicrotask(() => {
+    item._etfiUpdateQueued = false;
+    try { item.etfiUpdate(); }
+    catch (e) { console.error("[ETFI] etfiUpdate failed", e); }
+  });
 }
 
 function etfiOnAttributeChanged(name, oldValue, newValue) {
   baseOnAttributeChanged.call(this, name, oldValue, newValue);
-  if (
-    name === "data-project-type" ||
-    name === "data-growth-type" ||
-    name === "data-name" ||
-    name === "data-description"
-  ) {
-    this.etfiUpdate();
+  // These two don't affect the model; they only need the base description
+  // re-hidden, which is cheap and must not wait for a microtask.
+  if (name === "data-name" || name === "data-description") {
+    hideDescription(this);
+    return;
+  }
+  if (name === "data-project-type" || name === "data-growth-type") {
+    scheduleEtfiUpdate(this);
   }
 }
 
 function etfiUpdate() {
   const growth = isGrowthFocusEl(this.Root);
 
-  // Keep the inline description hidden (re-asserted here since the summary item
-  // is reused across focus changes).
   hideDescription(this);
 
   if (!this.etfiYields) return;
@@ -473,8 +488,6 @@ function etfiUpdate() {
 
   const model = buildModel(this) || { header: [], rows: [], sections: [], notes: [] };
 
-  // Header pills next to the focus name. Merge duplicate yield types into one
-  // pill by summing their values (first-seen order is preserved).
   clearChildren(this.etfiYields);
   const headerMerged = [];
   const headerByType = new Map();
@@ -490,8 +503,7 @@ function etfiUpdate() {
       headerMerged.push(entry);
     }
   }
-  // Lay the pills out in rows of at most 3 so they don't crowd / overlap the
-  // focus name; a 4th+ pill wraps to a new line.
+  // Rows of at most 3 so the pills don't crowd the focus name.
   appendPillRows(this.etfiYields, headerMerged.map((y) => yieldPill(y)));
   this.etfiYields.classList.toggle("hidden", this.etfiYields.childElementCount === 0);
 
@@ -501,19 +513,15 @@ function etfiUpdate() {
   const flat = (model.rows || []).filter(Boolean);
   const notes = (model.notes || []).filter(Boolean);
 
-  // Top zone: top sections, each its own panel.
   const lastTop = renderSectionPanels(this.etfiTop, topSecs, ETFI_SECTION_CFG);
 
-  // Base panel: any flat (untitled) rows.
   const base = this.etfiDetails;
   clearChildren(base);
   if (flat.length) appendRows(base, flat, ETFI_SECTION_CFG);
   base.classList.toggle("hidden", base.childElementCount === 0);
 
-  // Bottom zone: middle (default) sections then bottom sections, each its own panel.
   const lastBottom = renderSectionPanels(this.etfiBottom, [...midSecs, ...bottomSecs], ETFI_SECTION_CFG);
 
-  // Top-level notes attach to the last rendered panel (falling back to base).
   if (notes.length) {
     let host = lastBottom || (base.childElementCount ? base : null) || lastTop;
     if (!host) host = base;
@@ -524,9 +532,7 @@ function etfiUpdate() {
 
 // --- install ---------------------------------------------------------------
 //
-// The single place the mod takes over the base component. If the contract check
-// at the top of this section failed, nothing is installed and the stock Town
-// Focus panel is left exactly as the game built it.
+// The single place the mod takes over the base component.
 if (contractOk) {
   TownFocusChooserItem.prototype.onAttach = etfiOnAttach;
   TownFocusChooserItem.prototype.onDetach = etfiOnDetach;

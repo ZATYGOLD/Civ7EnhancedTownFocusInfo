@@ -1,26 +1,18 @@
 // SPDX-License-Identifier: GPL-3.0-only
 // Copyright (C) 2025-2026 Zatygold
-// File Path: ui/etfi-details/etfi-tooltip-section-description.js
 //
-// Author: Zatygold
+// Owns the focus description block for the Town Focus tooltip. A separate
+// element so the description renders self-contained without modifying the base
+// game's shared tooltip type.
 //
-// <etfi-tooltip-section-description> — a custom container element for the Town
-// Focus tooltip that owns the focus DESCRIPTION block (the same description text
-// shown by the inline focus list). The custom tooltip
-// (ui/production-chooser/town-focus-tooltip.js) instantiates it and feeds it the
-// description, so the description renders as a self-contained element below the
-// tooltip header without touching the base game's shared tooltip type.
-//
-// DATA FLOW: the tooltip sets the text on `element.etfiDescription` and bumps the
-// observed `data-rev` attribute to trigger a re-render. render() resolves the
-// text (a LOC key or composed string) and stylizes it into `contentDiv`.
+// town-focus-tooltip.js sets the text on `element.etfiDescription` and bumps the
+// observed `data-rev` attribute to trigger a re-render.
 
-import { applyListSpacing } from "./etfi-render.js";
+import { applyListSpacing } from "./town-focus-rows.js";
 
 const ETFI_TOWN_FOCUS_SECTION_DESCRIPTION = "etfi-tooltip-section-description";
 
 class EtfiTooltipSectionDescription extends Component {
-  // Single content node so a re-render can wipe and rebuild cleanly.
   contentDiv = document.createElement("p");
 
   onInitialize() {
@@ -38,13 +30,10 @@ class EtfiTooltipSectionDescription extends Component {
     }
   }
 
-  // The description text the tooltip handed us (may be undefined before set).
   get description() {
     return this.Root.etfiDescription ?? "";
   }
 
-  // Resolve (compose a LOC key; no-op for plain text), stylize for icons/markup,
-  // and apply the base game's list/paragraph spacing pass. Hide when empty.
   render() {
     const text = this.description;
     if (!text) {
@@ -55,7 +44,7 @@ class EtfiTooltipSectionDescription extends Component {
     this.Root.classList.remove("hidden");
     this.contentDiv.innerHTML = Locale.stylize(Locale.compose(text));
 
-    // Same paragraph/list spacing pass the base project tooltip uses.
+    // The same spacing pass the base project tooltip applies.
     applyListSpacing(this.contentDiv);
   }
 }

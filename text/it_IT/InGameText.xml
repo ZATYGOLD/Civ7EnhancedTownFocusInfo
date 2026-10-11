@@ -34,7 +34,6 @@
     <Replace Tag="LOC_MOD_ETFI_EXPAND_DETAILS" Language="it_IT"><Text>Espandi dettagli</Text></Replace>
     <Replace Tag="LOC_MOD_ETFI_PRODUCTION_TO_GOLD" Language="it_IT"><Text>Tutta la[icon:YIELD_PRODUCTION] Produzione del centro è convertita in[icon:YIELD_GOLD] Oro.</Text></Replace>
     <Replace Tag="LOC_MOD_ETFI_COMING_SOON" Language="it_IT"><Text>Prossimamente</Text></Replace>
-    <Replace Tag="LOC_MOD_ETFI_WALLS" Language="it_IT"><Text>Mura</Text></Replace>
     <Replace Tag="LOC_MOD_ETFI_FORTIFICATIONS" Language="it_IT"><Text>Fortificazioni</Text></Replace>
   </LocalizedText>
 </Database>
