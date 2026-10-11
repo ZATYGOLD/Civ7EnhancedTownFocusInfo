@@ -4,7 +4,7 @@
 // Mining Town (PROJECT_TOWN_PRODUCTION). Only Improved (worked) tiles are
 // listed — they are the ones that earn the Production.
 
-import { ETFI_YIELDS, getFocusImprovements, warehouseAmountResolver, composeWithFallback } from "../utilities/etfi-utilities.js";
+import { ETFI_YIELDS, getFocusImprovements, warehouseAmountResolver, composeWithFallback } from "../utilities/utilities-town-focus.js";
 import { fromGroups, foldByYield, sectionFrom } from "./contributions.js";
 
 // A "warehouse" focus: the amount lives on the Warehouse_YieldChanges rows the

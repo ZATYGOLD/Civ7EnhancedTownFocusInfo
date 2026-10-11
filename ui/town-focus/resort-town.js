@@ -9,7 +9,7 @@
 //     Wonder tiles are excluded; addNaturalWonderYields already folded their
 //     appealing bonus into the rows above.
 
-import { ETFI_YIELDS, TOURISM_ICON, getResortData, getCurrentAgeType, hasGlobalismMastery, resortAppealingPerTile, getVictoryScoringPoints, composeWithFallback } from "../utilities/etfi-utilities.js";
+import { ETFI_YIELDS, TOURISM_ICON, getResortData, getCurrentAgeType, hasGlobalismMastery, resortAppealingPerTile, getVictoryScoringPoints, composeWithFallback } from "../utilities/utilities-town-focus.js";
 import { contribution, fromGroups, foldByYield, sectionFrom } from "./contributions.js";
 
 // The per-tile Happiness/Gold amount comes from resortAppealingPerTile() in the

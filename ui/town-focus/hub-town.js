@@ -4,7 +4,7 @@
 // Hub Town (PROJECT_TOWN_INN): Influence per connected Settlement. Only
 // connected settlements are listed; there is no Disconnected category.
 
-import { ETFI_YIELDS, getConnectedSettlements, getModifierAmount, composeWithFallback } from "../utilities/etfi-utilities.js";
+import { ETFI_YIELDS, getConnectedSettlements, getModifierAmount, composeWithFallback } from "../utilities/utilities-town-focus.js";
 import { contribution, foldByYield, sectionFrom } from "./contributions.js";
 
 // Exploration and Modern define this modifier identically, so either resolves.

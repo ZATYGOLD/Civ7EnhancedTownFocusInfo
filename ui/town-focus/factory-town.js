@@ -5,7 +5,7 @@
 // range pills. The listed Factory Resources are informational and carry no
 // yields. The purchase discount is omitted — the project description has it.
 
-import { RESOURCE_ICON, getFactoryResources, tradeRangePill, getModifierAmount, composeWithFallback } from "../utilities/etfi-utilities.js";
+import { RESOURCE_ICON, getFactoryResources, tradeRangePill, getModifierAmount, composeWithFallback } from "../utilities/utilities-town-focus.js";
 import { contribution, fromGroups, foldByYield, sectionFrom } from "./contributions.js";
 
 // The trade-range bonus shares its modifiers with Trade Outpost and is read in

@@ -8,6 +8,7 @@
 		<AffectsSavedGames>0</AffectsSavedGames>
 		<Version>2.5.3</Version>
 		<LastUpdated>2026-10-11</LastUpdated>
+		<URL>https://github.com/ZATYGOLD/Civ7EnhancedTownFocusInfo</URL>
 	</Properties>
 	<Dependencies>
 		<Mod id="base-standard" title="LOC_MODULE_BASE_STANDARD_NAME" />
@@ -19,6 +20,8 @@
 		<Criteria id="always"><AlwaysMet/></Criteria>
 	</ActionCriteria>
 	<ActionGroups>
+		<!-- LoadOrder 1100 puts this after base-standard's own post-process pass
+		     (999), so the Town Focus panel exists before the mod patches it. -->
 		<ActionGroup id="etfi-shell" scope="shell" criteria="always">
 			<Properties>
 				<LoadOrder>1100</LoadOrder>
@@ -36,7 +39,7 @@
 					<Item locale="zh_Hant_HK">text/zh_Hant_HK/InGameText.xml</Item>
 				</UpdateText>
 				<UIScripts>
-					<Item>core/settings.js</Item>
+					<Item>vendor/settings.js</Item>
 					<Item>ui/settings-init.js</Item>
 				</UIScripts>
 			</Actions>
@@ -45,28 +48,28 @@
 			<Properties><LoadOrder>1100</LoadOrder></Properties>
 			<Actions>
 				<ImportFiles>
-					<Item>ui/etfi-styles.css</Item>
+					<Item>ui/production-chooser/town-focus-section-decorator.css</Item>
 				</ImportFiles>
 				<UIScripts>
-					<Item>core/settings.js</Item>
+					<Item>vendor/settings.js</Item>
 					<Item>ui/settings-init.js</Item>
-					<Item>ui/utilities/etfi-utilities.js</Item>
-					<Item>ui/etfi-town-focus/contributions.js</Item>
-					<Item>ui/etfi-town-focus/farm-fish-towns.js</Item>
-					<Item>ui/etfi-town-focus/mining-town.js</Item>
-					<Item>ui/etfi-town-focus/trade-town.js</Item>
-					<Item>ui/etfi-town-focus/hub-town.js</Item>
-					<Item>ui/etfi-town-focus/temple-town.js</Item>
-					<Item>ui/etfi-town-focus/urban-town.js</Item>
-					<Item>ui/etfi-town-focus/fort-town.js</Item>
-					<Item>ui/etfi-town-focus/resort-town.js</Item>
-					<Item>ui/etfi-town-focus/factory-town.js</Item>
-					<Item>ui/etfi-town-focus/focus-models.js</Item>
-					<Item>ui/etfi-details/etfi-render.js</Item>
-					<Item>ui/etfi-details/etfi-view-state.js</Item>
-					<Item>ui/etfi-details/etfi-tooltip-section-description.js</Item>
+					<Item>ui/utilities/utilities-town-focus.js</Item>
+					<Item>ui/town-focus/contributions.js</Item>
+					<Item>ui/town-focus/farm-fish-towns.js</Item>
+					<Item>ui/town-focus/mining-town.js</Item>
+					<Item>ui/town-focus/trade-town.js</Item>
+					<Item>ui/town-focus/hub-town.js</Item>
+					<Item>ui/town-focus/temple-town.js</Item>
+					<Item>ui/town-focus/urban-town.js</Item>
+					<Item>ui/town-focus/fort-town.js</Item>
+					<Item>ui/town-focus/resort-town.js</Item>
+					<Item>ui/town-focus/factory-town.js</Item>
+					<Item>ui/town-focus/focus-models.js</Item>
+					<Item>ui/components/town-focus-rows.js</Item>
+					<Item>ui/components/town-focus-view-state.js</Item>
+					<Item>ui/components/etfi-tooltip-section-description.js</Item>
 					<Item>ui/production-chooser/town-focus-tooltip.js</Item>
-					<Item>ui/production-chooser/etfi-town-focus-section.js</Item>
+					<Item>ui/production-chooser/town-focus-section-decorator.js</Item>
 				</UIScripts>
 				<UpdateText>
 					<Item>text/en_us/InGameText.xml</Item>

@@ -5,7 +5,7 @@
 // settlement remembers its own choice. Its own module so the panel section and
 // the focus hover tooltip need not import each other.
 
-import { ETFI_Settings } from "../../core/settings.js";
+import { ETFI_Settings } from "../../vendor/settings.js";
 
 const hidden = new Map();
 

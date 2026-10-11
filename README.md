@@ -22,6 +22,11 @@ A mod for Civilization VII that enhances the display of town focus yield bonuses
 - **Picking a focus rebuilt the list twice.** The base game already rebuilds it on a focus change; the mod was scheduling a second, identical rebuild straight after.
 - Smaller savings: the panel width is measured once per resolution change rather than once per card (each measurement forced the game to recalculate its whole UI layout), the Globalism unlock check and the Tourism value no longer re-scan game tables on every Resort preview, and the tile scans no longer build and discard data nothing displays.
 
+### Maintenance
+
+- The folder layout now follows the base game's own conventions: shared rendering lives in `ui/components/` (the game's name for a render kit), the data layer is `ui/utilities/utilities-town-focus.js` (matching `base-standard/ui/utilities/`), the vendored settings shim moved out of a folder called `core` — which is an engine module name — into `vendor/`, and the stylesheet sits beside the component that loads it. Redundant `etfi-` filename prefixes are gone; the game namespaces by path, not by filename.
+- Added a release-staging script, because Steam Workshop uploads the whole folder regardless of what the manifest lists — the repository and its dev files were going to ship. Added a checker that verifies every script on disk is registered in the manifest, that imports resolve, and that all nine languages define the same keys.
+
 ### What's New
 
 - **Every focus now reads its numbers from the game's own data.** Until now only Fort Town did; the other nine focuses carried hand-written values. Farming, Fishing, Mining and Trade Outpost read theirs from the warehouse-yield tables (which means a focus that pays a *different* amount for a particular improvement now shows that amount, instead of one flat number for the whole list); Hub, Religious Site, Urban Center, Factory Town and Resort Town read theirs from their project modifiers. A balance patch that changes any of these flows straight through to the preview.

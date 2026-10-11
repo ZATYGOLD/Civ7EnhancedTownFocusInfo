@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: GPL-3.0-only
  * Copyright (C) 2025-2026 Zatygold
- * File Path: ui/etfi-styles.css
+ * File Path: ui/production-chooser/town-focus-section-decorator.css
  *
  * Author: Zatygold
  *
@@ -10,7 +10,7 @@
  * redefined here.
  *
  * Loaded at runtime through the engine's own stylesheet loader,
- * ComponentUtilities.loadStyles() — see ui/production-chooser/etfi-town-focus-section.js.
+ * ComponentUtilities.loadStyles() — see ui/production-chooser/town-focus-section-decorator.js.
  */
 
 /* --- Town Focus panel ---------------------------------------------------- */
@@ -23,7 +23,7 @@
  * element selectors below (0,0,1) no matter which stylesheet loads last.
  * Without it the panel falls back to its natural, wider content size.
  *
- * NOTE: this is the default only. etfi-town-focus-section.js sets the width
+ * NOTE: this is the default only. town-focus-section-decorator.js sets the width
  * inline — which wins over this rule — and narrows the panel below the game's
  * 71.1111rem small-screen breakpoint. There is no media query here on purpose:
  * an inline style beats any stylesheet rule, so the decision has to live in JS

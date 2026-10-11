@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 // Copyright (C) 2025-2026 Zatygold
 //
-// Shared by the inline focus list (etfi-town-focus-section.js) and the focus
+// Shared by the inline focus list (town-focus-section-decorator.js) and the focus
 // hover tooltip (town-focus-tooltip.js) so the focus math lives in one place.
 
 import { buildFoodModel } from "./farm-fish-towns.js";

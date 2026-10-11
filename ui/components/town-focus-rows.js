@@ -27,11 +27,12 @@
 //   }
 
 import { Pill } from "/base-standard/ui-next/components/pills.js";
-import { ETFI_Settings } from "../../core/settings.js";
+import { ETFI_Settings } from "../../vendor/settings.js";
 import TooltipManager from "/core/ui/tooltips/tooltip-manager.js";
 
 // Per-yield pill background colors. (The divider color lives in
-// ui/etfi-styles.css, since only the stylesheet draws dividers now.)
+// ui/production-chooser/town-focus-section-decorator.css, since only the
+// stylesheet draws dividers now.)
 const YIELD_COLORS = {
   YIELD_FOOD: "rgba(128,179,77,0.35)",
   YIELD_PRODUCTION: "rgba(163,61,41,0.35)",
@@ -133,7 +134,7 @@ function iconEl(spec) {
   return null;
 }
 
-// Width and color come from .etfi-divider-v (etfi-styles.css).
+// Width and color come from .etfi-divider-v (town-focus-section-decorator.css).
 function vDivider() {
   const d = document.createElement("div");
   d.className = "self-stretch shrink-0 mx-1 etfi-divider-v";
@@ -164,7 +165,8 @@ export function yieldPill(entry, compact = false) {
       ? { "background-color": YIELD_COLORS[entry.yieldType] }
       : undefined;
 
-  // etfi-pill-tight trims the Pill's default px-1.5 (etfi-styles.css).
+  // etfi-pill-tight trims the Pill's default px-1.5
+  // (town-focus-section-decorator.css).
   return Pill({ class: "ml-1 etfi-pill-tight", small: true, backgroundStyle, children: body });
 }
 

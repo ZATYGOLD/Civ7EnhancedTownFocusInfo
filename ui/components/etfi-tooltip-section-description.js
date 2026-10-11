@@ -8,7 +8,7 @@
 // town-focus-tooltip.js sets the text on `element.etfiDescription` and bumps the
 // observed `data-rev` attribute to trigger a re-render.
 
-import { applyListSpacing } from "./etfi-render.js";
+import { applyListSpacing } from "./town-focus-rows.js";
 
 const ETFI_TOWN_FOCUS_SECTION_DESCRIPTION = "etfi-tooltip-section-description";
 

@@ -33,6 +33,6 @@
     "noImplicitAny": false,
     "skipLibCheck": true
   },
-  "include": ["core/**/*.js", "ui/**/*.js", "etfi-globals.d.ts"],
-  "exclude": ["text"]
+  "include": ["vendor/**/*.js", "ui/**/*.js", "tools/**/*.mjs", "etfi-globals.d.ts"],
+  "exclude": ["text", "node_modules"]
 }

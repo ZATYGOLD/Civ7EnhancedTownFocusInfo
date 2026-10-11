@@ -1,0 +1,14 @@
+# Normalise line endings so editors don't produce whole-file diffs.
+#
+# Two files were LF while their seventeen siblings were CRLF, and any editor
+# that normalises on save turned them into full-file changes that buried the
+# real diff. The same thing was happening to LICENSE and the ModInfoText files.
+#
+# After adding this, run ONCE to apply it to what is already committed:
+#     git add --renormalize .
+#     git commit -m "Normalise line endings"
+
+* text=auto eol=crlf
+
+*.png binary
+*.blp binary

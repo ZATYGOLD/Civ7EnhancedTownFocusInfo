@@ -20,14 +20,14 @@ import { createComponent, useContext, createEffect, createSignal } from "/core/v
 import { Tooltip, TooltipContext, TooltipHorizontalPosition } from "/core/ui-next/components/tooltip.js";
 import { TooltipModel } from "/core/ui-next/components/tooltip-model.js";
 import { TriggerType } from "/core/ui-next/components/trigger.js";
-import { getConnectedCitiesFood, getConvertedGold, composeWithFallback, isTownGrowing, isGrowthFocusEl } from "../utilities/etfi-utilities.js";
-import { buildFocusModel, focusHeaderYield } from "../etfi-town-focus/focus-models.js";
-import { fmt, renderSectionPanels, setChildren, applyListSpacing, splitSectionsByPanel, ETFI_SECTION_CFG, ETFI_DETAILS_CFG } from "../etfi-details/etfi-render.js";
-import { getHideDetails } from "../etfi-details/etfi-view-state.js";
-import { ETFI_TOWN_FOCUS_SECTION_DESCRIPTION } from "../etfi-details/etfi-tooltip-section-description.js";
+import { getConnectedCitiesFood, getConvertedGold, composeWithFallback, isTownGrowing, isGrowthFocusEl } from "../utilities/utilities-town-focus.js";
+import { buildFocusModel, focusHeaderYield } from "../town-focus/focus-models.js";
+import { fmt, renderSectionPanels, setChildren, applyListSpacing, splitSectionsByPanel, ETFI_SECTION_CFG, ETFI_DETAILS_CFG } from "../components/town-focus-rows.js";
+import { getHideDetails } from "../components/town-focus-view-state.js";
+import { ETFI_TOWN_FOCUS_SECTION_DESCRIPTION } from "../components/etfi-tooltip-section-description.js";
 
 // The unique tooltip style name the town-focus items reference (see
-// etfi-town-focus-section.js). Kept so the base tooltip is overridden/suppressed.
+// town-focus-section-decorator.js). Kept so the base tooltip is overridden/suppressed.
 export const ETFI_TOWN_FOCUS_TOOLTIP_STYLE = "etfi-town-focus-tooltip";
 
 // The legacy DOM tag of a Town Focus card. Scoped to town-focus cards only — we
@@ -100,7 +100,7 @@ class EtfiTownFocusTooltipContent {
     //   * descDivider — a thin separator line between the two blocks.
     //   * description (legacy <p>) — the generic Town behavior.
     this.sectionDescription.className = "flex flex-col";
-    // Divider height/color come from etfi-styles.css; the vertical margin is
+    // Divider height/color come from town-focus-section-decorator.css; the vertical margin is
     // specific to this separator so it stays inline.
     this.descDivider.className = "w-full self-center shrink-0 etfi-divider-h";
     this.descDivider.style.marginTop = "0.4rem";
@@ -463,7 +463,7 @@ function mountTownFocusTooltip() {
   // ModelRegistry only resolves models once the engine is ready; touching
   // TooltipModel before then throws. This runs at module load, so an unguarded
   // throw would abort the entire module — including the ETFI_TOWN_FOCUS_TOOLTIP_STYLE
-  // export that etfi-town-focus-section.js imports. Retry instead of dying.
+  // export that town-focus-section-decorator.js imports. Retry instead of dying.
   let model;
   try {
     model = TooltipModel.get();

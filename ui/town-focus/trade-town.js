@@ -5,7 +5,7 @@
 // Route range pill. Only Improved (worked) Resource tiles are listed — they are
 // the ones that earn the Happiness.
 
-import { ETFI_YIELDS, countResourceTiles, tradeRangePill, warehouseAmountResolver, composeWithFallback } from "../utilities/etfi-utilities.js";
+import { ETFI_YIELDS, countResourceTiles, tradeRangePill, warehouseAmountResolver, composeWithFallback } from "../utilities/utilities-town-focus.js";
 import { fromGroups, foldByYield, sectionFrom } from "./contributions.js";
 
 // A "warehouse" bonus (see getWarehouseAmounts). Its one row matches any

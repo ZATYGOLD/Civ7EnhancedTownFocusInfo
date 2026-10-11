@@ -5,7 +5,7 @@
 // Quarter. The bonus unit is the quarter (2+ qualifying buildings on a tile),
 // so lone Buildings are listed for reference only and earn nothing.
 
-import { ETFI_YIELDS, getTownBuildings, getModifierAmount, composeWithFallback } from "../utilities/etfi-utilities.js";
+import { ETFI_YIELDS, getTownBuildings, getModifierAmount, composeWithFallback } from "../utilities/utilities-town-focus.js";
 import { contribution, fromQuarters, foldByYield, sectionFrom } from "./contributions.js";
 
 // The two yields carry their own Amount, so they are read separately rather

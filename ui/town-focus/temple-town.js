@@ -6,7 +6,7 @@
 // is per building, not per quarter, so lone Buildings earn it too and that
 // category is not hidden.
 
-import { ETFI_YIELDS, RELIC_ICON, getTownBuildings, countTemples, getModifierAmount, composeWithFallback } from "../utilities/etfi-utilities.js";
+import { ETFI_YIELDS, RELIC_ICON, getTownBuildings, countTemples, getModifierAmount, composeWithFallback } from "../utilities/utilities-town-focus.js";
 import { contribution, fromQuarters, foldByYield, sectionFrom } from "./contributions.js";
 
 // Despite the name, this modifier targets ConstructibleClass=BUILDING — every

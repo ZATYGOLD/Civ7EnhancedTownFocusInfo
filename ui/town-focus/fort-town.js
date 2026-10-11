@@ -10,7 +10,7 @@
 // GAME (2.5.3) that Great Walls do earn the Gold. Do not split on DISTRICT_WALL
 // again, and test in game before acting on a report that says otherwise.
 
-import { ETFI_YIELDS, HEAL_ICON, FORTIFY_ICON, getFortifications, getModifierAmount, composeWithFallback } from "../utilities/etfi-utilities.js";
+import { ETFI_YIELDS, HEAL_ICON, FORTIFY_ICON, getFortifications, getModifierAmount, composeWithFallback } from "../utilities/utilities-town-focus.js";
 import { contribution, foldByYield, sectionFrom } from "./contributions.js";
 
 const MOD_GOLD = "ATTACH_FORT_WALLS_GOLD_FROM_PROJECT";

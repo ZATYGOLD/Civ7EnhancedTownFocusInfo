@@ -8,8 +8,8 @@ import { ComponentUtilities } from "/core/ui-next/utilities/component-utilities.
 import { ComponentID } from "/core/ui/utilities/utilities-component-id.js";
 import { TownFocusChooserItem } from "/base-standard/ui/production-chooser/town-focus-section.js";
 import { TownFocusRefreshEvent } from "/base-standard/ui/production-chooser/panel-town-focus.js";
-import { getTownCity, composeWithFallback, isGrowthFocusEl } from "../utilities/etfi-utilities.js";
-import { getHideDetails, setHideDetails } from "../etfi-details/etfi-view-state.js";
+import { getTownCity, composeWithFallback, isGrowthFocusEl } from "../utilities/utilities-town-focus.js";
+import { getHideDetails, setHideDetails } from "../components/town-focus-view-state.js";
 import { ETFI_TOWN_FOCUS_TOOLTIP_STYLE } from "./town-focus-tooltip.js";
 import {
   yieldPill,
@@ -20,19 +20,19 @@ import {
   splitSectionsByPanel,
   clearChildren,
   ETFI_SECTION_CFG,
-} from "../etfi-details/etfi-render.js";
-import { buildFocusModel } from "../etfi-town-focus/focus-models.js";
+} from "../components/town-focus-rows.js";
+import { buildFocusModel } from "../town-focus/focus-models.js";
 
 // When the panel carries the `etfi-hide-details` class (toggled by the header
 // switch), every focus card's detail zones are hidden, leaving just the name
-// + yield pills. The hide state lives in the shared etfi-view-state module so
+// + yield pills. The hide state lives in the shared town-focus-view-state module so
 // the focus hover tooltip can read it too. Defaults to showing details.
 
 // The mod's stylesheet, loaded through the engine's own loader rather than an
 // injected <style> element. ComponentUtilities.loadStyles() de-duplicates, and
 // logs "style-cache: Error loading style - <url>" if the path is wrong, so a
 // bad path is diagnosable in the log instead of failing silently.
-ComponentUtilities.loadStyles("fs://game/EnhancedTownFocusInfoMod/ui/etfi-styles.css");
+ComponentUtilities.loadStyles("fs://game/EnhancedTownFocusInfoMod/ui/production-chooser/town-focus-section-decorator.css");
 
 // Fully rebuild the focus list. We reuse the base game's own refresh event (the
 // same path used when the panel reopens), which rebuilds every
@@ -168,7 +168,8 @@ function buildModel(item) {
   return buildFocusModel(getTownCity(), projectTypeString(item.Root));
 }
 
-// Panel width is set BOTH here and in etfi-styles.css on purpose: the sheet is
+// Panel width is set BOTH here and in town-focus-section-decorator.css on
+// purpose: the sheet is
 // the declarative source, this inline set is the guarantee. The base panel
 // carries its own width utility classes, so if the sheet fails to load the panel
 // silently reverts to its much wider natural width.
@@ -294,7 +295,8 @@ function ensureHideToggle(fromEl) {
     const header = panel.querySelector("fxs-header");
     const content = header?.parentElement;
     if (content) {
-      // .etfi-anchored carries the absolute placement (etfi-styles.css); the
+      // .etfi-anchored carries the absolute placement
+      // (town-focus-section-decorator.css); the
       // fallback branch below deliberately stays in normal flow.
       row.classList.add("etfi-anchored");
       content.appendChild(row);
@@ -346,7 +348,7 @@ function verifyBaseContract() {
       "[ETFI] TownFocusChooserItem is missing expected method(s):", missing.join(", ") +
       ". The mod's focus-card patch is disabled so the stock panel keeps working. " +
       "This usually means a game patch renamed them; update REQUIRED_METHODS and the " +
-      "wrappers in ui/production-chooser/etfi-town-focus-section.js to match.",
+      "wrappers in ui/production-chooser/town-focus-section-decorator.js to match.",
     );
     return false;
   }
