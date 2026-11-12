@@ -2,6 +2,19 @@
 
 A mod for Civilization VII that enhances the display of town focus yield bonuses, showing detailed breakdowns of improvements, buildings, and trade routes that contribute to specialization bonuses.
 
+## Version 2.5.4
+
+Compatible with game update 1.5.1, which disables all installed mods — re-enable this one in Additional Content.
+
+### Fixes
+
+- **The focus hover tooltip works again.** 1.5.1 renamed a tooltip field (`name` to `id`), so every hover was silently ignored. The focus effect text lives in that tooltip, which is why the base game's description looked hidden for no reason.
+
+### Maintenance
+
+- Verified against 1.5.1: the ten focuses, the modifiers and arguments behind them, and the card and panel structure the mod patches are all unchanged.
+- Options registration no longer throws if the game initializes its options screen earlier than it does today.
+
 ## Version 2.5.3
 
 ### Fixes
