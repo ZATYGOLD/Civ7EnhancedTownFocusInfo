@@ -39,7 +39,13 @@ const onOptionExpandDetailsUpdate = (optionInfo, value) => {
 // implementation, so it fixed nothing and only froze a core singleton's method
 // at our copy for every other mod. Do not reinstate without re-checking stock.
 
-Options.addInitCallback(() => {
+// addInitCallback throws ("Options already initialized") if the options screen
+// has already run its init pass. LoadOrder 1100 is comfortably before the first
+// time that screen opens, so this does not fire today — but if a future patch
+// moves options init earlier, an unguarded throw here would abort the rest of
+// this module at load. Catching it costs nothing and degrades to "the mod's two
+// options are missing from the Options screen" instead, with a reason in the log.
+const registerEtfiOptions = () => {
   Options.addOption({
     category: CategoryType["Mods"],
     group: "etfi",
@@ -61,4 +67,14 @@ Options.addInitCallback(() => {
     label: "LOC_MOD_ETFI_EXPAND_DETAILS_DEFAULT",
     description: "LOC_MOD_ETFI_EXPAND_DETAILS_DEFAULT_DESC",
   });
-});
+};
+
+try {
+  Options.addInitCallback(registerEtfiOptions);
+} catch (e) {
+  console.error(
+    "[ETFI] could not register the mod's Options entries; the rest of the mod is unaffected. " +
+    "Options.addInitCallback rejected a late registration:",
+    e,
+  );
+}

@@ -403,9 +403,31 @@ const CONTENT = new EtfiTownFocusTooltipContent();
 
 const TOOLTIP_NAME = { value: null };
 
+// The key TooltipModel uses to address this tooltip. Game 1.5.1 renamed the
+// TooltipContext field from `name` to `id` (every call site in tooltip.js now
+// passes ctx.id to triggerTooltip/isLocked), so read `id` first and keep `name`
+// as the pre-1.5.1 fallback.
+//
+// This MUST be loud when neither exists. The old code silently captured
+// undefined, and the hover handler's `!TOOLTIP_NAME.value` guard then swallowed
+// every mouseover — no error, no tooltip, nothing in the log to point at.
+function tooltipKeyOf(ctx) {
+  const key = ctx?.id ?? ctx?.name;
+  if (key === undefined || key === null) {
+    console.error(
+      "[ETFI] TooltipContext exposes neither `id` nor `name`; the town-focus hover " +
+      "tooltip cannot be addressed and will not appear. A game patch has probably " +
+      "renamed the field again — update tooltipKeyOf() in " +
+      "ui/production-chooser/town-focus-tooltip.js to match core/ui-next/components/tooltip.js.",
+    );
+    return null;
+  }
+  return key;
+}
+
 function NameCapture() {
   const ctx = useContext(TooltipContext);
-  if (ctx) TOOLTIP_NAME.value = ctx.name;
+  if (ctx) TOOLTIP_NAME.value = tooltipKeyOf(ctx);
   return null;
 }
 
@@ -418,7 +440,8 @@ function LegacyLayerLift() {
   const model = TooltipModel.get();
   const layer = document.getElementById("tooltips");
   createEffect(() => {
-    const locked = ctx ? model.isLocked(ctx.name) : false;
+    const key = ctx ? tooltipKeyOf(ctx) : null;
+    const locked = key === null ? false : model.isLocked(key);
     if (layer) layer.classList.toggle("etfi-legacy-layer-lift", locked);
   });
   return null;
@@ -488,9 +511,14 @@ function mountTownFocusTooltip() {
   // we only re-run update() when the hovered card actually changes.
   let shownCard = null;
 
+  // Tooltip keys are now numeric and the counter starts at 0, so the first
+  // tooltip mounted in a session is addressed as 0. A truthiness check on the
+  // key therefore rejects a perfectly valid tooltip; test for absence instead.
+  const hasKey = () => TOOLTIP_NAME.value !== null && TOOLTIP_NAME.value !== undefined;
+
   const onMouseOver = (e) => {
     const card = e.target?.closest?.(CARD_SELECTOR);
-    if (!card || !TOOLTIP_NAME.value) return;
+    if (!card || !hasKey()) return;
     // Innermost-tooltip rule: if the cursor is over an inner element with its own
     // tooltip style, let that one own the hover — otherwise both fire and overlap.
     // While locked we leave ours pinned so those links stay hoverable inside it.
@@ -513,7 +541,7 @@ function mountTownFocusTooltip() {
 
   const onMouseOut = (e) => {
     const card = e.target?.closest?.(CARD_SELECTOR);
-    if (!card || !TOOLTIP_NAME.value) return;
+    if (!card || !hasKey()) return;
     if (!card.contains(e.relatedTarget)) {
       model.triggerTooltip(TOOLTIP_NAME.value, TriggerType.Blur, card);
       if (shownCard === card) shownCard = null;
